@@ -7,75 +7,17 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,300;0,700&family=Manrope:wght@300;400;700&display=swap" rel="stylesheet"/>
-    
-    <script id="tailwind-config">
-        tailwind.config = {
-          theme: { extend: { colors: { primary: "#000000", secondary: "#B91C1C" }, fontFamily: { "body": ["Manrope", "sans-serif"], "headline": ["Noto Serif", "serif"] } } }
-        }
-    </script>
-    <style>
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
-        body { background-color: #FDFBF7; font-family: 'Manrope', sans-serif; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-    </style>
+    <script id="tailwind-config">tailwind.config = { theme: { extend: { colors: { primary: "#000000", secondary: "#B91C1C" }, fontFamily: { "body": ["Manrope", "sans-serif"], "headline": ["Noto Serif", "serif"] } } } }</script>
+    <style>.material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; } body { background-color: #FDFBF7; font-family: 'Manrope', sans-serif; } .no-scrollbar::-webkit-scrollbar { display: none; } .tab-content { display: none; } .tab-content.active { display: block; }</style>
 </head>
 <body class="text-primary overflow-x-hidden min-h-screen">
-
-    <header class="bg-[#111111] border-b border-stone-800 sticky top-0 z-40 flex justify-between items-center w-full px-5 py-4 lg:pl-72 shadow-sm text-white">
-        <div class="flex items-center gap-4">
-            <button onclick="toggleSidebar()" class="lg:hidden p-1 hover:bg-stone-800 rounded-md transition-colors"><span class="material-symbols-outlined">menu</span></button>
-            <h2 class="text-lg font-bold hidden sm:block">Gestão Allvino</h2>
-        </div>
-        <div class="flex items-center gap-3">
-            <span class="text-sm font-bold text-stone-300">Olá, Master</span>
-            <span class="text-[10px] bg-stone-300 text-black px-2 py-0.5 rounded-full uppercase font-bold">Admin</span>
-        </div>
-    </header>
-
-    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 flex flex-col h-full w-64 bg-[#0a0a0a] border-r border-stone-800 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl lg:shadow-none">
-        <div class="px-6 py-6 border-b border-stone-800 bg-[#111111] flex justify-between">
-            <img src="LOGO-ALLVINO-BRANCO.png" class="h-10" onerror="this.src='https://via.placeholder.com/150x50?text=Allvino'">
-            <button onclick="toggleSidebar()" class="lg:hidden text-stone-400"><span class="material-symbols-outlined">close</span></button>
-        </div>
-        <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto no-scrollbar">
-            <button type="button" onclick="showTab('bi')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-secondary">analytics</span> BI Analytics</button>
-            <button type="button" onclick="showTab('catalogo')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-blue-400">wine_bar</span> Catálogo</button>
-            <button type="button" onclick="showTab('promo')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-green-500">campaign</span> Promoções</button>
-            <button type="button" onclick="showTab('usuarios')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-orange-400">group</span> Equipe</button>
-            <button type="button" onclick="showTab('perfil')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-purple-400">person_edit</span> Meu Perfil</button>
-        </nav>
-        <div class="p-6 border-t border-stone-800">
-            <a href="#" onclick="fazerLogout()" class="flex text-secondary font-bold text-sm hover:text-red-400 transition-colors"><span class="material-symbols-outlined mr-2">logout</span> Sair do Sistema</a>
-        </div>
-    </aside>
-
+    <header class="bg-[#111111] border-b border-stone-800 sticky top-0 z-40 flex justify-between items-center w-full px-5 py-4 lg:pl-72 shadow-sm text-white"><div class="flex items-center gap-4"><button onclick="toggleSidebar()" class="lg:hidden p-1 hover:bg-stone-800 rounded-md transition-colors"><span class="material-symbols-outlined">menu</span></button><h2 class="text-lg font-bold hidden sm:block">Gestão Allvino</h2></div><div class="flex items-center gap-3"><span class="text-sm font-bold text-stone-300">Olá, Master</span><span class="text-[10px] bg-stone-300 text-black px-2 py-0.5 rounded-full uppercase font-bold">Admin</span></div></header>
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 flex flex-col h-full w-64 bg-[#0a0a0a] border-r border-stone-800 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl lg:shadow-none"><div class="px-6 py-6 border-b border-stone-800 bg-[#111111] flex justify-between"><img src="LOGO-ALLVINO-BRANCO.png" class="h-10" onerror="this.src='https://via.placeholder.com/150x50?text=Allvino'"><button onclick="toggleSidebar()" class="lg:hidden text-stone-400"><span class="material-symbols-outlined">close</span></button></div><nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto no-scrollbar"><button type="button" onclick="showTab('bi')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-secondary">analytics</span> BI Analytics</button><button type="button" onclick="showTab('catalogo')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-blue-400">wine_bar</span> Catálogo</button><button type="button" onclick="showTab('promo')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-green-500">campaign</span> Promoções</button><button type="button" onclick="showTab('usuarios')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-orange-400">group</span> Equipe</button><button type="button" onclick="showTab('perfil')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-purple-400">person_edit</span> Meu Perfil</button></nav><div class="p-6 border-t border-stone-800"><a href="#" onclick="fazerLogout()" class="flex text-secondary font-bold text-sm hover:text-red-400 transition-colors"><span class="material-symbols-outlined mr-2">logout</span> Sair do Sistema</a></div></aside>
     <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/60 z-40 hidden lg:hidden backdrop-blur-sm transition-opacity"></div>
-
     <main class="lg:ml-64 p-5 lg:p-8 max-w-7xl mx-auto pb-32">
+        <div id="tab-bi" class="tab-content active space-y-8"><div class="border-b border-stone-200 pb-6"><h1 class="text-3xl font-bold font-serif">Inteligência Allvino</h1></div><p class="text-stone-500">O módulo BI será atualizado na Fase 4.</p></div>
+        <div id="tab-catalogo" class="tab-content space-y-8"><div class="flex justify-between items-center border-b pb-6 flex-wrap gap-4"><h1 class="text-3xl font-bold font-serif">Gestão do Catálogo</h1><div class="flex gap-2"><button type="button" onclick="abrirModalCategoria()" class="bg-stone-200 text-black px-6 py-3 rounded-xl font-bold hover:bg-stone-300 transition flex items-center gap-2"><span class="material-symbols-outlined text-[20px]">category</span> Nova Categoria</button><button type="button" onclick="abrirModalProduto()" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-blue-700 transition flex items-center gap-2"><span class="material-symbols-outlined text-[20px]">add</span> Novo Vinho</button></div></div><div class="bg-white rounded-2xl border shadow-sm overflow-hidden overflow-x-auto"><table class="w-full text-left min-w-[800px]"><thead class="bg-stone-50 border-b text-xs uppercase font-bold text-stone-400"><tr><th class="px-6 py-4">Vinho</th><th class="px-6 py-4">País</th><th class="px-6 py-4">Preço App</th><th class="px-6 py-4 text-right">Ações</th></tr></thead><tbody class="divide-y divide-stone-100 text-sm" id="tabela-produtos"><tr><td colspan="4" class="px-6 py-8 text-center text-stone-400 font-bold">Carregando catálogo...</td></tr></tbody></table></div></div>
         
-        <div id="tab-bi" class="tab-content active space-y-8">
-            <div class="border-b border-stone-200 pb-6"><h1 class="text-3xl font-bold font-serif">Inteligência Allvino</h1></div>
-            <p class="text-stone-500">O módulo BI será atualizado na Fase 4.</p>
-        </div>
-
-        <div id="tab-catalogo" class="tab-content space-y-8">
-            <div class="flex justify-between items-center border-b pb-6 flex-wrap gap-4">
-                <h1 class="text-3xl font-bold font-serif">Gestão do Catálogo</h1>
-                <div class="flex gap-2">
-                    <button type="button" onclick="abrirModalCategoria()" class="bg-stone-200 text-black px-6 py-3 rounded-xl font-bold hover:bg-stone-300 transition flex items-center gap-2"><span class="material-symbols-outlined text-[20px]">category</span> Nova Categoria</button>
-                    <button type="button" onclick="abrirModalProduto()" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-blue-700 transition flex items-center gap-2"><span class="material-symbols-outlined text-[20px]">add</span> Novo Vinho</button>
-                </div>
-            </div>
-            <div class="bg-white rounded-2xl border shadow-sm overflow-hidden overflow-x-auto">
-                <table class="w-full text-left min-w-[800px]">
-                    <thead class="bg-stone-50 border-b text-xs uppercase font-bold text-stone-400"><tr><th class="px-6 py-4">Vinho</th><th class="px-6 py-4">País</th><th class="px-6 py-4">Preço App</th><th class="px-6 py-4 text-right">Ações</th></tr></thead>
-                    <tbody class="divide-y divide-stone-100 text-sm" id="tabela-produtos"><tr><td colspan="4" class="px-6 py-8 text-center text-stone-400 font-bold">Carregando catálogo...</td></tr></tbody>
-                </table>
-            </div>
-        </div>
-
         <div id="tab-promo" class="tab-content space-y-8">
             <div class="flex justify-between items-center border-b pb-6 flex-wrap gap-4">
                 <h1 class="text-3xl font-bold font-serif">Promoções e Kits</h1>
@@ -94,9 +36,8 @@
                 </table>
             </div>
         </div>
-
-        <div id="tab-usuarios" class="tab-content space-y-8"><div class="border-b pb-6"><h1 class="text-3xl font-bold font-serif">Gestão de Equipe</h1></div></div>
-        <div id="tab-perfil" class="tab-content space-y-8"><div class="border-b pb-6"><h1 class="text-3xl font-bold font-serif">Meu Perfil</h1></div></div>
+        
+        <div id="tab-usuarios" class="tab-content space-y-8"><div class="border-b pb-6"><h1 class="text-3xl font-bold font-serif">Gestão de Equipe</h1></div></div><div id="tab-perfil" class="tab-content space-y-8"><div class="border-b pb-6"><h1 class="text-3xl font-bold font-serif">Meu Perfil</h1></div></div>
     </main>
 
     <div id="modal-produto" class="fixed inset-0 z-[60] flex justify-end hidden opacity-0 transition-opacity duration-300"><div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="toggleModal('modal-produto')"></div><div class="relative w-full max-w-md h-full bg-white flex flex-col transform translate-x-full transition-transform duration-300 shadow-2xl"><div class="flex justify-between px-6 py-5 border-b bg-stone-50"><h2 id="titulo-modal-produto" class="text-xl font-bold">Produto</h2><button type="button" onclick="toggleModal('modal-produto')"><span class="material-symbols-outlined">close</span></button></div><div class="flex-1 overflow-y-auto p-6"><form id="form-produto" onsubmit="salvarProduto(event)" class="space-y-4"><input type="hidden" id="produto-id"><label class="border-2 border-dashed border-stone-300 rounded-2xl p-6 flex flex-col items-center cursor-pointer hover:bg-stone-50 relative overflow-hidden group"><input type="file" id="foto-vinho" accept="image/png, image/jpeg" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"><span class="material-symbols-outlined text-[40px] text-stone-400 group-hover:text-blue-500 transition-colors">add_photo_alternate</span><p class="font-bold text-sm text-center mt-2 group-hover:text-blue-500">Enviar Foto</p><p id="nome-arquivo" class="text-[10px] text-stone-400 mt-1 uppercase tracking-widest text-center truncate max-w-[200px]">Opcional se for editar</p></label><input type="text" id="nome" placeholder="Nome Comercial" class="w-full border p-4 rounded-xl font-bold text-sm" required><textarea id="descricao" rows="3" placeholder="Descrição do Produto" class="w-full border p-4 rounded-xl text-sm"></textarea><div class="grid grid-cols-2 gap-4"><input type="text" id="sku" placeholder="SKU" class="border p-4 rounded-xl font-mono text-sm" required><input type="number" id="preco" step="0.01" placeholder="Preço R$" class="border p-4 rounded-xl font-bold text-sm" required></div><div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] font-bold text-stone-400">PAÍS</label><select id="pais" class="w-full border p-4 rounded-xl text-sm mt-1" required><option value="">Carregando...</option></select></div><div><label class="text-[10px] font-bold text-stone-400">TIPO</label><select id="tipo" class="w-full border p-4 rounded-xl text-sm mt-1" required><option value="">Carregando...</option></select></div></div><button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold mt-4 shadow-lg hover:bg-blue-700 transition">Salvar Produto</button></form></div></div></div>
@@ -110,9 +51,10 @@
                 <form id="form-promocao" onsubmit="salvarPromocao(event)" class="space-y-4">
                     <div>
                         <label class="text-[10px] font-bold text-stone-400">TIPO DE OFERTA</label>
-                        <select id="promo-tipo" class="w-full border p-3 rounded-xl text-sm mt-1" onchange="togglePrecoPromo()" required>
+                        <select id="promo-tipo" class="w-full border p-3 rounded-xl text-sm mt-1" onchange="toggleFormatoPromo()" required>
                             <option value="Banner">Apenas Banner Principal</option>
-                            <option value="Kit">Kit ou Vinho Promocional</option>
+                            <option value="Kit">Kit Promocional</option>
+                            <option value="Produto Avulso">Produto Avulso</option>
                         </select>
                     </div>
 
@@ -126,12 +68,23 @@
                     <input type="text" id="promo-titulo" placeholder="Título (Ex: Ofertas da Semana ou Kit Malbec)" class="w-full border p-4 rounded-xl font-bold text-sm" required>
                     <textarea id="promo-subtitulo" rows="3" placeholder="Subtítulo ou descrição..." class="w-full border p-4 rounded-xl text-sm" required></textarea>
                     
+                    <div id="container-promo-textos" class="space-y-4 bg-stone-50 p-4 rounded-xl border border-stone-100">
+                        <div>
+                            <label class="text-[10px] font-bold text-stone-400">TAG DESTAQUE</label>
+                            <input type="text" id="promo-badge" placeholder="Ex: Seleção Especial" value="Seleção Especial" class="w-full border p-3 rounded-xl text-sm mt-1">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-stone-400">TEXTO DO BOTÃO</label>
+                            <input type="text" id="promo-botao" placeholder="Ex: Ver Promoções" value="Ver Promoções" class="w-full border p-3 rounded-xl text-sm mt-1">
+                        </div>
+                    </div>
+
                     <div id="container-promo-preco" class="hidden">
                         <label class="text-[10px] font-bold text-stone-400">PREÇO PROMOCIONAL (R$)</label>
                         <input type="number" id="promo-preco" step="0.01" placeholder="Ex: 149.90" class="w-full border p-4 rounded-xl font-bold text-sm mt-1">
                     </div>
 
-                    <button type="submit" class="w-full bg-green-600 text-white py-4 rounded-xl font-bold mt-4 shadow-lg hover:bg-green-700 transition">Ativar Promoção</button>
+                    <button type="submit" class="w-full bg-green-600 text-white py-4 rounded-xl font-bold mt-4 shadow-lg hover:bg-green-700 transition">Salvar Oferta</button>
                 </form>
             </div>
         </div>
@@ -158,13 +111,19 @@
         async function salvarProduto(e) { e.preventDefault(); const btn = e.submitter; const textoOriginal = btn.innerText; btn.innerText = "Salvando..."; btn.disabled = true; const id = document.getElementById('produto-id').value; const nome = document.getElementById('nome').value; const descricao = document.getElementById('descricao').value; const sku = document.getElementById('sku').value; const preco = parseFloat(document.getElementById('preco').value); const pais = document.getElementById('pais').value; const tipo = document.getElementById('tipo').value; const file = document.getElementById('foto-vinho').files[0]; let imagemUrl = null; if (file) { const fileName = `${Date.now()}-${Math.floor(Math.random()*1000)}.${file.name.split('.').pop()}`; const { error: uploadError } = await supabaseClient.storage.from('produtos').upload(fileName, file); if (uploadError) { alert("Erro na foto: " + uploadError.message); btn.innerText = textoOriginal; btn.disabled = false; return; } const { data } = supabaseClient.storage.from('produtos').getPublicUrl(fileName); imagemUrl = data.publicUrl; } const dadosSalvar = { nome, descricao, sku_sankhya: sku, preco, pais, tipo }; if (imagemUrl) dadosSalvar.imagem_url = imagemUrl; let erroDb; if (id) { const { error } = await supabaseClient.from('produtos').update(dadosSalvar).eq('id', id); erroDb = error; } else { const { error } = await supabaseClient.from('produtos').insert([dadosSalvar]); erroDb = error; } if (erroDb) alert("Erro no banco: " + erroDb.message); else { toggleModal('modal-produto'); carregarProdutos(); } btn.innerText = textoOriginal; btn.disabled = false; }
         async function deletarProduto(id) { if(confirm("Apagar vinho?")) { await supabaseClient.from('produtos').delete().eq('id', id); carregarProdutos(); } }
 
-        // --- SISTEMA DE PROMOÇÕES ATUALIZADO ---
-        function togglePrecoPromo() {
+        function toggleFormatoPromo() {
             const tipo = document.getElementById('promo-tipo').value;
             const containerPreco = document.getElementById('container-promo-preco');
+            const containerTextos = document.getElementById('container-promo-textos');
             const inputPreco = document.getElementById('promo-preco');
-            if (tipo === 'Kit') { containerPreco.classList.remove('hidden'); inputPreco.required = true; } 
-            else { containerPreco.classList.add('hidden'); inputPreco.required = false; inputPreco.value = ''; }
+
+            if (tipo === 'Banner') {
+                containerPreco.classList.add('hidden'); inputPreco.required = false; inputPreco.value = '';
+                containerTextos.classList.remove('hidden');
+            } else {
+                containerPreco.classList.remove('hidden'); inputPreco.required = true;
+                containerTextos.classList.add('hidden');
+            }
         }
 
         async function carregarPromocoes() {
@@ -173,31 +132,28 @@
             tbody.innerHTML = ''; 
 
             if (error) { tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-4 text-center text-red-500">Erro ao carregar ofertas.</td></tr>`; return; }
-            if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-stone-400 font-bold">Nenhuma oferta cadastrada.</td></tr>`; return; }
+            if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-stone-400 font-bold">Nenhuma oferta.</td></tr>`; return; }
 
             data.forEach(p => {
                 const statusBadge = p.status ? '<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-200">Ativo</span>' : '<span class="bg-stone-100 text-stone-500 px-3 py-1 rounded-full text-xs font-bold border border-stone-200">Inativo</span>';
-                const tagTipo = p.tipo_oferta === 'Kit' ? `<span class="mt-2 inline-block bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-[10px] font-bold">KIT/PRODUTO: R$ ${p.preco.toFixed(2).replace('.', ',')}</span>` : `<span class="mt-2 inline-block bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-[10px] font-bold">BANNER INFORMATIVO</span>`;
+                const tagTipo = p.tipo_oferta === 'Banner' ? `<span class="mt-2 inline-block bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-[10px] font-bold">BANNER INFORMATIVO</span>` : `<span class="mt-2 inline-block bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-[10px] font-bold">${p.tipo_oferta.toUpperCase()}: R$ ${p.preco.toFixed(2).replace('.', ',')}</span>`;
 
                 tbody.innerHTML += `
                     <tr class="hover:bg-stone-50 border-b border-stone-100">
                         <td class="px-6 py-4"><img src="${p.imagem_url}" class="h-16 w-28 object-cover rounded-lg shadow-sm" onerror="this.src='https://via.placeholder.com/150x80'"></td>
                         <td class="px-6 py-4 font-bold text-sm">${p.titulo}<br><span class="text-[11px] text-stone-400 font-normal line-clamp-2 mt-1 max-w-xs">${p.subtitulo}</span><br>${tagTipo}</td>
                         <td class="px-6 py-4">${statusBadge}</td>
-                        <td class="px-6 py-4 text-right">
-                            <div class="flex justify-end gap-2">
-                                <button type="button" onclick="alternarStatusPromo('${p.id}', ${!p.status})" class="text-stone-600 bg-stone-100 p-2 rounded-lg hover:bg-stone-200 transition" title="Ligar/Desligar"><span class="material-symbols-outlined text-[18px]">power_settings_new</span></button>
-                                <button type="button" onclick="deletarPromocao('${p.id}')" class="text-red-600 bg-red-50 p-2 rounded-lg hover:bg-red-100 transition"><span class="material-symbols-outlined text-[18px]">delete</span></button>
-                            </div>
-                        </td>
+                        <td class="px-6 py-4 text-right"><div class="flex justify-end gap-2"><button type="button" onclick="alternarStatusPromo('${p.id}', ${!p.status})" class="text-stone-600 bg-stone-100 p-2 rounded-lg hover:bg-stone-200 transition" title="Ligar/Desligar"><span class="material-symbols-outlined text-[18px]">power_settings_new</span></button><button type="button" onclick="deletarPromocao('${p.id}')" class="text-red-600 bg-red-50 p-2 rounded-lg hover:bg-red-100 transition"><span class="material-symbols-outlined text-[18px]">delete</span></button></div></td>
                     </tr>`;
             });
         }
 
         function abrirModalPromocao() { 
             document.getElementById('form-promocao').reset(); 
+            document.getElementById('promo-badge').value = 'Seleção Especial';
+            document.getElementById('promo-botao').value = 'Ver Promoções';
             document.getElementById('nome-arquivo-promo').innerText = "JPG ou PNG";
-            togglePrecoPromo(); // Reseta a exibição do preço
+            toggleFormatoPromo(); 
             toggleModal('modal-promocao'); 
         }
 
@@ -210,6 +166,9 @@
             const subtitulo = document.getElementById('promo-subtitulo').value;
             let preco = document.getElementById('promo-preco').value;
             preco = preco ? parseFloat(preco) : null;
+            
+            const badge_texto = document.getElementById('promo-badge').value || 'Seleção Especial';
+            const botao_texto = document.getElementById('promo-botao').value || 'Ver Promoções';
 
             const file = document.getElementById('foto-promo').files[0];
             if (!file) { alert("Você precisa enviar a arte!"); btn.innerText = textoOriginal; btn.disabled = false; return; }
@@ -221,7 +180,7 @@
             const { data } = supabaseClient.storage.from('produtos').getPublicUrl(fileName);
             const imagemUrl = data.publicUrl;
 
-            const { error: dbError } = await supabaseClient.from('promocoes').insert([{ titulo, subtitulo, imagem_url: imagemUrl, status: true, tipo_oferta, preco }]);
+            const { error: dbError } = await supabaseClient.from('promocoes').insert([{ titulo, subtitulo, imagem_url: imagemUrl, status: true, tipo_oferta, preco, badge_texto, botao_texto }]);
 
             if (dbError) alert("Erro ao salvar: " + dbError.message);
             else { toggleModal('modal-promocao'); carregarPromocoes(); alert("Oferta cadastrada com sucesso!"); }
@@ -230,7 +189,7 @@
         }
 
         async function alternarStatusPromo(id, novoStatus) { await supabaseClient.from('promocoes').update({ status: novoStatus }).eq('id', id); carregarPromocoes(); }
-        async function deletarPromocao(id) { if(confirm("Deseja apagar permanentemente esta oferta?")) { await supabaseClient.from('promocoes').delete().eq('id', id); carregarPromocoes(); } }
+        async function deletarPromocao(id) { if(confirm("Apagar oferta?")) { await supabaseClient.from('promocoes').delete().eq('id', id); carregarPromocoes(); } }
 
         document.addEventListener("DOMContentLoaded", () => { carregarCategorias(); carregarProdutos(); carregarPromocoes(); });
     </script>
