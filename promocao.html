@@ -60,9 +60,9 @@
                 const isKit = kit.tipo_oferta === 'Kit';
                 const btnText = isKit ? 'Adicionar Kit' : 'Adicionar';
                 
-                // Separação de Design visual exigida: Kit (Cover) vs Avulso (Contain, BG branco)
-                const imgClass = isKit ? 'w-full h-full object-cover' : 'h-full w-full object-contain mix-blend-multiply p-4';
-                const bgClass = isKit ? 'bg-stone-100' : 'bg-stone-50';
+                // NOVO PADRÃO: Ambos usam object-contain com respiro para NUNCA cortar a garrafa
+                const imgClass = 'h-full w-full object-contain mix-blend-multiply p-6';
+                const bgClass = 'bg-stone-50';
 
                 container.innerHTML += `
                     <div class="bg-white p-4 rounded-3xl shadow-sm border border-[#B91C1C]/20 flex flex-col h-full hover:shadow-md transition-shadow relative">
