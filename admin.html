@@ -7,13 +7,24 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,300;0,700&family=Manrope:wght@300;400;700&display=swap" rel="stylesheet"/>
+    
+    <script id="tailwind-config">
+        tailwind.config = {
+          theme: {
+            extend: {
+              colors: { primary: "#000000", secondary: "#B91C1C" },
+              fontFamily: { "body": ["Manrope", "sans-serif"], "headline": ["Noto Serif", "serif"] }
+            }
+          }
+        }
+    </script>
+
     <style>
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
         body { background-color: #FDFBF7; font-family: 'Manrope', sans-serif; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        /* Esconde a setinha padrão de input date em alguns navegadores para ficar mais limpo */
         input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.6; transition: 0.2s; }
         input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
     </style>
@@ -37,11 +48,11 @@
             <button onclick="toggleSidebar()" class="lg:hidden text-stone-400"><span class="material-symbols-outlined">close</span></button>
         </div>
         <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto no-scrollbar">
-            <button onclick="showTab('bi')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-secondary">analytics</span> BI Analytics</button>
-            <button onclick="showTab('catalogo')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-blue-400">wine_bar</span> Catálogo</button>
-            <button onclick="showTab('promo')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-green-500">campaign</span> Promoções</button>
-            <button onclick="showTab('usuarios')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-orange-400">group</span> Equipe</button>
-            <button onclick="showTab('perfil')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-purple-400">person_edit</span> Meu Perfil</button>
+            <button type="button" onclick="showTab('bi')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-secondary">analytics</span> BI Analytics</button>
+            <button type="button" onclick="showTab('catalogo')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-blue-400">wine_bar</span> Catálogo</button>
+            <button type="button" onclick="showTab('promo')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-green-500">campaign</span> Promoções</button>
+            <button type="button" onclick="showTab('usuarios')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-orange-400">group</span> Equipe</button>
+            <button type="button" onclick="showTab('perfil')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-purple-400">person_edit</span> Meu Perfil</button>
         </nav>
         <div class="p-6 border-t border-stone-800"><a href="admin-login.html" class="flex text-secondary font-bold text-sm"><span class="material-symbols-outlined mr-2">logout</span> Sair</a></div>
     </aside>
@@ -53,7 +64,6 @@
         <div id="tab-bi" class="tab-content active space-y-8">
             <div class="flex flex-col md:flex-row justify-between md:items-end gap-4 border-b border-stone-200 pb-6">
                 <h1 class="text-3xl font-bold font-serif">Inteligência Allvino</h1>
-                
                 <div class="flex flex-col sm:flex-row gap-3">
                     <div class="flex items-center gap-2 bg-white border border-stone-200 px-3 py-2 rounded-xl shadow-sm w-fit">
                         <span class="material-symbols-outlined text-stone-400 text-[20px]">calendar_month</span>
@@ -65,12 +75,11 @@
                             <option value="custom">Período Personalizado</option>
                         </select>
                     </div>
-
                     <div id="datas-custom" class="hidden items-center gap-2 bg-white border border-stone-200 px-3 py-2 rounded-xl shadow-sm transition-all w-fit">
                         <input type="date" class="text-sm font-bold text-stone-600 outline-none border-none focus:ring-0 bg-transparent p-0 cursor-pointer">
                         <span class="text-stone-300 text-xs font-bold px-1">ATÉ</span>
                         <input type="date" class="text-sm font-bold text-stone-600 outline-none border-none focus:ring-0 bg-transparent p-0 cursor-pointer">
-                        <button onclick="alert('Filtro de período personalizado aplicado com sucesso!')" class="bg-black text-white px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-stone-800 transition ml-1">Filtrar</button>
+                        <button type="button" onclick="alert('Filtro aplicado!')" class="bg-black text-white px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-stone-800 transition ml-1">Filtrar</button>
                     </div>
                 </div>
             </div>
@@ -126,20 +135,20 @@
         <div id="tab-catalogo" class="tab-content space-y-8">
             <div class="flex justify-between items-center border-b pb-6">
                 <h1 class="text-3xl font-bold font-serif">Gestão do Catálogo</h1>
-                <button onclick="toggleModal('modal-produto')" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg">Novo Vinho</button>
+                <button type="button" onclick="toggleModal('modal-produto')" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg">Novo Vinho</button>
             </div>
             <div class="bg-white rounded-2xl border shadow-sm overflow-hidden overflow-x-auto">
                 <table class="w-full text-left min-w-[800px]">
                     <thead class="bg-stone-50 border-b text-xs uppercase font-bold text-stone-400">
                         <tr><th class="px-6 py-4">Vinho</th><th class="px-6 py-4">País</th><th class="px-6 py-4">Preço App</th><th class="px-6 py-4 text-right">Ações</th></tr>
                     </thead>
-                    <tbody class="divide-y divide-stone-100 text-sm">
+                    <tbody class="divide-y divide-stone-100 text-sm" id="tabela-produtos">
                         <tr>
                             <td class="px-6 py-4 font-bold flex items-center gap-3"><img src="https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=50" class="h-10 w-8 object-contain">Arkos Vinho Verde</td>
                             <td class="px-6 py-4">🇵🇹 Portugal</td><td class="px-6 py-4 font-bold">R$ 89,90</td>
                             <td class="px-6 py-4 text-right">
-                                <button onclick="toggleModal('modal-produto')" class="text-blue-600 font-bold px-3 py-1 bg-blue-50 rounded-lg mr-2">Editar</button>
-                                <button onclick="confirm('Remover este item?')" class="text-red-600 font-bold px-3 py-1 bg-red-50 rounded-lg">Remover</button>
+                                <button type="button" class="text-blue-600 font-bold px-3 py-1 bg-blue-50 rounded-lg mr-2">Editar</button>
+                                <button type="button" class="text-red-600 font-bold px-3 py-1 bg-red-50 rounded-lg">Remover</button>
                             </td>
                         </tr>
                     </tbody>
@@ -150,7 +159,7 @@
         <div id="tab-promo" class="tab-content space-y-8">
             <div class="flex justify-between items-center border-b pb-6">
                 <h1 class="text-3xl font-bold font-serif">Promoções e Kits</h1>
-                <button onclick="toggleModal('modal-promo')" class="bg-green-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg">Nova Oferta</button>
+                <button type="button" onclick="toggleModal('modal-promo')" class="bg-green-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg">Nova Oferta</button>
             </div>
             <div class="bg-white rounded-2xl border shadow-sm overflow-hidden overflow-x-auto">
                 <table class="w-full text-left min-w-[800px]">
@@ -164,8 +173,8 @@
                             <td class="px-6 py-4 text-stone-400 line-through">R$ 269,70</td>
                             <td class="px-6 py-4 font-bold text-green-600">R$ 229,90</td>
                             <td class="px-6 py-4 text-right">
-                                <button onclick="toggleModal('modal-promo')" class="text-blue-600 font-bold px-3 py-1 bg-blue-50 rounded-lg mr-2">Editar</button>
-                                <button onclick="confirm('Remover promoção?')" class="text-red-600 font-bold px-3 py-1 bg-red-50 rounded-lg">Remover</button>
+                                <button type="button" class="text-blue-600 font-bold px-3 py-1 bg-blue-50 rounded-lg mr-2">Editar</button>
+                                <button type="button" class="text-red-600 font-bold px-3 py-1 bg-red-50 rounded-lg">Remover</button>
                             </td>
                         </tr>
                     </tbody>
@@ -176,7 +185,7 @@
         <div id="tab-usuarios" class="tab-content space-y-8">
             <div class="flex justify-between items-center border-b pb-6">
                 <h1 class="text-3xl font-bold font-serif">Gestão de Equipe</h1>
-                <button onclick="toggleModal('modal-equipe')" class="bg-orange-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg">Novo Usuário</button>
+                <button type="button" onclick="toggleModal('modal-equipe')" class="bg-orange-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg">Novo Usuário</button>
             </div>
             <div class="bg-white rounded-2xl border shadow-sm overflow-hidden overflow-x-auto">
                 <table class="w-full text-left min-w-[800px]">
@@ -187,18 +196,12 @@
                         <tr>
                             <td class="px-6 py-4 font-bold">Theo</td><td class="px-6 py-4">theo@allvino.com.br</td><td class="px-6 py-4">27 99999-9999</td>
                             <td class="px-6 py-4"><span class="bg-black text-white px-2 py-1 rounded text-[10px] font-bold uppercase">Gerente</span></td>
-                            <td class="px-6 py-4 text-right">
-                                <button onclick="toggleModal('modal-equipe')" class="text-blue-600 font-bold px-3 py-1 bg-blue-50 rounded-lg mr-2">Editar</button>
-                                <button class="text-stone-300 font-bold px-3 py-1 cursor-not-allowed">Remover</button>
-                            </td>
+                            <td class="px-6 py-4 text-right"><button type="button" class="text-blue-600 font-bold px-3 py-1 bg-blue-50 rounded-lg mr-2">Editar</button></td>
                         </tr>
                         <tr>
                             <td class="px-6 py-4 font-bold">Elen</td><td class="px-6 py-4">elen@allvino.com.br</td><td class="px-6 py-4">27 88888-8888</td>
                             <td class="px-6 py-4"><span class="bg-stone-100 text-stone-600 px-2 py-1 rounded text-[10px] font-bold uppercase">Consultora</span></td>
-                            <td class="px-6 py-4 text-right">
-                                <button onclick="toggleModal('modal-equipe')" class="text-blue-600 font-bold px-3 py-1 bg-blue-50 rounded-lg mr-2">Editar</button>
-                                <button onclick="confirm('Revogar acesso deste usuário?')" class="text-red-600 font-bold px-3 py-1 bg-red-50 rounded-lg">Remover</button>
-                            </td>
+                            <td class="px-6 py-4 text-right"><button type="button" class="text-blue-600 font-bold px-3 py-1 bg-blue-50 rounded-lg mr-2">Editar</button></td>
                         </tr>
                     </tbody>
                 </table>
@@ -222,13 +225,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div><label class="text-[10px] font-bold uppercase text-stone-400 block mb-1">Nome</label><input type="text" value="Theo" class="w-full p-4 bg-stone-50 border rounded-xl font-bold outline-none focus:border-black"></div>
                         <div><label class="text-[10px] font-bold uppercase text-stone-400 block mb-1">E-mail</label><input type="email" value="theo@allvino.com.br" class="w-full p-4 bg-stone-50 border rounded-xl font-bold outline-none focus:border-black"></div>
-                        <div><label class="text-[10px] font-bold uppercase text-stone-400 block mb-1">Telefone / WhatsApp</label><input type="text" value="27 3261-9494" class="w-full p-4 bg-stone-50 border rounded-xl font-bold outline-none focus:border-black"></div>
-                    </div>
-                    <div class="pt-6 border-t mt-6">
-                        <h3 class="font-bold text-sm mb-4">Segurança da Conta</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div><label class="text-[10px] font-bold uppercase text-stone-400 block mb-1">Nova Senha</label><input type="password" placeholder="Mínimo 8 caracteres" class="w-full p-4 bg-white border rounded-xl font-bold outline-none focus:border-black shadow-sm"></div>
-                        </div>
+                        <div><label class="text-[10px] font-bold uppercase text-stone-400 block mb-1">Telefone</label><input type="text" value="27 3261-9494" class="w-full p-4 bg-stone-50 border rounded-xl font-bold outline-none focus:border-black"></div>
                     </div>
                     <button type="submit" class="w-full bg-black text-white py-4 rounded-xl font-bold shadow-lg mt-4">Salvar Alterações</button>
                 </form>
@@ -240,7 +237,7 @@
     <div id="modal-produto" class="fixed inset-0 z-[60] flex justify-end hidden opacity-0 transition-opacity duration-300">
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="toggleModal('modal-produto')"></div>
         <div class="relative w-full max-w-md h-full bg-white flex flex-col transform translate-x-full transition-transform duration-300 shadow-2xl">
-            <div class="flex justify-between px-6 py-5 border-b bg-stone-50"><h2 class="text-xl font-bold">Produto</h2><button onclick="toggleModal('modal-produto')"><span class="material-symbols-outlined">close</span></button></div>
+            <div class="flex justify-between px-6 py-5 border-b bg-stone-50"><h2 class="text-xl font-bold">Produto</h2><button type="button" onclick="toggleModal('modal-produto')"><span class="material-symbols-outlined">close</span></button></div>
             <div class="flex-1 overflow-y-auto p-6">
                 <form onsubmit="salvarDados(event, 'modal-produto')" class="space-y-4">
                     <label class="border-2 border-dashed border-stone-300 rounded-2xl p-6 flex flex-col items-center cursor-pointer hover:bg-stone-50 relative overflow-hidden">
@@ -271,7 +268,7 @@
     <div id="modal-promo" class="fixed inset-0 z-[60] flex justify-end hidden opacity-0 transition-opacity duration-300">
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="toggleModal('modal-promo')"></div>
         <div class="relative w-full max-w-md h-full bg-white flex flex-col transform translate-x-full transition-transform duration-300 shadow-2xl">
-            <div class="flex justify-between px-6 py-5 border-b bg-stone-50"><h2 class="text-xl font-bold">Oferta</h2><button onclick="toggleModal('modal-promo')"><span class="material-symbols-outlined">close</span></button></div>
+            <div class="flex justify-between px-6 py-5 border-b bg-stone-50"><h2 class="text-xl font-bold">Oferta</h2><button type="button" onclick="toggleModal('modal-promo')"><span class="material-symbols-outlined">close</span></button></div>
             <div class="flex-1 overflow-y-auto p-6">
                 <form onsubmit="salvarDados(event, 'modal-promo')" class="space-y-4">
                     <label class="border-2 border-dashed border-stone-300 rounded-2xl p-6 flex flex-col items-center cursor-pointer hover:bg-stone-50 relative overflow-hidden">
@@ -293,37 +290,48 @@
     <div id="modal-equipe" class="fixed inset-0 z-[60] flex justify-end hidden opacity-0 transition-opacity duration-300">
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="toggleModal('modal-equipe')"></div>
         <div class="relative w-full max-w-md h-full bg-white flex flex-col transform translate-x-full transition-transform duration-300 shadow-2xl">
-            <div class="flex justify-between px-6 py-5 border-b bg-stone-50"><h2 class="text-xl font-bold">Membro da Equipe</h2><button onclick="toggleModal('modal-equipe')"><span class="material-symbols-outlined">close</span></button></div>
+            <div class="flex justify-between px-6 py-5 border-b bg-stone-50"><h2 class="text-xl font-bold">Membro da Equipe</h2><button type="button" onclick="toggleModal('modal-equipe')"><span class="material-symbols-outlined">close</span></button></div>
             <div class="flex-1 overflow-y-auto p-6">
                 <form onsubmit="salvarDados(event, 'modal-equipe')" class="space-y-4">
                     <div><label class="text-[10px] font-bold text-stone-400">NOME COMPLETO</label><input type="text" class="w-full border p-4 rounded-xl text-sm font-bold" required></div>
                     <div><label class="text-[10px] font-bold text-stone-400">E-MAIL CORPORATIVO</label><input type="email" class="w-full border p-4 rounded-xl text-sm" required></div>
                     <div><label class="text-[10px] font-bold text-stone-400">TELEFONE</label><input type="text" class="w-full border p-4 rounded-xl text-sm" required></div>
                     <div>
-                        <label class="text-[10px] font-bold text-stone-400">FUNÇÃO / PERMISSÃO</label>
-                        <select class="w-full border p-4 rounded-xl text-sm font-bold"><option>Gerente (Acesso Total)</option><option>Consultor(a) (Vendas e Promoções)</option><option>Atendente (Apenas Visão)</option></select>
+                        <label class="text-[10px] font-bold text-stone-400">FUNÇÃO</label>
+                        <select class="w-full border p-4 rounded-xl text-sm font-bold"><option>Gerente</option><option>Consultor(a)</option><option>Atendente</option></select>
                     </div>
-                    <div class="pt-4 border-t"><label class="text-[10px] font-bold text-stone-400">CRIAR SENHA DE ACESSO</label><input type="password" class="w-full border p-4 rounded-xl text-sm" required></div>
+                    <div class="pt-4 border-t"><label class="text-[10px] font-bold text-stone-400">SENHA DE ACESSO</label><input type="password" class="w-full border p-4 rounded-xl text-sm" required></div>
                     <button type="submit" class="w-full bg-orange-500 text-white py-4 rounded-xl font-bold mt-4">Salvar Usuário</button>
                 </form>
             </div>
         </div>
     </div>
 
+
     <script>
-        function toggleSidebar() { const s = document.getElementById('sidebar'), o = document.getElementById('sidebar-overlay'); s.classList.toggle('-translate-x-full'); o.classList.toggle('hidden'); }
-        function showTab(t) { document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.getElementById('tab-' + t).classList.add('active'); if(window.innerWidth < 1024) toggleSidebar(); }
-        
-        function toggleModal(id) {
-            const m = document.getElementById(id), p = m.querySelector('.relative');
-            if (m.classList.contains('hidden')) { m.classList.remove('hidden'); setTimeout(() => { m.classList.remove('opacity-0'); p.classList.remove('translate-x-full'); }, 10); } 
-            else { m.classList.add('opacity-0'); p.classList.add('translate-x-full'); setTimeout(() => m.classList.add('hidden'), 300); }
+        function toggleSidebar() { 
+            const s = document.getElementById('sidebar');
+            const o = document.getElementById('sidebar-overlay'); 
+            s.classList.toggle('-translate-x-full'); 
+            o.classList.toggle('hidden'); 
         }
         
-        function salvarDados(event, modalId = null) {
-            event.preventDefault();
-            alert("Sucesso! Os dados foram validados.");
-            if(modalId) toggleModal(modalId);
+        function showTab(t) { 
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); 
+            document.getElementById('tab-' + t).classList.add('active'); 
+            if(window.innerWidth < 1024) toggleSidebar(); 
+        }
+        
+        function toggleModal(id) {
+            const m = document.getElementById(id);
+            const p = m.querySelector('.relative');
+            if (m.classList.contains('hidden')) { 
+                m.classList.remove('hidden'); 
+                setTimeout(() => { m.classList.remove('opacity-0'); p.classList.remove('translate-x-full'); }, 10); 
+            } else { 
+                m.classList.add('opacity-0'); p.classList.add('translate-x-full'); 
+                setTimeout(() => m.classList.add('hidden'), 300); 
+            }
         }
 
         function addCategoria(selectId) {
@@ -336,7 +344,6 @@
             }
         }
 
-        // Nova Lógica do Filtro Customizado de Datas
         function toggleDataCustom() {
             const select = document.getElementById('filtro-tempo');
             const customDiv = document.getElementById('datas-custom');
@@ -346,8 +353,73 @@
             } else {
                 customDiv.classList.add('hidden');
                 customDiv.classList.remove('flex');
-                // Adiciona um feedback visual se mudar de custom para outro filtro
-                alert(`Filtro alterado para: ${select.options[select.selectedIndex].text}`);
+            }
+        }
+    </script>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+    <script>
+        const supabaseUrl = 'https://jfgtafnfuqlysdnvsbhk.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmZ3RhZm5mdXFseXNkbnZzYmhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNDY1NzgsImV4cCI6MjA5MjcyMjU3OH0.mZDnR1A8VIJVUzedb7GU1db628dSqU-8SdvBFXXVaE4';
+        
+        let supabase;
+        if (window.supabase) {
+            supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        }
+
+        async function salvarDados(event, modalId = null) {
+            event.preventDefault(); 
+            
+            // Corrige comportamento de botão para não travar
+            const btn = event.submitter || event.target.querySelector('button[type="submit"]');
+            const textoOriginal = btn ? btn.innerText : 'Salvar';
+            
+            if(btn) {
+                btn.innerText = "Salvando...";
+                btn.disabled = true;
+            }
+
+            if (modalId === 'modal-produto' && supabase) {
+                const form = event.target;
+                const nome = form.querySelectorAll('input[type="text"]')[0].value;
+                const descricao = form.querySelector('textarea').value;
+                const sku = form.querySelectorAll('input[type="text"]')[1].value;
+                const preco = form.querySelector('input[type="number"]').value;
+                const pais = form.querySelector('#pais').value;
+                const tipo = form.querySelector('#tipo').value;
+
+                // Envia para a tabela 'produtos'
+                const { data, error } = await supabase
+                    .from('produtos')
+                    .insert([
+                        { 
+                            nome: nome, 
+                            descricao: descricao, 
+                            sku_sankhya: sku, 
+                            preco: parseFloat(preco), 
+                            pais: pais, 
+                            tipo: tipo 
+                        }
+                    ]);
+
+                if (error) {
+                    alert("Erro ao salvar o vinho: " + error.message);
+                } else {
+                    alert("Sucesso! Vinho adicionado ao catálogo oficial.");
+                    form.reset(); 
+                    toggleModal(modalId); 
+                }
+            } else {
+                alert("Simulação: Dados validados com sucesso!");
+                if(modalId) toggleModal(modalId);
+            }
+
+            if(btn) {
+                btn.innerText = textoOriginal;
+                btn.disabled = false;
             }
         }
     </script>
