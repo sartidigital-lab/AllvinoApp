@@ -17,18 +17,18 @@
         <h1 class="text-white text-xl font-bold text-center mb-2">Portal da Loja</h1>
         <p class="text-stone-400 text-sm text-center mb-8">Acesso restrito à Gerência e Consultoria de Vendas.</p>
 
-        <form onsubmit="event.preventDefault(); window.location.href='admin.html';" class="space-y-5">
+        <form id="loginForm" class="space-y-5">
             <div>
                 <label class="text-xs font-bold text-stone-400 uppercase tracking-wider block mb-2">E-mail Corporativo</label>
-                <input type="email" placeholder="theo@allvino.com.br" required class="w-full bg-[#0a0a0a] border border-stone-700 text-white rounded-xl py-3 px-4 outline-none focus:border-red-600 transition-colors">
+                <input type="email" id="email" placeholder="theo@allvino.com.br" required class="w-full bg-[#0a0a0a] border border-stone-700 text-white rounded-xl py-3 px-4 outline-none focus:border-red-600 transition-colors">
             </div>
             <div>
                 <label class="text-xs font-bold text-stone-400 uppercase tracking-wider block mb-2">Senha</label>
-                <input type="password" placeholder="••••••••" required class="w-full bg-[#0a0a0a] border border-stone-700 text-white rounded-xl py-3 px-4 outline-none focus:border-red-600 transition-colors">
+                <input type="password" id="password" placeholder="••••••••" required class="w-full bg-[#0a0a0a] border border-stone-700 text-white rounded-xl py-3 px-4 outline-none focus:border-red-600 transition-colors">
             </div>
             
-            <button type="submit" class="w-full bg-[#B91C1C] text-white py-4 rounded-xl font-bold text-sm uppercase tracking-widest hover:bg-red-800 transition-colors mt-4 shadow-lg shadow-red-900/20">
-                Aceder ao Painel
+            <button type="submit" id="btnSubmit" class="w-full bg-[#B91C1C] text-white py-4 rounded-xl font-bold text-sm uppercase tracking-widest hover:bg-red-800 transition-colors mt-4 shadow-lg shadow-red-900/20">
+                Acessar Painel
             </button>
         </form>
 
@@ -36,5 +36,44 @@
             Problemas no acesso? Fale com o suporte técnico.
         </p>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+        // CONFIGURAÇÃO DAS CHAVES DEFINITIVAS
+        const supabaseUrl = 'https://jfgtafnfuqlysdnvsbhk.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmZ3RhZm5mdXFseXNkbnZzYmhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNDY1NzgsImV4cCI6MjA5MjcyMjU3OH0.mZDnR1A8VIJVUzedb7GU1db628dSqU-8SdvBFXXVaE4';
+        
+        // Iniciar cliente Supabase
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        const form = document.getElementById('loginForm');
+        const btn = document.getElementById('btnSubmit');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            btn.innerText = "Verificando...";
+            btn.disabled = true;
+
+            // Tentativa de Login Real no Supabase
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password,
+            });
+
+            if (error) {
+                alert("Erro: " + error.message);
+                btn.innerText = "Acessar Painel";
+                btn.disabled = false;
+            } else {
+                // Sucesso: Redireciona para o painel administrativo
+                window.location.href = 'admin.html';
+            }
+        });
+    </script>
 </body>
 </html>
