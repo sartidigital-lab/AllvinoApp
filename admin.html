@@ -54,7 +54,11 @@
             <button type="button" onclick="showTab('usuarios')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-orange-400">group</span> Equipe</button>
             <button type="button" onclick="showTab('perfil')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-purple-400">person_edit</span> Meu Perfil</button>
         </nav>
-        <div class="p-6 border-t border-stone-800"><a href="admin-login.html" class="flex text-secondary font-bold text-sm"><span class="material-symbols-outlined mr-2">logout</span> Sair</a></div>
+        <div class="p-6 border-t border-stone-800">
+            <a href="#" onclick="fazerLogout()" class="flex text-secondary font-bold text-sm hover:text-red-400 transition-colors">
+                <span class="material-symbols-outlined mr-2">logout</span> Sair do Sistema
+            </a>
+        </div>
     </aside>
 
     <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/60 z-40 hidden lg:hidden backdrop-blur-sm transition-opacity"></div>
@@ -89,53 +93,14 @@
                 <div class="bg-white p-6 rounded-2xl border shadow-sm"><p class="text-stone-400 text-xs font-bold uppercase">Garrafas Vendidas</p><h3 class="text-3xl font-bold mt-2">114</h3></div>
                 <div class="bg-white p-6 rounded-2xl border shadow-sm"><p class="text-stone-400 text-xs font-bold uppercase">Clientes</p><h3 class="text-3xl font-bold mt-2">32</h3></div>
             </div>
-
-            <div class="lg:col-span-2 bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden flex flex-col mt-6">
-                <div class="p-6 border-b border-stone-100 flex justify-between items-center bg-stone-50">
-                    <h3 class="font-bold text-primary flex items-center gap-2"><span class="material-symbols-outlined">group</span> Performance por Vendedor</h3>
-                </div>
-                <div class="overflow-x-auto flex-1">
-                    <table class="w-full text-left h-full">
-                        <thead class="bg-stone-50 text-[10px] uppercase text-stone-400 border-b border-stone-100">
-                            <tr>
-                                <th class="px-6 py-3 font-bold">Equipe</th>
-                                <th class="px-6 py-3 font-bold text-center">Pedidos</th>
-                                <th class="px-6 py-3 font-bold text-center">Clientes</th>
-                                <th class="px-6 py-3 font-bold text-center">Garrafas</th>
-                                <th class="px-6 py-3 font-bold text-right">Faturamento</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-stone-100">
-                            <tr class="hover:bg-stone-50 transition">
-                                <td class="px-6 py-4 flex items-center gap-3">
-                                    <div class="w-8 h-8 rounded-full bg-red-100 text-secondary flex items-center justify-center font-bold text-xs">EL</div>
-                                    <div><span class="font-bold text-primary block">Elen</span><span class="text-[10px] text-stone-400 uppercase tracking-wider">Consultora</span></div>
-                                </td>
-                                <td class="px-6 py-4 font-bold text-stone-600 text-center">22</td>
-                                <td class="px-6 py-4 font-bold text-stone-600 text-center">19</td>
-                                <td class="px-6 py-4 font-bold text-stone-600 text-center">72</td>
-                                <td class="px-6 py-4 font-bold text-primary text-right">R$ 8.450,00</td>
-                            </tr>
-                            <tr class="hover:bg-stone-50 transition">
-                                <td class="px-6 py-4 flex items-center gap-3">
-                                    <div class="w-8 h-8 rounded-full bg-stone-200 text-stone-600 flex items-center justify-center font-bold text-xs">TH</div>
-                                    <div><span class="font-bold text-primary block">Theo</span><span class="text-[10px] text-stone-400 uppercase tracking-wider">Gerente</span></div>
-                                </td>
-                                <td class="px-6 py-4 font-bold text-stone-600 text-center">16</td>
-                                <td class="px-6 py-4 font-bold text-stone-600 text-center">13</td>
-                                <td class="px-6 py-4 font-bold text-stone-600 text-center">42</td>
-                                <td class="px-6 py-4 font-bold text-primary text-right">R$ 5.800,00</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
         </div>
 
         <div id="tab-catalogo" class="tab-content space-y-8">
             <div class="flex justify-between items-center border-b pb-6">
                 <h1 class="text-3xl font-bold font-serif">Gestão do Catálogo</h1>
-                <button type="button" onclick="toggleModal('modal-produto')" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg">Novo Vinho</button>
+                <button type="button" onclick="toggleModal('modal-produto')" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[20px]">add</span> Novo Vinho
+                </button>
             </div>
             <div class="bg-white rounded-2xl border shadow-sm overflow-hidden overflow-x-auto">
                 <table class="w-full text-left min-w-[800px]">
@@ -144,93 +109,16 @@
                     </thead>
                     <tbody class="divide-y divide-stone-100 text-sm" id="tabela-produtos">
                         <tr>
-                            <td class="px-6 py-4 font-bold flex items-center gap-3"><img src="https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=50" class="h-10 w-8 object-contain">Arkos Vinho Verde</td>
-                            <td class="px-6 py-4">🇵🇹 Portugal</td><td class="px-6 py-4 font-bold">R$ 89,90</td>
-                            <td class="px-6 py-4 text-right">
-                                <button type="button" class="text-blue-600 font-bold px-3 py-1 bg-blue-50 rounded-lg mr-2">Editar</button>
-                                <button type="button" class="text-red-600 font-bold px-3 py-1 bg-red-50 rounded-lg">Remover</button>
-                            </td>
+                            <td colspan="4" class="px-6 py-8 text-center text-stone-400 font-bold">Carregando catálogo...</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <div id="tab-promo" class="tab-content space-y-8">
-            <div class="flex justify-between items-center border-b pb-6">
-                <h1 class="text-3xl font-bold font-serif">Promoções e Kits</h1>
-                <button type="button" onclick="toggleModal('modal-promo')" class="bg-green-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg">Nova Oferta</button>
-            </div>
-            <div class="bg-white rounded-2xl border shadow-sm overflow-hidden overflow-x-auto">
-                <table class="w-full text-left min-w-[800px]">
-                    <thead class="bg-stone-50 border-b text-xs uppercase font-bold text-stone-400">
-                        <tr><th class="px-6 py-4">Campanha</th><th class="px-6 py-4">Tipo</th><th class="px-6 py-4">Preço Original</th><th class="px-6 py-4">Preço Oferta</th><th class="px-6 py-4 text-right">Ações</th></tr>
-                    </thead>
-                    <tbody class="divide-y divide-stone-100 text-sm">
-                        <tr>
-                            <td class="px-6 py-4 font-bold">Pack 3x Arkos Vinho Verde</td>
-                            <td class="px-6 py-4"><span class="bg-stone-100 px-2 py-1 rounded text-xs font-bold">Kit</span></td>
-                            <td class="px-6 py-4 text-stone-400 line-through">R$ 269,70</td>
-                            <td class="px-6 py-4 font-bold text-green-600">R$ 229,90</td>
-                            <td class="px-6 py-4 text-right">
-                                <button type="button" class="text-blue-600 font-bold px-3 py-1 bg-blue-50 rounded-lg mr-2">Editar</button>
-                                <button type="button" class="text-red-600 font-bold px-3 py-1 bg-red-50 rounded-lg">Remover</button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <div id="tab-usuarios" class="tab-content space-y-8">
-            <div class="flex justify-between items-center border-b pb-6">
-                <h1 class="text-3xl font-bold font-serif">Gestão de Equipe</h1>
-                <button type="button" onclick="toggleModal('modal-equipe')" class="bg-orange-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg">Novo Usuário</button>
-            </div>
-            <div class="bg-white rounded-2xl border shadow-sm overflow-hidden overflow-x-auto">
-                <table class="w-full text-left min-w-[800px]">
-                    <thead class="bg-stone-50 border-b text-xs uppercase font-bold text-stone-400">
-                        <tr><th class="px-6 py-4">Nome</th><th class="px-6 py-4">E-mail</th><th class="px-6 py-4">Telefone</th><th class="px-6 py-4">Função</th><th class="px-6 py-4 text-right">Ações</th></tr>
-                    </thead>
-                    <tbody class="divide-y divide-stone-100 text-sm">
-                        <tr>
-                            <td class="px-6 py-4 font-bold">Theo</td><td class="px-6 py-4">theo@allvino.com.br</td><td class="px-6 py-4">27 99999-9999</td>
-                            <td class="px-6 py-4"><span class="bg-black text-white px-2 py-1 rounded text-[10px] font-bold uppercase">Gerente</span></td>
-                            <td class="px-6 py-4 text-right"><button type="button" class="text-blue-600 font-bold px-3 py-1 bg-blue-50 rounded-lg mr-2">Editar</button></td>
-                        </tr>
-                        <tr>
-                            <td class="px-6 py-4 font-bold">Elen</td><td class="px-6 py-4">elen@allvino.com.br</td><td class="px-6 py-4">27 88888-8888</td>
-                            <td class="px-6 py-4"><span class="bg-stone-100 text-stone-600 px-2 py-1 rounded text-[10px] font-bold uppercase">Consultora</span></td>
-                            <td class="px-6 py-4 text-right"><button type="button" class="text-blue-600 font-bold px-3 py-1 bg-blue-50 rounded-lg mr-2">Editar</button></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <div id="tab-perfil" class="tab-content space-y-8">
-            <div class="border-b pb-6"><h1 class="text-3xl font-bold font-serif">Meu Perfil</h1></div>
-            <div class="max-w-2xl bg-white border rounded-3xl p-8 shadow-sm">
-                <form onsubmit="salvarDados(event)" class="space-y-6">
-                    <div class="flex items-center gap-6 mb-8">
-                        <div class="w-24 h-24 rounded-full bg-stone-100 border-2 border-dashed border-stone-300 flex items-center justify-center overflow-hidden relative group cursor-pointer">
-                            <input type="file" class="absolute inset-0 opacity-0 cursor-pointer z-10">
-                            <span class="material-symbols-outlined text-stone-400 group-hover:text-black transition">add_a_photo</span>
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-lg">Foto de Perfil</h3>
-                            <p class="text-xs text-stone-400">Clique na área para enviar uma foto (JPG ou PNG).</p>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div><label class="text-[10px] font-bold uppercase text-stone-400 block mb-1">Nome</label><input type="text" value="Theo" class="w-full p-4 bg-stone-50 border rounded-xl font-bold outline-none focus:border-black"></div>
-                        <div><label class="text-[10px] font-bold uppercase text-stone-400 block mb-1">E-mail</label><input type="email" value="theo@allvino.com.br" class="w-full p-4 bg-stone-50 border rounded-xl font-bold outline-none focus:border-black"></div>
-                        <div><label class="text-[10px] font-bold uppercase text-stone-400 block mb-1">Telefone</label><input type="text" value="27 3261-9494" class="w-full p-4 bg-stone-50 border rounded-xl font-bold outline-none focus:border-black"></div>
-                    </div>
-                    <button type="submit" class="w-full bg-black text-white py-4 rounded-xl font-bold shadow-lg mt-4">Salvar Alterações</button>
-                </form>
-            </div>
-        </div>
+        <div id="tab-promo" class="tab-content space-y-8"><div class="flex justify-between items-center border-b pb-6"><h1 class="text-3xl font-bold font-serif">Promoções e Kits</h1><button type="button" onclick="toggleModal('modal-promo')" class="bg-green-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg">Nova Oferta</button></div></div>
+        <div id="tab-usuarios" class="tab-content space-y-8"><div class="flex justify-between items-center border-b pb-6"><h1 class="text-3xl font-bold font-serif">Gestão de Equipe</h1><button type="button" onclick="toggleModal('modal-equipe')" class="bg-orange-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg">Novo Usuário</button></div></div>
+        <div id="tab-perfil" class="tab-content space-y-8"><div class="border-b pb-6"><h1 class="text-3xl font-bold font-serif">Meu Perfil</h1></div></div>
 
     </main>
 
@@ -239,69 +127,30 @@
         <div class="relative w-full max-w-md h-full bg-white flex flex-col transform translate-x-full transition-transform duration-300 shadow-2xl">
             <div class="flex justify-between px-6 py-5 border-b bg-stone-50"><h2 class="text-xl font-bold">Produto</h2><button type="button" onclick="toggleModal('modal-produto')"><span class="material-symbols-outlined">close</span></button></div>
             <div class="flex-1 overflow-y-auto p-6">
-                <form onsubmit="salvarDados(event, 'modal-produto')" class="space-y-4">
-                    <label class="border-2 border-dashed border-stone-300 rounded-2xl p-6 flex flex-col items-center cursor-pointer hover:bg-stone-50 relative overflow-hidden">
-                        <input type="file" class="absolute inset-0 opacity-0 cursor-pointer"><span class="material-symbols-outlined text-[40px] text-stone-400">add_photo_alternate</span><p class="font-bold text-sm">Imagem do Produto</p>
+                <form id="form-produto" onsubmit="salvarDados(event, 'modal-produto')" class="space-y-4">
+                    <label class="border-2 border-dashed border-stone-300 rounded-2xl p-6 flex flex-col items-center cursor-pointer hover:bg-stone-50 relative overflow-hidden group">
+                        <input type="file" id="foto-vinho" accept="image/png, image/jpeg" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" required>
+                        <span class="material-symbols-outlined text-[40px] text-stone-400 group-hover:text-blue-500 transition-colors">add_photo_alternate</span>
+                        <p class="font-bold text-sm text-center mt-2 group-hover:text-blue-500">Enviar Foto</p>
+                        <p id="nome-arquivo" class="text-[10px] text-stone-400 mt-1 uppercase tracking-widest text-center truncate max-w-[200px]">PNG ou JPG transparente</p>
                     </label>
-                    <input type="text" placeholder="Nome Comercial" class="w-full border p-4 rounded-xl font-bold text-sm" required>
-                    <textarea rows="3" placeholder="Descrição do Produto" class="w-full border p-4 rounded-xl text-sm"></textarea>
+                    <input type="text" id="nome" placeholder="Nome Comercial" class="w-full border p-4 rounded-xl font-bold text-sm" required>
+                    <textarea id="descricao" rows="3" placeholder="Descrição do Produto" class="w-full border p-4 rounded-xl text-sm"></textarea>
                     <div class="grid grid-cols-2 gap-4">
-                        <input type="text" placeholder="SKU" class="border p-4 rounded-xl font-mono text-sm" required>
-                        <input type="number" step="0.01" placeholder="Preço R$" class="border p-4 rounded-xl font-bold text-sm" required>
+                        <input type="text" id="sku" placeholder="SKU" class="border p-4 rounded-xl font-mono text-sm" required>
+                        <input type="number" id="preco" step="0.01" placeholder="Preço R$" class="border p-4 rounded-xl font-bold text-sm" required>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <div class="flex justify-between"><label class="text-[10px] font-bold text-stone-400">PAÍS</label><a href="#" onclick="addCategoria('pais')" class="text-[10px] text-blue-600">+ Novo</a></div>
-                            <select id="pais" class="w-full border p-4 rounded-xl text-sm mt-1"><option>Portugal</option><option>França</option></select>
+                            <select id="pais" class="w-full border p-4 rounded-xl text-sm mt-1"><option>Portugal</option><option>França</option><option>Brasil</option><option>Argentina</option></select>
                         </div>
                         <div>
                             <div class="flex justify-between"><label class="text-[10px] font-bold text-stone-400">TIPO</label><a href="#" onclick="addCategoria('tipo')" class="text-[10px] text-blue-600">+ Novo</a></div>
-                            <select id="tipo" class="w-full border p-4 rounded-xl text-sm mt-1"><option>Branco</option><option>Tinto</option></select>
+                            <select id="tipo" class="w-full border p-4 rounded-xl text-sm mt-1"><option>Branco</option><option>Tinto</option><option>Rosé</option></select>
                         </div>
                     </div>
-                    <button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold mt-4">Salvar Produto</button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <div id="modal-promo" class="fixed inset-0 z-[60] flex justify-end hidden opacity-0 transition-opacity duration-300">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="toggleModal('modal-promo')"></div>
-        <div class="relative w-full max-w-md h-full bg-white flex flex-col transform translate-x-full transition-transform duration-300 shadow-2xl">
-            <div class="flex justify-between px-6 py-5 border-b bg-stone-50"><h2 class="text-xl font-bold">Oferta</h2><button type="button" onclick="toggleModal('modal-promo')"><span class="material-symbols-outlined">close</span></button></div>
-            <div class="flex-1 overflow-y-auto p-6">
-                <form onsubmit="salvarDados(event, 'modal-promo')" class="space-y-4">
-                    <label class="border-2 border-dashed border-stone-300 rounded-2xl p-6 flex flex-col items-center cursor-pointer hover:bg-stone-50 relative overflow-hidden">
-                        <input type="file" class="absolute inset-0 opacity-0 cursor-pointer"><span class="material-symbols-outlined text-[40px] text-stone-400">campaign</span><p class="font-bold text-sm">Banner da Promoção</p>
-                    </label>
-                    <input type="text" placeholder="Título da Campanha" class="w-full border p-4 rounded-xl font-bold text-sm" required>
-                    <select class="w-full border p-4 rounded-xl text-sm"><option>Produto Avulso</option><option>Kit / Combo</option></select>
-                    <textarea rows="2" placeholder="Descrição da Oferta" class="w-full border p-4 rounded-xl text-sm"></textarea>
-                    <div class="grid grid-cols-2 gap-4">
-                        <input type="number" step="0.01" placeholder="De R$" class="border p-4 rounded-xl text-sm line-through text-stone-400">
-                        <input type="number" step="0.01" placeholder="Por R$" class="border p-4 rounded-xl font-bold text-sm text-green-600" required>
-                    </div>
-                    <button type="submit" class="w-full bg-green-600 text-white py-4 rounded-xl font-bold mt-4">Publicar Oferta</button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <div id="modal-equipe" class="fixed inset-0 z-[60] flex justify-end hidden opacity-0 transition-opacity duration-300">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="toggleModal('modal-equipe')"></div>
-        <div class="relative w-full max-w-md h-full bg-white flex flex-col transform translate-x-full transition-transform duration-300 shadow-2xl">
-            <div class="flex justify-between px-6 py-5 border-b bg-stone-50"><h2 class="text-xl font-bold">Membro da Equipe</h2><button type="button" onclick="toggleModal('modal-equipe')"><span class="material-symbols-outlined">close</span></button></div>
-            <div class="flex-1 overflow-y-auto p-6">
-                <form onsubmit="salvarDados(event, 'modal-equipe')" class="space-y-4">
-                    <div><label class="text-[10px] font-bold text-stone-400">NOME COMPLETO</label><input type="text" class="w-full border p-4 rounded-xl text-sm font-bold" required></div>
-                    <div><label class="text-[10px] font-bold text-stone-400">E-MAIL CORPORATIVO</label><input type="email" class="w-full border p-4 rounded-xl text-sm" required></div>
-                    <div><label class="text-[10px] font-bold text-stone-400">TELEFONE</label><input type="text" class="w-full border p-4 rounded-xl text-sm" required></div>
-                    <div>
-                        <label class="text-[10px] font-bold text-stone-400">FUNÇÃO</label>
-                        <select class="w-full border p-4 rounded-xl text-sm font-bold"><option>Gerente</option><option>Consultor(a)</option><option>Atendente</option></select>
-                    </div>
-                    <div class="pt-4 border-t"><label class="text-[10px] font-bold text-stone-400">SENHA DE ACESSO</label><input type="password" class="w-full border p-4 rounded-xl text-sm" required></div>
-                    <button type="submit" class="w-full bg-orange-500 text-white py-4 rounded-xl font-bold mt-4">Salvar Usuário</button>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold mt-4 shadow-lg hover:bg-blue-700 transition">Salvar Produto</button>
                 </form>
             </div>
         </div>
@@ -309,57 +158,30 @@
 
 
     <script>
-        function toggleSidebar() { 
-            const s = document.getElementById('sidebar');
-            const o = document.getElementById('sidebar-overlay'); 
-            s.classList.toggle('-translate-x-full'); 
-            o.classList.toggle('hidden'); 
-        }
-        
-        function showTab(t) { 
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); 
-            document.getElementById('tab-' + t).classList.add('active'); 
-            if(window.innerWidth < 1024) toggleSidebar(); 
-        }
-        
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); document.getElementById('sidebar-overlay').classList.toggle('hidden'); }
+        function showTab(t) { document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.getElementById('tab-' + t).classList.add('active'); if(window.innerWidth < 1024) toggleSidebar(); }
         function toggleModal(id) {
-            const m = document.getElementById(id);
-            const p = m.querySelector('.relative');
-            if (m.classList.contains('hidden')) { 
-                m.classList.remove('hidden'); 
-                setTimeout(() => { m.classList.remove('opacity-0'); p.classList.remove('translate-x-full'); }, 10); 
-            } else { 
-                m.classList.add('opacity-0'); p.classList.add('translate-x-full'); 
-                setTimeout(() => m.classList.add('hidden'), 300); 
-            }
+            const m = document.getElementById(id), p = m.querySelector('.relative');
+            if (m.classList.contains('hidden')) { m.classList.remove('hidden'); setTimeout(() => { m.classList.remove('opacity-0'); p.classList.remove('translate-x-full'); }, 10); } 
+            else { m.classList.add('opacity-0'); p.classList.add('translate-x-full'); setTimeout(() => m.classList.add('hidden'), 300); }
         }
-
         function addCategoria(selectId) {
             const nova = prompt(`Digite a nova categoria:`);
-            if (nova && nova.trim() !== '') {
-                const s = document.getElementById(selectId);
-                const opt = document.createElement('option');
-                opt.text = nova; opt.value = nova;
-                s.add(opt); s.value = nova;
-            }
+            if (nova && nova.trim() !== '') { const s = document.getElementById(selectId), opt = document.createElement('option'); opt.text = nova; opt.value = nova; s.add(opt); s.value = nova; }
+        }
+        function toggleDataCustom() {
+            const select = document.getElementById('filtro-tempo'), customDiv = document.getElementById('datas-custom');
+            if(select.value === 'custom') { customDiv.classList.remove('hidden'); customDiv.classList.add('flex'); } else { customDiv.classList.add('hidden'); customDiv.classList.remove('flex'); }
         }
 
-        function toggleDataCustom() {
-            const select = document.getElementById('filtro-tempo');
-            const customDiv = document.getElementById('datas-custom');
-            if(select.value === 'custom') {
-                customDiv.classList.remove('hidden');
-                customDiv.classList.add('flex');
-            } else {
-                customDiv.classList.add('hidden');
-                customDiv.classList.remove('flex');
-            }
-        }
+        // Script visual para mostrar o nome da foto selecionada
+        document.getElementById('foto-vinho').addEventListener('change', function(e) {
+            const fileName = e.target.files[0]?.name;
+            if(fileName) document.getElementById('nome-arquivo').innerText = fileName;
+        });
     </script>
 
-
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 
     <script>
         const supabaseUrl = 'https://jfgtafnfuqlysdnvsbhk.supabase.co';
@@ -368,31 +190,106 @@
         let supabase;
         if (window.supabase) {
             supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+            // Ao carregar a página, já busca os produtos no banco
+            carregarProdutos();
         }
 
+        // FUNÇÃO DE LOGOUT
+        async function fazerLogout() {
+            if(supabase) {
+                await supabase.auth.signOut();
+                window.location.href = 'admin-login.html';
+            }
+        }
+
+        // FUNÇÃO PARA BUSCAR E RENDERIZAR OS PRODUTOS NA TABELA
+        async function carregarProdutos() {
+            const { data, error } = await supabase.from('produtos').select('*').order('criado_em', { ascending: false });
+            
+            const tbody = document.getElementById('tabela-produtos');
+            tbody.innerHTML = ''; // Limpa a tabela
+
+            if (error) {
+                tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-4 text-center text-red-500">Erro ao carregar dados.</td></tr>`;
+                return;
+            }
+
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-stone-400 font-bold">Nenhum vinho cadastrado ainda.</td></tr>`;
+                return;
+            }
+
+            // Popula a tabela dinamicamente com os dados reais
+            data.forEach(produto => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-stone-50 border-b border-stone-100 transition-colors";
+                tr.innerHTML = `
+                    <td class="px-6 py-4 font-bold flex items-center gap-4">
+                        <div class="h-12 w-10 bg-stone-100 rounded-lg flex items-center justify-center p-1">
+                            <img src="${produto.imagem_url || 'https://via.placeholder.com/50'}" class="h-full w-full object-contain mix-blend-multiply">
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-sm">${produto.nome}</span>
+                            <span class="text-[10px] text-stone-400 font-mono">${produto.sku_sankhya}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-sm">${produto.pais || '-'} <br><span class="text-[10px] font-bold uppercase text-stone-400">${produto.tipo}</span></td>
+                    <td class="px-6 py-4 font-bold text-sm">R$ ${produto.preco.toFixed(2).replace('.', ',')}</td>
+                    <td class="px-6 py-4 text-right">
+                        <button type="button" class="text-blue-600 font-bold px-3 py-1.5 bg-blue-50 rounded-lg mr-2 text-xs hover:bg-blue-100 transition">Editar</button>
+                        <button type="button" onclick="deletarProduto('${produto.id}')" class="text-red-600 font-bold px-3 py-1.5 bg-red-50 rounded-lg text-xs hover:bg-red-100 transition">Remover</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // FUNÇÃO DE SALVAR COM UPLOAD DE IMAGEM
         async function salvarDados(event, modalId = null) {
             event.preventDefault(); 
             
-            // Corrige comportamento de botão para não travar
-            const btn = event.submitter || event.target.querySelector('button[type="submit"]');
-            const textoOriginal = btn ? btn.innerText : 'Salvar';
-            
-            if(btn) {
-                btn.innerText = "Salvando...";
-                btn.disabled = true;
-            }
+            const btn = event.submitter;
+            const textoOriginal = btn.innerText;
+            btn.innerText = "Fazendo Upload e Salvando...";
+            btn.disabled = true;
 
             if (modalId === 'modal-produto' && supabase) {
-                const form = event.target;
-                const nome = form.querySelectorAll('input[type="text"]')[0].value;
-                const descricao = form.querySelector('textarea').value;
-                const sku = form.querySelectorAll('input[type="text"]')[1].value;
-                const preco = form.querySelector('input[type="number"]').value;
-                const pais = form.querySelector('#pais').value;
-                const tipo = form.querySelector('#tipo').value;
+                // 1. Captura os dados de texto
+                const nome = document.getElementById('nome').value;
+                const descricao = document.getElementById('descricao').value;
+                const sku = document.getElementById('sku').value;
+                const preco = document.getElementById('preco').value;
+                const pais = document.getElementById('pais').value;
+                const tipo = document.getElementById('tipo').value;
 
-                // Envia para a tabela 'produtos'
-                const { data, error } = await supabase
+                // 2. Captura o Arquivo de Imagem
+                const fotoInput = document.getElementById('foto-vinho');
+                const file = fotoInput.files[0];
+                let imagemUrl = null;
+
+                // Lógica de Upload para a pasta 'produtos' do Supabase Storage
+                if (file) {
+                    const fileExt = file.name.split('.').pop();
+                    const fileName = `${Date.now()}-${Math.floor(Math.random() * 1000)}.${fileExt}`; // Nome único
+                    
+                    const { data: uploadData, error: uploadError } = await supabase.storage
+                        .from('produtos')
+                        .upload(fileName, file);
+
+                    if (uploadError) {
+                        alert("Erro no upload da imagem: " + uploadError.message);
+                        btn.innerText = textoOriginal;
+                        btn.disabled = false;
+                        return; // Interrompe se a foto falhar
+                    }
+
+                    // Se a foto subiu com sucesso, pega o link público dela
+                    const { data: publicUrlData } = supabase.storage.from('produtos').getPublicUrl(fileName);
+                    imagemUrl = publicUrlData.publicUrl;
+                }
+
+                // 3. Salva no banco de dados (agora com o link da imagem)
+                const { error: dbError } = await supabase
                     .from('produtos')
                     .insert([
                         { 
@@ -401,25 +298,31 @@
                             sku_sankhya: sku, 
                             preco: parseFloat(preco), 
                             pais: pais, 
-                            tipo: tipo 
+                            tipo: tipo,
+                            imagem_url: imagemUrl // <--- A MÁGICA ACONTECE AQUI
                         }
                     ]);
 
-                if (error) {
-                    alert("Erro ao salvar o vinho: " + error.message);
+                if (dbError) {
+                    alert("Erro ao salvar no banco: " + dbError.message);
                 } else {
-                    alert("Sucesso! Vinho adicionado ao catálogo oficial.");
-                    form.reset(); 
+                    document.getElementById('form-produto').reset(); 
+                    document.getElementById('nome-arquivo').innerText = "PNG ou JPG transparente";
                     toggleModal(modalId); 
+                    carregarProdutos(); // Recarrega a tabela na mesma hora!
+                    alert("Sucesso! Vinho adicionado ao catálogo.");
                 }
-            } else {
-                alert("Simulação: Dados validados com sucesso!");
-                if(modalId) toggleModal(modalId);
             }
 
-            if(btn) {
-                btn.innerText = textoOriginal;
-                btn.disabled = false;
+            btn.innerText = textoOriginal;
+            btn.disabled = false;
+        }
+
+        // Bônus: Função para remover o produto se o Theo errar
+        async function deletarProduto(id) {
+            if(confirm("Tem certeza que deseja apagar este vinho do catálogo?")) {
+                await supabase.from('produtos').delete().eq('id', id);
+                carregarProdutos(); // Atualiza a tabela
             }
         }
     </script>
