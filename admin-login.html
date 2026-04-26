@@ -32,19 +32,15 @@
             </button>
         </form>
 
-        <p class="text-center text-stone-500 text-xs mt-8 font-medium">
-            Problemas no acesso? Fale com o suporte técnico.
-        </p>
+        <p class="text-center text-stone-500 text-xs mt-8 font-medium">Problemas no acesso? Fale com o suporte técnico.</p>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
-        // CONFIGURAÇÃO DAS CHAVES DEFINITIVAS
         const supabaseUrl = 'https://jfgtafnfuqlysdnvsbhk.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmZ3RhZm5mdXFseXNkbnZzYmhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNDY1NzgsImV4cCI6MjA5MjcyMjU3OH0.mZDnR1A8VIJVUzedb7GU1db628dSqU-8SdvBFXXVaE4';
         
-        // Iniciar cliente Supabase
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         const form = document.getElementById('loginForm');
@@ -59,7 +55,6 @@
             btn.innerText = "Verificando...";
             btn.disabled = true;
 
-            // Tentativa de Login Real no Supabase
             const { data, error } = await supabase.auth.signInWithPassword({
                 email: email,
                 password: password,
@@ -70,7 +65,6 @@
                 btn.innerText = "Acessar Painel";
                 btn.disabled = false;
             } else {
-                // Sucesso: Redireciona para o painel administrativo
                 window.location.href = 'admin.html';
             }
         });
