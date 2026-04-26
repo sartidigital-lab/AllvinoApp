@@ -10,23 +10,15 @@
     
     <script id="tailwind-config">
         tailwind.config = {
-          theme: {
-            extend: {
-              colors: { primary: "#000000", secondary: "#B91C1C" },
-              fontFamily: { "body": ["Manrope", "sans-serif"], "headline": ["Noto Serif", "serif"] }
-            }
-          }
+          theme: { extend: { colors: { primary: "#000000", secondary: "#B91C1C" }, fontFamily: { "body": ["Manrope", "sans-serif"], "headline": ["Noto Serif", "serif"] } } }
         }
     </script>
-
     <style>
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
         body { background-color: #FDFBF7; font-family: 'Manrope', sans-serif; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.6; transition: 0.2s; }
-        input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
     </style>
 </head>
 <body class="text-primary overflow-x-hidden min-h-screen">
@@ -37,14 +29,14 @@
             <h2 class="text-lg font-bold hidden sm:block">Gestão Allvino</h2>
         </div>
         <div class="flex items-center gap-3">
-            <span class="text-sm font-bold text-stone-300">Olá, Theo</span>
-            <span class="text-[10px] bg-stone-300 text-black px-2 py-0.5 rounded-full uppercase font-bold">Master</span>
+            <span class="text-sm font-bold text-stone-300">Olá, Master</span>
+            <span class="text-[10px] bg-stone-300 text-black px-2 py-0.5 rounded-full uppercase font-bold">Admin</span>
         </div>
     </header>
 
     <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 flex flex-col h-full w-64 bg-[#0a0a0a] border-r border-stone-800 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl lg:shadow-none">
         <div class="px-6 py-6 border-b border-stone-800 bg-[#111111] flex justify-between">
-            <img src="LOGO-ALLVINO-BRANCO.png" class="h-10">
+            <img src="LOGO-ALLVINO-BRANCO.png" class="h-10" onerror="this.src='https://via.placeholder.com/150x50?text=Allvino'">
             <button onclick="toggleSidebar()" class="lg:hidden text-stone-400"><span class="material-symbols-outlined">close</span></button>
         </div>
         <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto no-scrollbar">
@@ -55,9 +47,7 @@
             <button type="button" onclick="showTab('perfil')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-purple-400">person_edit</span> Meu Perfil</button>
         </nav>
         <div class="p-6 border-t border-stone-800">
-            <a href="#" onclick="fazerLogout()" class="flex text-secondary font-bold text-sm hover:text-red-400 transition-colors">
-                <span class="material-symbols-outlined mr-2">logout</span> Sair do Sistema
-            </a>
+            <a href="#" onclick="fazerLogout()" class="flex text-secondary font-bold text-sm hover:text-red-400 transition-colors"><span class="material-symbols-outlined mr-2">logout</span> Sair do Sistema</a>
         </div>
     </aside>
 
@@ -66,230 +56,181 @@
     <main class="lg:ml-64 p-5 lg:p-8 max-w-7xl mx-auto pb-32">
         
         <div id="tab-bi" class="tab-content active space-y-8">
-            <div class="flex flex-col md:flex-row justify-between md:items-end gap-4 border-b border-stone-200 pb-6">
-                <h1 class="text-3xl font-bold font-serif">Inteligência Allvino</h1>
-                <div class="flex flex-col sm:flex-row gap-3">
-                    <div class="flex items-center gap-2 bg-white border border-stone-200 px-3 py-2 rounded-xl shadow-sm w-fit">
-                        <span class="material-symbols-outlined text-stone-400 text-[20px]">calendar_month</span>
-                        <select id="filtro-tempo" onchange="toggleDataCustom()" class="bg-transparent text-sm font-bold text-black outline-none border-none focus:ring-0 cursor-pointer">
-                            <option value="hoje">Hoje</option>
-                            <option value="7d">Últimos 7 dias</option>
-                            <option value="30d">Últimos 30 dias</option>
-                            <option value="ano">Este Ano</option>
-                            <option value="custom">Período Personalizado</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-black text-white p-6 rounded-2xl shadow-lg"><p class="text-white/60 text-xs font-bold uppercase">Faturamento</p><h3 class="text-3xl font-bold mt-2">R$ 14.250</h3></div>
-                <div class="bg-white p-6 rounded-2xl border shadow-sm"><p class="text-stone-400 text-xs font-bold uppercase">Garrafas Vendidas</p><h3 class="text-3xl font-bold mt-2">114</h3></div>
-                <div class="bg-white p-6 rounded-2xl border shadow-sm"><p class="text-stone-400 text-xs font-bold uppercase">Clientes</p><h3 class="text-3xl font-bold mt-2">32</h3></div>
-            </div>
+            <div class="border-b border-stone-200 pb-6"><h1 class="text-3xl font-bold font-serif">Inteligência Allvino</h1></div>
+            <p class="text-stone-500">O módulo BI será atualizado na Fase 4.</p>
         </div>
 
         <div id="tab-catalogo" class="tab-content space-y-8">
-            <div class="flex justify-between items-center border-b pb-6">
+            <div class="flex justify-between items-center border-b pb-6 flex-wrap gap-4">
                 <h1 class="text-3xl font-bold font-serif">Gestão do Catálogo</h1>
-                <button type="button" onclick="toggleModal('modal-produto')" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2">
-                    <span class="material-symbols-outlined text-[20px]">add</span> Novo Vinho
+                <div class="flex gap-2">
+                    <button type="button" onclick="abrirModalCategoria()" class="bg-stone-200 text-black px-6 py-3 rounded-xl font-bold hover:bg-stone-300 transition flex items-center gap-2"><span class="material-symbols-outlined text-[20px]">category</span> Nova Categoria</button>
+                    <button type="button" onclick="abrirModalProduto()" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-blue-700 transition flex items-center gap-2"><span class="material-symbols-outlined text-[20px]">add</span> Novo Vinho</button>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl border shadow-sm overflow-hidden overflow-x-auto">
+                <table class="w-full text-left min-w-[800px]">
+                    <thead class="bg-stone-50 border-b text-xs uppercase font-bold text-stone-400"><tr><th class="px-6 py-4">Vinho</th><th class="px-6 py-4">País</th><th class="px-6 py-4">Preço App</th><th class="px-6 py-4 text-right">Ações</th></tr></thead>
+                    <tbody class="divide-y divide-stone-100 text-sm" id="tabela-produtos"><tr><td colspan="4" class="px-6 py-8 text-center text-stone-400 font-bold">Carregando catálogo...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="tab-promo" class="tab-content space-y-8">
+            <div class="flex justify-between items-center border-b pb-6 flex-wrap gap-4">
+                <h1 class="text-3xl font-bold font-serif">Promoções e Kits</h1>
+                <button type="button" onclick="abrirModalPromocao()" class="bg-green-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-green-700 transition flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[20px]">add_photo_alternate</span> Nova Oferta
                 </button>
             </div>
             <div class="bg-white rounded-2xl border shadow-sm overflow-hidden overflow-x-auto">
                 <table class="w-full text-left min-w-[800px]">
                     <thead class="bg-stone-50 border-b text-xs uppercase font-bold text-stone-400">
-                        <tr><th class="px-6 py-4">Vinho</th><th class="px-6 py-4">País</th><th class="px-6 py-4">Preço App</th><th class="px-6 py-4 text-right">Ações</th></tr>
+                        <tr><th class="px-6 py-4 w-40">Banner</th><th class="px-6 py-4">Informações</th><th class="px-6 py-4">Status</th><th class="px-6 py-4 text-right">Ações</th></tr>
                     </thead>
-                    <tbody class="divide-y divide-stone-100 text-sm" id="tabela-produtos">
-                        <tr>
-                            <td colspan="4" class="px-6 py-8 text-center text-stone-400 font-bold">Carregando catálogo...</td>
-                        </tr>
+                    <tbody class="divide-y divide-stone-100 text-sm" id="tabela-promocoes">
+                        <tr><td colspan="4" class="px-6 py-8 text-center text-stone-400 font-bold">Carregando promoções...</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <div id="tab-promo" class="tab-content space-y-8"><div class="flex justify-between items-center border-b pb-6"><h1 class="text-3xl font-bold font-serif">Promoções e Kits</h1><button type="button" class="bg-green-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg">Nova Oferta</button></div></div>
-        <div id="tab-usuarios" class="tab-content space-y-8"><div class="flex justify-between items-center border-b pb-6"><h1 class="text-3xl font-bold font-serif">Gestão de Equipe</h1><button type="button" class="bg-orange-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg">Novo Usuário</button></div></div>
+        <div id="tab-usuarios" class="tab-content space-y-8"><div class="border-b pb-6"><h1 class="text-3xl font-bold font-serif">Gestão de Equipe</h1></div></div>
         <div id="tab-perfil" class="tab-content space-y-8"><div class="border-b pb-6"><h1 class="text-3xl font-bold font-serif">Meu Perfil</h1></div></div>
-
     </main>
 
-    <div id="modal-produto" class="fixed inset-0 z-[60] flex justify-end hidden opacity-0 transition-opacity duration-300">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="toggleModal('modal-produto')"></div>
+    <div id="modal-produto" class="fixed inset-0 z-[60] flex justify-end hidden opacity-0 transition-opacity duration-300"><div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="toggleModal('modal-produto')"></div><div class="relative w-full max-w-md h-full bg-white flex flex-col transform translate-x-full transition-transform duration-300 shadow-2xl"><div class="flex justify-between px-6 py-5 border-b bg-stone-50"><h2 id="titulo-modal-produto" class="text-xl font-bold">Produto</h2><button type="button" onclick="toggleModal('modal-produto')"><span class="material-symbols-outlined">close</span></button></div><div class="flex-1 overflow-y-auto p-6"><form id="form-produto" onsubmit="salvarProduto(event)" class="space-y-4"><input type="hidden" id="produto-id"><label class="border-2 border-dashed border-stone-300 rounded-2xl p-6 flex flex-col items-center cursor-pointer hover:bg-stone-50 relative overflow-hidden group"><input type="file" id="foto-vinho" accept="image/png, image/jpeg" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"><span class="material-symbols-outlined text-[40px] text-stone-400 group-hover:text-blue-500 transition-colors">add_photo_alternate</span><p class="font-bold text-sm text-center mt-2 group-hover:text-blue-500">Enviar Foto</p><p id="nome-arquivo" class="text-[10px] text-stone-400 mt-1 uppercase tracking-widest text-center truncate max-w-[200px]">Opcional se for editar</p></label><input type="text" id="nome" placeholder="Nome Comercial" class="w-full border p-4 rounded-xl font-bold text-sm" required><textarea id="descricao" rows="3" placeholder="Descrição do Produto" class="w-full border p-4 rounded-xl text-sm"></textarea><div class="grid grid-cols-2 gap-4"><input type="text" id="sku" placeholder="SKU" class="border p-4 rounded-xl font-mono text-sm" required><input type="number" id="preco" step="0.01" placeholder="Preço R$" class="border p-4 rounded-xl font-bold text-sm" required></div><div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] font-bold text-stone-400">PAÍS</label><select id="pais" class="w-full border p-4 rounded-xl text-sm mt-1" required><option value="">Carregando...</option></select></div><div><label class="text-[10px] font-bold text-stone-400">TIPO</label><select id="tipo" class="w-full border p-4 rounded-xl text-sm mt-1" required><option value="">Carregando...</option></select></div></div><button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold mt-4 shadow-lg hover:bg-blue-700 transition">Salvar Produto</button></form></div></div></div>
+    <div id="modal-categoria" class="fixed inset-0 z-[60] flex items-center justify-center hidden opacity-0 transition-opacity duration-300"><div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="toggleModal('modal-categoria')"></div><div class="relative w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl transform scale-95 transition-transform duration-300"><div class="flex justify-between items-center mb-4"><h2 class="text-lg font-bold">Nova Categoria</h2><button type="button" onclick="toggleModal('modal-categoria')"><span class="material-symbols-outlined">close</span></button></div><form id="form-categoria" onsubmit="salvarCategoria(event)" class="space-y-4"><div><label class="text-[10px] font-bold text-stone-400">QUAL O TIPO DO FILTRO?</label><select id="cat-tipo" class="w-full border p-3 rounded-xl text-sm mt-1" required><option value="pais">País (Ex: Portugal)</option><option value="tipo">Tipo do Vinho (Ex: Tinto)</option></select></div><input type="text" id="cat-nome" placeholder="Nome do Filtro" class="w-full border p-3 rounded-xl text-sm" required><button type="submit" class="w-full bg-black text-white py-3 rounded-xl font-bold mt-2 hover:bg-stone-800 transition">Salvar</button></form></div></div>
+
+    <div id="modal-promocao" class="fixed inset-0 z-[60] flex justify-end hidden opacity-0 transition-opacity duration-300">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="toggleModal('modal-promocao')"></div>
         <div class="relative w-full max-w-md h-full bg-white flex flex-col transform translate-x-full transition-transform duration-300 shadow-2xl">
-            <div class="flex justify-between px-6 py-5 border-b bg-stone-50"><h2 class="text-xl font-bold">Produto</h2><button type="button" onclick="toggleModal('modal-produto')"><span class="material-symbols-outlined">close</span></button></div>
+            <div class="flex justify-between px-6 py-5 border-b bg-stone-50"><h2 class="text-xl font-bold">Nova Oferta</h2><button type="button" onclick="toggleModal('modal-promocao')"><span class="material-symbols-outlined">close</span></button></div>
             <div class="flex-1 overflow-y-auto p-6">
-                <form id="form-produto" onsubmit="salvarDados(event, 'modal-produto')" class="space-y-4">
+                <form id="form-promocao" onsubmit="salvarPromocao(event)" class="space-y-4">
                     <label class="border-2 border-dashed border-stone-300 rounded-2xl p-6 flex flex-col items-center cursor-pointer hover:bg-stone-50 relative overflow-hidden group">
-                        <input type="file" id="foto-vinho" accept="image/png, image/jpeg" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" required>
-                        <span class="material-symbols-outlined text-[40px] text-stone-400 group-hover:text-blue-500 transition-colors">add_photo_alternate</span>
-                        <p class="font-bold text-sm text-center mt-2 group-hover:text-blue-500">Enviar Foto</p>
-                        <p id="nome-arquivo" class="text-[10px] text-stone-400 mt-1 uppercase tracking-widest text-center truncate max-w-[200px]">PNG ou JPG transparente</p>
+                        <input type="file" id="foto-promo" accept="image/png, image/jpeg" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" required>
+                        <span class="material-symbols-outlined text-[40px] text-stone-400 group-hover:text-green-500 transition-colors">add_photo_alternate</span>
+                        <p class="font-bold text-sm text-center mt-2 group-hover:text-green-500">Enviar Arte do Banner</p>
+                        <p id="nome-arquivo-promo" class="text-[10px] text-stone-400 mt-1 uppercase tracking-widest text-center truncate max-w-[200px]">Tamanho ideal: Formato Horizontal</p>
                     </label>
-                    <input type="text" id="nome" placeholder="Nome Comercial" class="w-full border p-4 rounded-xl font-bold text-sm" required>
-                    <textarea id="descricao" rows="3" placeholder="Descrição do Produto" class="w-full border p-4 rounded-xl text-sm"></textarea>
-                    <div class="grid grid-cols-2 gap-4">
-                        <input type="text" id="sku" placeholder="SKU" class="border p-4 rounded-xl font-mono text-sm" required>
-                        <input type="number" id="preco" step="0.01" placeholder="Preço R$" class="border p-4 rounded-xl font-bold text-sm" required>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="text-[10px] font-bold text-stone-400">PAÍS</label>
-                            <select id="pais" class="w-full border p-4 rounded-xl text-sm mt-1"><option>Portugal</option><option>França</option><option>Brasil</option><option>Argentina</option></select>
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-bold text-stone-400">TIPO</label>
-                            <select id="tipo" class="w-full border p-4 rounded-xl text-sm mt-1"><option>Branco</option><option>Tinto</option><option>Rosé</option></select>
-                        </div>
-                    </div>
-                    <button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold mt-4 shadow-lg hover:bg-blue-700 transition">Salvar Produto</button>
+                    <input type="text" id="promo-titulo" placeholder="Título (Ex: Ofertas da Semana)" class="w-full border p-4 rounded-xl font-bold text-sm" required>
+                    <textarea id="promo-subtitulo" rows="3" placeholder="Subtítulo ou descrição da promoção..." class="w-full border p-4 rounded-xl text-sm" required></textarea>
+                    
+                    <button type="submit" class="w-full bg-green-600 text-white py-4 rounded-xl font-bold mt-4 shadow-lg hover:bg-green-700 transition">Ativar Promoção</button>
                 </form>
             </div>
         </div>
     </div>
 
-
-    <script>
-        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); document.getElementById('sidebar-overlay').classList.toggle('hidden'); }
-        function showTab(t) { document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.getElementById('tab-' + t).classList.add('active'); if(window.innerWidth < 1024) toggleSidebar(); }
-        function toggleModal(id) {
-            const m = document.getElementById(id), p = m.querySelector('.relative');
-            if (m.classList.contains('hidden')) { m.classList.remove('hidden'); setTimeout(() => { m.classList.remove('opacity-0'); p.classList.remove('translate-x-full'); }, 10); } 
-            else { m.classList.add('opacity-0'); p.classList.add('translate-x-full'); setTimeout(() => m.classList.add('hidden'), 300); }
-        }
-
-        document.getElementById('foto-vinho').addEventListener('change', function(e) {
-            const fileName = e.target.files[0]?.name;
-            if(fileName) document.getElementById('nome-arquivo').innerText = fileName;
-        });
-    </script>
-
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
     <script>
         const supabaseUrl = 'https://jfgtafnfuqlysdnvsbhk.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmZ3RhZm5mdXFseXNkbnZzYmhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNDY1NzgsImV4cCI6MjA5MjcyMjU3OH0.mZDnR1A8VIJVUzedb7GU1db628dSqU-8SdvBFXXVaE4';
-        
-        // VACINA APLICADA: Usando supabaseClient
         const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
-        
-        // Ao carregar a página, já busca os produtos no banco
-        carregarProdutos();
 
-        // FUNÇÃO DE LOGOUT
-        async function fazerLogout() {
-            await supabaseClient.auth.signOut();
-            window.location.href = 'admin-login.html';
+        // --- NAVEGAÇÃO BÁSICA E FUNÇÕES DE ARQUIVO ---
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); document.getElementById('sidebar-overlay').classList.toggle('hidden'); }
+        function showTab(t) { document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.getElementById('tab-' + t).classList.add('active'); if(window.innerWidth < 1024) toggleSidebar(); }
+        function toggleModal(id) {
+            const m = document.getElementById(id);
+            if (m.classList.contains('hidden')) { m.classList.remove('hidden'); setTimeout(() => { m.classList.remove('opacity-0'); if(m.querySelector('.translate-x-full')) m.querySelector('.relative').classList.remove('translate-x-full'); if(m.querySelector('.scale-95')) m.querySelector('.relative').classList.remove('scale-95'); }, 10); } 
+            else { m.classList.add('opacity-0'); if(m.querySelector('.relative').classList.contains('translate-x-0')) m.querySelector('.relative').classList.add('translate-x-full'); if(m.querySelector('.relative').classList.contains('scale-100')) m.querySelector('.relative').classList.add('scale-95'); setTimeout(() => m.classList.add('hidden'), 300); }
         }
+        async function fazerLogout() { await supabaseClient.auth.signOut(); window.location.href = 'admin-login.html'; }
 
-        // RENDERIZAR OS PRODUTOS
-        async function carregarProdutos() {
-            const { data, error } = await supabaseClient.from('produtos').select('*').order('criado_em', { ascending: false });
-            
-            const tbody = document.getElementById('tabela-produtos');
+        document.getElementById('foto-vinho').addEventListener('change', e => { if(e.target.files[0]) document.getElementById('nome-arquivo').innerText = e.target.files[0].name; });
+        document.getElementById('foto-promo').addEventListener('change', e => { if(e.target.files[0]) document.getElementById('nome-arquivo-promo').innerText = e.target.files[0].name; });
+
+        // --- CATÁLOGO E CATEGORIAS (MANTIDOS DA FASE 2) ---
+        async function carregarCategorias() { const { data, error } = await supabaseClient.from('categorias').select('*').order('nome'); const selectPais = document.getElementById('pais'); const selectTipo = document.getElementById('tipo'); selectPais.innerHTML = '<option value="">Selecione o País</option>'; selectTipo.innerHTML = '<option value="">Selecione o Tipo</option>'; if(!error && data) { data.forEach(c => { const opt = `<option value="${c.nome}">${c.nome}</option>`; if(c.tipo === 'pais') selectPais.innerHTML += opt; else if(c.tipo === 'tipo') selectTipo.innerHTML += opt; }); } }
+        async function salvarCategoria(e) { e.preventDefault(); const btn = e.submitter; btn.innerText = "Salvando..."; btn.disabled = true; const tipo = document.getElementById('cat-tipo').value; const nome = document.getElementById('cat-nome').value; const { error } = await supabaseClient.from('categorias').insert([{ tipo, nome }]); if(error) alert("Erro: " + error.message); else { document.getElementById('form-categoria').reset(); toggleModal('modal-categoria'); carregarCategorias(); alert("Categoria salva!"); } btn.innerText = "Salvar"; btn.disabled = false; }
+        async function carregarProdutos() { const { data, error } = await supabaseClient.from('produtos').select('*').order('criado_em', { ascending: false }); const tbody = document.getElementById('tabela-produtos'); tbody.innerHTML = ''; if (error) { tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-4 text-center text-red-500">Erro.</td></tr>`; return; } if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-stone-400 font-bold">Nenhum vinho.</td></tr>`; return; } data.forEach(p => { tbody.innerHTML += `<tr class="hover:bg-stone-50 border-b border-stone-100"><td class="px-6 py-4 font-bold flex items-center gap-4"><div class="h-12 w-10 bg-stone-100 rounded-lg flex items-center justify-center p-1"><img src="${p.imagem_url || 'https://via.placeholder.com/50'}" class="h-full w-full object-contain mix-blend-multiply"></div><div class="flex flex-col"><span class="text-sm">${p.nome}</span><span class="text-[10px] text-stone-400 font-mono">${p.sku_sankhya}</span></div></td><td class="px-6 py-4 text-sm">${p.pais || '-'} <br><span class="text-[10px] font-bold uppercase text-stone-400">${p.tipo || '-'}</span></td><td class="px-6 py-4 font-bold text-sm">R$ ${p.preco.toFixed(2).replace('.', ',')}</td><td class="px-6 py-4 text-right"><div class="flex justify-end gap-2"><button type="button" onclick='abrirModalProduto(${JSON.stringify(p)})' class="text-blue-600 bg-blue-50 p-2 rounded-lg hover:bg-blue-100 transition"><span class="material-symbols-outlined text-[18px]">edit</span></button><button type="button" onclick="deletarProduto('${p.id}')" class="text-red-600 bg-red-50 p-2 rounded-lg hover:bg-red-100 transition"><span class="material-symbols-outlined text-[18px]">delete</span></button></div></td></tr>`; }); }
+        function abrirModalCategoria() { document.getElementById('form-categoria').reset(); toggleModal('modal-categoria'); }
+        function abrirModalProduto(produtoStr) { document.getElementById('form-produto').reset(); const inputFoto = document.getElementById('foto-vinho'); const nomeArquivo = document.getElementById('nome-arquivo'); const tituloModal = document.getElementById('titulo-modal-produto'); const idInput = document.getElementById('produto-id'); if (produtoStr) { const p = typeof produtoStr === 'string' ? JSON.parse(produtoStr) : produtoStr; tituloModal.innerText = "Editar Produto"; idInput.value = p.id; document.getElementById('nome').value = p.nome; document.getElementById('descricao').value = p.descricao || ''; document.getElementById('sku').value = p.sku_sankhya; document.getElementById('preco').value = p.preco; document.getElementById('pais').value = p.pais || ''; document.getElementById('tipo').value = p.tipo || ''; inputFoto.required = false; nomeArquivo.innerText = "Deixe vazio para manter a foto atual"; } else { tituloModal.innerText = "Novo Vinho"; idInput.value = ""; inputFoto.required = true; nomeArquivo.innerText = "PNG ou JPG transparente"; } toggleModal('modal-produto'); }
+        async function salvarProduto(e) { e.preventDefault(); const btn = e.submitter; const textoOriginal = btn.innerText; btn.innerText = "Salvando..."; btn.disabled = true; const id = document.getElementById('produto-id').value; const nome = document.getElementById('nome').value; const descricao = document.getElementById('descricao').value; const sku = document.getElementById('sku').value; const preco = parseFloat(document.getElementById('preco').value); const pais = document.getElementById('pais').value; const tipo = document.getElementById('tipo').value; const file = document.getElementById('foto-vinho').files[0]; let imagemUrl = null; if (file) { const fileName = `${Date.now()}-${Math.floor(Math.random()*1000)}.${file.name.split('.').pop()}`; const { error: uploadError } = await supabaseClient.storage.from('produtos').upload(fileName, file); if (uploadError) { alert("Erro na foto: " + uploadError.message); btn.innerText = textoOriginal; btn.disabled = false; return; } const { data } = supabaseClient.storage.from('produtos').getPublicUrl(fileName); imagemUrl = data.publicUrl; } const dadosSalvar = { nome, descricao, sku_sankhya: sku, preco, pais, tipo }; if (imagemUrl) dadosSalvar.imagem_url = imagemUrl; let erroDb; if (id) { const { error } = await supabaseClient.from('produtos').update(dadosSalvar).eq('id', id); erroDb = error; } else { const { error } = await supabaseClient.from('produtos').insert([dadosSalvar]); erroDb = error; } if (erroDb) alert("Erro no banco: " + erroDb.message); else { toggleModal('modal-produto'); carregarProdutos(); } btn.innerText = textoOriginal; btn.disabled = false; }
+        async function deletarProduto(id) { if(confirm("Apagar vinho?")) { await supabaseClient.from('produtos').delete().eq('id', id); carregarProdutos(); } }
+
+        // --- SISTEMA DE PROMOÇÕES (NOVO) ---
+        async function carregarPromocoes() {
+            const { data, error } = await supabaseClient.from('promocoes').select('*').order('criado_em', { ascending: false });
+            const tbody = document.getElementById('tabela-promocoes');
             tbody.innerHTML = ''; 
 
-            if (error) {
-                tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-4 text-center text-red-500">Erro ao carregar dados.</td></tr>`;
-                return;
-            }
+            if (error) { tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-4 text-center text-red-500">Erro ao carregar banners.</td></tr>`; return; }
+            if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-stone-400 font-bold">Nenhuma oferta cadastrada.</td></tr>`; return; }
 
-            if (data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-stone-400 font-bold">Nenhum vinho cadastrado ainda.</td></tr>`;
-                return;
-            }
-
-            data.forEach(produto => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-stone-50 border-b border-stone-100 transition-colors";
-                tr.innerHTML = `
-                    <td class="px-6 py-4 font-bold flex items-center gap-4">
-                        <div class="h-12 w-10 bg-stone-100 rounded-lg flex items-center justify-center p-1">
-                            <img src="${produto.imagem_url || 'https://via.placeholder.com/50'}" class="h-full w-full object-contain mix-blend-multiply">
-                        </div>
-                        <div class="flex flex-col">
-                            <span class="text-sm">${produto.nome}</span>
-                            <span class="text-[10px] text-stone-400 font-mono">${produto.sku_sankhya}</span>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4 text-sm">${produto.pais || '-'} <br><span class="text-[10px] font-bold uppercase text-stone-400">${produto.tipo}</span></td>
-                    <td class="px-6 py-4 font-bold text-sm">R$ ${produto.preco.toFixed(2).replace('.', ',')}</td>
-                    <td class="px-6 py-4 text-right">
-                        <button type="button" onclick="deletarProduto('${produto.id}')" class="text-red-600 font-bold px-3 py-1.5 bg-red-50 rounded-lg text-xs hover:bg-red-100 transition">Remover</button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
+            data.forEach(p => {
+                const statusBadge = p.status 
+                    ? '<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-200">Ativo</span>' 
+                    : '<span class="bg-stone-100 text-stone-500 px-3 py-1 rounded-full text-xs font-bold border border-stone-200">Inativo</span>';
+                
+                tbody.innerHTML += `
+                    <tr class="hover:bg-stone-50 border-b border-stone-100">
+                        <td class="px-6 py-4"><img src="${p.imagem_url}" class="h-16 w-28 object-cover rounded-lg shadow-sm" onerror="this.src='https://via.placeholder.com/150x80'"></td>
+                        <td class="px-6 py-4 font-bold text-sm">${p.titulo}<br><span class="text-[11px] text-stone-400 font-normal line-clamp-2 mt-1 max-w-xs">${p.subtitulo}</span></td>
+                        <td class="px-6 py-4">${statusBadge}</td>
+                        <td class="px-6 py-4 text-right">
+                            <div class="flex justify-end gap-2">
+                                <button type="button" onclick="alternarStatusPromo('${p.id}', ${!p.status})" class="text-stone-600 bg-stone-100 p-2 rounded-lg hover:bg-stone-200 transition" title="Ligar/Desligar"><span class="material-symbols-outlined text-[18px]">power_settings_new</span></button>
+                                <button type="button" onclick="deletarPromocao('${p.id}')" class="text-red-600 bg-red-50 p-2 rounded-lg hover:bg-red-100 transition"><span class="material-symbols-outlined text-[18px]">delete</span></button>
+                            </div>
+                        </td>
+                    </tr>`;
             });
         }
 
-        // SALVAR COM UPLOAD
-        async function salvarDados(event, modalId = null) {
-            event.preventDefault(); 
+        function abrirModalPromocao() { 
+            document.getElementById('form-promocao').reset(); 
+            document.getElementById('nome-arquivo-promo').innerText = "Tamanho ideal: Formato Horizontal";
+            toggleModal('modal-promocao'); 
+        }
+
+        async function salvarPromocao(e) {
+            e.preventDefault(); 
+            const btn = e.submitter; const textoOriginal = btn.innerText; btn.innerText = "Enviando..."; btn.disabled = true;
+
+            const titulo = document.getElementById('promo-titulo').value;
+            const subtitulo = document.getElementById('promo-subtitulo').value;
+            const file = document.getElementById('foto-promo').files[0];
+
+            if (!file) { alert("Você precisa enviar a arte do banner!"); btn.innerText = textoOriginal; btn.disabled = false; return; }
+
+            // Usa a mesma pasta 'produtos' por facilidade, mas com prefixo 'promo-'
+            const fileName = `promo-${Date.now()}.${file.name.split('.').pop()}`; 
+            const { error: uploadError } = await supabaseClient.storage.from('produtos').upload(fileName, file);
             
-            const btn = event.submitter;
-            const textoOriginal = btn.innerText;
-            btn.innerText = "Salvando...";
-            btn.disabled = true;
+            if (uploadError) { alert("Erro ao enviar banner: " + uploadError.message); btn.innerText = textoOriginal; btn.disabled = false; return; }
+            
+            const { data } = supabaseClient.storage.from('produtos').getPublicUrl(fileName);
+            const imagemUrl = data.publicUrl;
 
-            if (modalId === 'modal-produto') {
-                const nome = document.getElementById('nome').value;
-                const descricao = document.getElementById('descricao').value;
-                const sku = document.getElementById('sku').value;
-                const preco = document.getElementById('preco').value;
-                const pais = document.getElementById('pais').value;
-                const tipo = document.getElementById('tipo').value;
+            const { error: dbError } = await supabaseClient.from('promocoes').insert([{ titulo, subtitulo, imagem_url: imagemUrl, status: true }]);
 
-                const fotoInput = document.getElementById('foto-vinho');
-                const file = fotoInput.files[0];
-                let imagemUrl = null;
+            if (dbError) alert("Erro ao salvar: " + dbError.message);
+            else { toggleModal('modal-promocao'); carregarPromocoes(); alert("Promoção ativada com sucesso!"); }
 
-                if (file) {
-                    const fileExt = file.name.split('.').pop();
-                    const fileName = `${Date.now()}-${Math.floor(Math.random() * 1000)}.${fileExt}`; 
-                    
-                    const { data: uploadData, error: uploadError } = await supabaseClient.storage
-                        .from('produtos')
-                        .upload(fileName, file);
-
-                    if (uploadError) {
-                        alert("Erro no upload da imagem: " + uploadError.message);
-                        btn.innerText = textoOriginal;
-                        btn.disabled = false;
-                        return; 
-                    }
-
-                    const { data: publicUrlData } = supabaseClient.storage.from('produtos').getPublicUrl(fileName);
-                    imagemUrl = publicUrlData.publicUrl;
-                }
-
-                const { error: dbError } = await supabaseClient
-                    .from('produtos')
-                    .insert([{ nome, descricao, sku_sankhya: sku, preco: parseFloat(preco), pais, tipo, imagem_url: imagemUrl }]);
-
-                if (dbError) {
-                    alert("Erro ao salvar no banco: " + dbError.message);
-                } else {
-                    document.getElementById('form-produto').reset(); 
-                    document.getElementById('nome-arquivo').innerText = "PNG ou JPG transparente";
-                    toggleModal(modalId); 
-                    carregarProdutos(); 
-                    alert("Sucesso! Vinho adicionado.");
-                }
-            }
-
-            btn.innerText = textoOriginal;
-            btn.disabled = false;
+            btn.innerText = textoOriginal; btn.disabled = false;
         }
 
-        // DELETAR PRODUTO
-        async function deletarProduto(id) {
-            if(confirm("Tem certeza que deseja apagar este vinho?")) {
-                await supabaseClient.from('produtos').delete().eq('id', id);
-                carregarProdutos(); 
-            }
+        async function alternarStatusPromo(id, novoStatus) {
+            await supabaseClient.from('promocoes').update({ status: novoStatus }).eq('id', id);
+            carregarPromocoes();
         }
+
+        async function deletarPromocao(id) { 
+            if(confirm("Deseja apagar permanentemente esta promoção?")) { 
+                await supabaseClient.from('promocoes').delete().eq('id', id); 
+                carregarPromocoes(); 
+            } 
+        }
+
+        // Inicialização Global
+        document.addEventListener("DOMContentLoaded", () => { 
+            carregarCategorias(); 
+            carregarProdutos(); 
+            carregarPromocoes(); 
+        });
     </script>
 </body>
 </html>
