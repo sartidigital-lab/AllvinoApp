@@ -86,7 +86,7 @@
             <div class="bg-white rounded-2xl border shadow-sm overflow-hidden overflow-x-auto">
                 <table class="w-full text-left min-w-[800px]">
                     <thead class="bg-stone-50 border-b text-xs uppercase font-bold text-stone-400">
-                        <tr><th class="px-6 py-4 w-40">Banner</th><th class="px-6 py-4">Informações</th><th class="px-6 py-4">Status</th><th class="px-6 py-4 text-right">Ações</th></tr>
+                        <tr><th class="px-6 py-4 w-40">Arte</th><th class="px-6 py-4">Informações</th><th class="px-6 py-4">Status</th><th class="px-6 py-4 text-right">Ações</th></tr>
                     </thead>
                     <tbody class="divide-y divide-stone-100 text-sm" id="tabela-promocoes">
                         <tr><td colspan="4" class="px-6 py-8 text-center text-stone-400 font-bold">Carregando promoções...</td></tr>
@@ -108,15 +108,29 @@
             <div class="flex justify-between px-6 py-5 border-b bg-stone-50"><h2 class="text-xl font-bold">Nova Oferta</h2><button type="button" onclick="toggleModal('modal-promocao')"><span class="material-symbols-outlined">close</span></button></div>
             <div class="flex-1 overflow-y-auto p-6">
                 <form id="form-promocao" onsubmit="salvarPromocao(event)" class="space-y-4">
+                    <div>
+                        <label class="text-[10px] font-bold text-stone-400">TIPO DE OFERTA</label>
+                        <select id="promo-tipo" class="w-full border p-3 rounded-xl text-sm mt-1" onchange="togglePrecoPromo()" required>
+                            <option value="Banner">Apenas Banner Principal</option>
+                            <option value="Kit">Kit ou Vinho Promocional</option>
+                        </select>
+                    </div>
+
                     <label class="border-2 border-dashed border-stone-300 rounded-2xl p-6 flex flex-col items-center cursor-pointer hover:bg-stone-50 relative overflow-hidden group">
                         <input type="file" id="foto-promo" accept="image/png, image/jpeg" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" required>
                         <span class="material-symbols-outlined text-[40px] text-stone-400 group-hover:text-green-500 transition-colors">add_photo_alternate</span>
-                        <p class="font-bold text-sm text-center mt-2 group-hover:text-green-500">Enviar Arte do Banner</p>
-                        <p id="nome-arquivo-promo" class="text-[10px] text-stone-400 mt-1 uppercase tracking-widest text-center truncate max-w-[200px]">Tamanho ideal: Formato Horizontal</p>
+                        <p class="font-bold text-sm text-center mt-2 group-hover:text-green-500">Enviar Imagem</p>
+                        <p id="nome-arquivo-promo" class="text-[10px] text-stone-400 mt-1 uppercase tracking-widest text-center truncate max-w-[200px]">JPG ou PNG</p>
                     </label>
-                    <input type="text" id="promo-titulo" placeholder="Título (Ex: Ofertas da Semana)" class="w-full border p-4 rounded-xl font-bold text-sm" required>
-                    <textarea id="promo-subtitulo" rows="3" placeholder="Subtítulo ou descrição da promoção..." class="w-full border p-4 rounded-xl text-sm" required></textarea>
+
+                    <input type="text" id="promo-titulo" placeholder="Título (Ex: Ofertas da Semana ou Kit Malbec)" class="w-full border p-4 rounded-xl font-bold text-sm" required>
+                    <textarea id="promo-subtitulo" rows="3" placeholder="Subtítulo ou descrição..." class="w-full border p-4 rounded-xl text-sm" required></textarea>
                     
+                    <div id="container-promo-preco" class="hidden">
+                        <label class="text-[10px] font-bold text-stone-400">PREÇO PROMOCIONAL (R$)</label>
+                        <input type="number" id="promo-preco" step="0.01" placeholder="Ex: 149.90" class="w-full border p-4 rounded-xl font-bold text-sm mt-1">
+                    </div>
+
                     <button type="submit" class="w-full bg-green-600 text-white py-4 rounded-xl font-bold mt-4 shadow-lg hover:bg-green-700 transition">Ativar Promoção</button>
                 </form>
             </div>
@@ -129,20 +143,13 @@
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmZ3RhZm5mdXFseXNkbnZzYmhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNDY1NzgsImV4cCI6MjA5MjcyMjU3OH0.mZDnR1A8VIJVUzedb7GU1db628dSqU-8SdvBFXXVaE4';
         const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        // --- NAVEGAÇÃO BÁSICA E FUNÇÕES DE ARQUIVO ---
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); document.getElementById('sidebar-overlay').classList.toggle('hidden'); }
         function showTab(t) { document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.getElementById('tab-' + t).classList.add('active'); if(window.innerWidth < 1024) toggleSidebar(); }
-        function toggleModal(id) {
-            const m = document.getElementById(id);
-            if (m.classList.contains('hidden')) { m.classList.remove('hidden'); setTimeout(() => { m.classList.remove('opacity-0'); if(m.querySelector('.translate-x-full')) m.querySelector('.relative').classList.remove('translate-x-full'); if(m.querySelector('.scale-95')) m.querySelector('.relative').classList.remove('scale-95'); }, 10); } 
-            else { m.classList.add('opacity-0'); if(m.querySelector('.relative').classList.contains('translate-x-0')) m.querySelector('.relative').classList.add('translate-x-full'); if(m.querySelector('.relative').classList.contains('scale-100')) m.querySelector('.relative').classList.add('scale-95'); setTimeout(() => m.classList.add('hidden'), 300); }
-        }
+        function toggleModal(id) { const m = document.getElementById(id); if (m.classList.contains('hidden')) { m.classList.remove('hidden'); setTimeout(() => { m.classList.remove('opacity-0'); if(m.querySelector('.translate-x-full')) m.querySelector('.relative').classList.remove('translate-x-full'); if(m.querySelector('.scale-95')) m.querySelector('.relative').classList.remove('scale-95'); }, 10); } else { m.classList.add('opacity-0'); if(m.querySelector('.relative').classList.contains('translate-x-0')) m.querySelector('.relative').classList.add('translate-x-full'); if(m.querySelector('.relative').classList.contains('scale-100')) m.querySelector('.relative').classList.add('scale-95'); setTimeout(() => m.classList.add('hidden'), 300); } }
         async function fazerLogout() { await supabaseClient.auth.signOut(); window.location.href = 'admin-login.html'; }
-
         document.getElementById('foto-vinho').addEventListener('change', e => { if(e.target.files[0]) document.getElementById('nome-arquivo').innerText = e.target.files[0].name; });
         document.getElementById('foto-promo').addEventListener('change', e => { if(e.target.files[0]) document.getElementById('nome-arquivo-promo').innerText = e.target.files[0].name; });
 
-        // --- CATÁLOGO E CATEGORIAS (MANTIDOS DA FASE 2) ---
         async function carregarCategorias() { const { data, error } = await supabaseClient.from('categorias').select('*').order('nome'); const selectPais = document.getElementById('pais'); const selectTipo = document.getElementById('tipo'); selectPais.innerHTML = '<option value="">Selecione o País</option>'; selectTipo.innerHTML = '<option value="">Selecione o Tipo</option>'; if(!error && data) { data.forEach(c => { const opt = `<option value="${c.nome}">${c.nome}</option>`; if(c.tipo === 'pais') selectPais.innerHTML += opt; else if(c.tipo === 'tipo') selectTipo.innerHTML += opt; }); } }
         async function salvarCategoria(e) { e.preventDefault(); const btn = e.submitter; btn.innerText = "Salvando..."; btn.disabled = true; const tipo = document.getElementById('cat-tipo').value; const nome = document.getElementById('cat-nome').value; const { error } = await supabaseClient.from('categorias').insert([{ tipo, nome }]); if(error) alert("Erro: " + error.message); else { document.getElementById('form-categoria').reset(); toggleModal('modal-categoria'); carregarCategorias(); alert("Categoria salva!"); } btn.innerText = "Salvar"; btn.disabled = false; }
         async function carregarProdutos() { const { data, error } = await supabaseClient.from('produtos').select('*').order('criado_em', { ascending: false }); const tbody = document.getElementById('tabela-produtos'); tbody.innerHTML = ''; if (error) { tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-4 text-center text-red-500">Erro.</td></tr>`; return; } if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-stone-400 font-bold">Nenhum vinho.</td></tr>`; return; } data.forEach(p => { tbody.innerHTML += `<tr class="hover:bg-stone-50 border-b border-stone-100"><td class="px-6 py-4 font-bold flex items-center gap-4"><div class="h-12 w-10 bg-stone-100 rounded-lg flex items-center justify-center p-1"><img src="${p.imagem_url || 'https://via.placeholder.com/50'}" class="h-full w-full object-contain mix-blend-multiply"></div><div class="flex flex-col"><span class="text-sm">${p.nome}</span><span class="text-[10px] text-stone-400 font-mono">${p.sku_sankhya}</span></div></td><td class="px-6 py-4 text-sm">${p.pais || '-'} <br><span class="text-[10px] font-bold uppercase text-stone-400">${p.tipo || '-'}</span></td><td class="px-6 py-4 font-bold text-sm">R$ ${p.preco.toFixed(2).replace('.', ',')}</td><td class="px-6 py-4 text-right"><div class="flex justify-end gap-2"><button type="button" onclick='abrirModalProduto(${JSON.stringify(p)})' class="text-blue-600 bg-blue-50 p-2 rounded-lg hover:bg-blue-100 transition"><span class="material-symbols-outlined text-[18px]">edit</span></button><button type="button" onclick="deletarProduto('${p.id}')" class="text-red-600 bg-red-50 p-2 rounded-lg hover:bg-red-100 transition"><span class="material-symbols-outlined text-[18px]">delete</span></button></div></td></tr>`; }); }
@@ -151,24 +158,31 @@
         async function salvarProduto(e) { e.preventDefault(); const btn = e.submitter; const textoOriginal = btn.innerText; btn.innerText = "Salvando..."; btn.disabled = true; const id = document.getElementById('produto-id').value; const nome = document.getElementById('nome').value; const descricao = document.getElementById('descricao').value; const sku = document.getElementById('sku').value; const preco = parseFloat(document.getElementById('preco').value); const pais = document.getElementById('pais').value; const tipo = document.getElementById('tipo').value; const file = document.getElementById('foto-vinho').files[0]; let imagemUrl = null; if (file) { const fileName = `${Date.now()}-${Math.floor(Math.random()*1000)}.${file.name.split('.').pop()}`; const { error: uploadError } = await supabaseClient.storage.from('produtos').upload(fileName, file); if (uploadError) { alert("Erro na foto: " + uploadError.message); btn.innerText = textoOriginal; btn.disabled = false; return; } const { data } = supabaseClient.storage.from('produtos').getPublicUrl(fileName); imagemUrl = data.publicUrl; } const dadosSalvar = { nome, descricao, sku_sankhya: sku, preco, pais, tipo }; if (imagemUrl) dadosSalvar.imagem_url = imagemUrl; let erroDb; if (id) { const { error } = await supabaseClient.from('produtos').update(dadosSalvar).eq('id', id); erroDb = error; } else { const { error } = await supabaseClient.from('produtos').insert([dadosSalvar]); erroDb = error; } if (erroDb) alert("Erro no banco: " + erroDb.message); else { toggleModal('modal-produto'); carregarProdutos(); } btn.innerText = textoOriginal; btn.disabled = false; }
         async function deletarProduto(id) { if(confirm("Apagar vinho?")) { await supabaseClient.from('produtos').delete().eq('id', id); carregarProdutos(); } }
 
-        // --- SISTEMA DE PROMOÇÕES (NOVO) ---
+        // --- SISTEMA DE PROMOÇÕES ATUALIZADO ---
+        function togglePrecoPromo() {
+            const tipo = document.getElementById('promo-tipo').value;
+            const containerPreco = document.getElementById('container-promo-preco');
+            const inputPreco = document.getElementById('promo-preco');
+            if (tipo === 'Kit') { containerPreco.classList.remove('hidden'); inputPreco.required = true; } 
+            else { containerPreco.classList.add('hidden'); inputPreco.required = false; inputPreco.value = ''; }
+        }
+
         async function carregarPromocoes() {
             const { data, error } = await supabaseClient.from('promocoes').select('*').order('criado_em', { ascending: false });
             const tbody = document.getElementById('tabela-promocoes');
             tbody.innerHTML = ''; 
 
-            if (error) { tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-4 text-center text-red-500">Erro ao carregar banners.</td></tr>`; return; }
+            if (error) { tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-4 text-center text-red-500">Erro ao carregar ofertas.</td></tr>`; return; }
             if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-stone-400 font-bold">Nenhuma oferta cadastrada.</td></tr>`; return; }
 
             data.forEach(p => {
-                const statusBadge = p.status 
-                    ? '<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-200">Ativo</span>' 
-                    : '<span class="bg-stone-100 text-stone-500 px-3 py-1 rounded-full text-xs font-bold border border-stone-200">Inativo</span>';
-                
+                const statusBadge = p.status ? '<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-200">Ativo</span>' : '<span class="bg-stone-100 text-stone-500 px-3 py-1 rounded-full text-xs font-bold border border-stone-200">Inativo</span>';
+                const tagTipo = p.tipo_oferta === 'Kit' ? `<span class="mt-2 inline-block bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-[10px] font-bold">KIT/PRODUTO: R$ ${p.preco.toFixed(2).replace('.', ',')}</span>` : `<span class="mt-2 inline-block bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-[10px] font-bold">BANNER INFORMATIVO</span>`;
+
                 tbody.innerHTML += `
                     <tr class="hover:bg-stone-50 border-b border-stone-100">
                         <td class="px-6 py-4"><img src="${p.imagem_url}" class="h-16 w-28 object-cover rounded-lg shadow-sm" onerror="this.src='https://via.placeholder.com/150x80'"></td>
-                        <td class="px-6 py-4 font-bold text-sm">${p.titulo}<br><span class="text-[11px] text-stone-400 font-normal line-clamp-2 mt-1 max-w-xs">${p.subtitulo}</span></td>
+                        <td class="px-6 py-4 font-bold text-sm">${p.titulo}<br><span class="text-[11px] text-stone-400 font-normal line-clamp-2 mt-1 max-w-xs">${p.subtitulo}</span><br>${tagTipo}</td>
                         <td class="px-6 py-4">${statusBadge}</td>
                         <td class="px-6 py-4 text-right">
                             <div class="flex justify-end gap-2">
@@ -182,7 +196,8 @@
 
         function abrirModalPromocao() { 
             document.getElementById('form-promocao').reset(); 
-            document.getElementById('nome-arquivo-promo').innerText = "Tamanho ideal: Formato Horizontal";
+            document.getElementById('nome-arquivo-promo').innerText = "JPG ou PNG";
+            togglePrecoPromo(); // Reseta a exibição do preço
             toggleModal('modal-promocao'); 
         }
 
@@ -190,47 +205,34 @@
             e.preventDefault(); 
             const btn = e.submitter; const textoOriginal = btn.innerText; btn.innerText = "Enviando..."; btn.disabled = true;
 
+            const tipo_oferta = document.getElementById('promo-tipo').value;
             const titulo = document.getElementById('promo-titulo').value;
             const subtitulo = document.getElementById('promo-subtitulo').value;
+            let preco = document.getElementById('promo-preco').value;
+            preco = preco ? parseFloat(preco) : null;
+
             const file = document.getElementById('foto-promo').files[0];
+            if (!file) { alert("Você precisa enviar a arte!"); btn.innerText = textoOriginal; btn.disabled = false; return; }
 
-            if (!file) { alert("Você precisa enviar a arte do banner!"); btn.innerText = textoOriginal; btn.disabled = false; return; }
-
-            // Usa a mesma pasta 'produtos' por facilidade, mas com prefixo 'promo-'
             const fileName = `promo-${Date.now()}.${file.name.split('.').pop()}`; 
             const { error: uploadError } = await supabaseClient.storage.from('produtos').upload(fileName, file);
-            
-            if (uploadError) { alert("Erro ao enviar banner: " + uploadError.message); btn.innerText = textoOriginal; btn.disabled = false; return; }
+            if (uploadError) { alert("Erro ao enviar imagem: " + uploadError.message); btn.innerText = textoOriginal; btn.disabled = false; return; }
             
             const { data } = supabaseClient.storage.from('produtos').getPublicUrl(fileName);
             const imagemUrl = data.publicUrl;
 
-            const { error: dbError } = await supabaseClient.from('promocoes').insert([{ titulo, subtitulo, imagem_url: imagemUrl, status: true }]);
+            const { error: dbError } = await supabaseClient.from('promocoes').insert([{ titulo, subtitulo, imagem_url: imagemUrl, status: true, tipo_oferta, preco }]);
 
             if (dbError) alert("Erro ao salvar: " + dbError.message);
-            else { toggleModal('modal-promocao'); carregarPromocoes(); alert("Promoção ativada com sucesso!"); }
+            else { toggleModal('modal-promocao'); carregarPromocoes(); alert("Oferta cadastrada com sucesso!"); }
 
             btn.innerText = textoOriginal; btn.disabled = false;
         }
 
-        async function alternarStatusPromo(id, novoStatus) {
-            await supabaseClient.from('promocoes').update({ status: novoStatus }).eq('id', id);
-            carregarPromocoes();
-        }
+        async function alternarStatusPromo(id, novoStatus) { await supabaseClient.from('promocoes').update({ status: novoStatus }).eq('id', id); carregarPromocoes(); }
+        async function deletarPromocao(id) { if(confirm("Deseja apagar permanentemente esta oferta?")) { await supabaseClient.from('promocoes').delete().eq('id', id); carregarPromocoes(); } }
 
-        async function deletarPromocao(id) { 
-            if(confirm("Deseja apagar permanentemente esta promoção?")) { 
-                await supabaseClient.from('promocoes').delete().eq('id', id); 
-                carregarPromocoes(); 
-            } 
-        }
-
-        // Inicialização Global
-        document.addEventListener("DOMContentLoaded", () => { 
-            carregarCategorias(); 
-            carregarProdutos(); 
-            carregarPromocoes(); 
-        });
+        document.addEventListener("DOMContentLoaded", () => { carregarCategorias(); carregarProdutos(); carregarPromocoes(); });
     </script>
 </body>
 </html>
