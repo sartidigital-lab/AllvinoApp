@@ -3,57 +3,156 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
-    <title>Allvino - Login</title>
+    <title>Allvino - Acesso</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap" rel="stylesheet"/>
     <style>body { background-color: #FDFBF7; font-family: 'Manrope', sans-serif; }</style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-5">
-    
     <div class="w-full max-w-sm">
-        <div class="flex justify-center mb-10 h-16">
+        <div class="flex justify-center mb-10 h-12">
             <img src="LOGO-ALLVINO-PRETO.png" alt="Allvino" class="h-full w-auto object-contain scale-150 transform origin-center">
         </div>
 
-        <h1 class="text-2xl font-bold text-black text-center mb-2">Bem-vindo de volta</h1>
-        <p class="text-stone-500 text-sm text-center mb-8">Acesse sua adega digital.</p>
-
-        <button type="button" onclick="window.location.href='catalogo.html';" class="w-full bg-white border border-stone-200 text-black py-3.5 px-4 rounded-2xl font-bold text-sm shadow-sm flex items-center justify-center gap-3 hover:bg-stone-50 transition-colors mb-6">
-            <svg class="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-            Entrar com o Google
-        </button>
-
-        <div class="flex items-center gap-4 mb-6">
-            <div class="flex-1 h-px bg-stone-200"></div>
-            <span class="text-xs text-stone-400 font-bold uppercase tracking-wider">Ou acesse com e-mail</span>
-            <div class="flex-1 h-px bg-stone-200"></div>
-        </div>
-
-        <form onsubmit="event.preventDefault(); window.location.href='catalogo.html';" class="space-y-4">
-            <div>
-                <input type="email" placeholder="Seu e-mail" required class="w-full bg-white border border-stone-200 text-black rounded-2xl py-4 px-5 outline-none focus:border-black transition-colors shadow-sm">
-            </div>
-            <div>
-                <input type="password" placeholder="Sua senha" required class="w-full bg-white border border-stone-200 text-black rounded-2xl py-4 px-5 outline-none focus:border-black transition-colors shadow-sm">
+        <div id="modo-login" class="block">
+            <div class="text-center mb-6">
+                <h1 class="text-2xl font-bold text-black mb-1">Bem-vindo de volta</h1>
+                <p class="text-stone-500 text-sm">Acesse sua adega digital.</p>
             </div>
             
-            <div class="flex justify-between items-center mb-4 mt-2">
-                <label class="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" checked class="w-5 h-5 rounded border-stone-300 text-black focus:ring-black">
-                    <span class="text-sm font-bold text-stone-500">Manter conectado</span>
-                </label>
-                <a href="recuperar-senha.html" class="text-xs font-bold text-stone-500 hover:text-black">Esqueceu a senha?</a>
+            <button type="button" onclick="loginComGoogle()" class="w-full bg-white border border-stone-200 text-black py-3.5 px-4 rounded-2xl font-bold text-sm shadow-sm flex items-center justify-center gap-3 hover:bg-stone-50 transition-colors mb-6">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                Entrar com o Google
+            </button>
+
+            <div class="flex items-center gap-4 mb-6">
+                <div class="flex-1 h-px bg-stone-200"></div>
+                <span class="text-xs text-stone-400 font-bold uppercase tracking-wider">Ou acesse com e-mail</span>
+                <div class="flex-1 h-px bg-stone-200"></div>
             </div>
 
-            <button type="submit" class="w-full bg-black text-white py-4 rounded-2xl font-bold text-lg active:scale-95 transition-transform shadow-xl">
-                Entrar
-            </button>
-        </form>
+            <form onsubmit="fazerLogin(event)" class="space-y-4">
+                <input type="email" id="login-email" placeholder="Seu e-mail" required class="w-full bg-white border border-stone-200 text-black rounded-2xl py-4 px-5 outline-none focus:border-black transition-colors shadow-sm">
+                <input type="password" id="login-senha" placeholder="Sua senha" required class="w-full bg-white border border-stone-200 text-black rounded-2xl py-4 px-5 outline-none focus:border-black transition-colors shadow-sm">
+                
+                <div class="flex justify-between items-center mb-4 mt-2">
+                    <label class="flex items-center gap-3 cursor-pointer"><input type="checkbox" checked class="w-5 h-5 rounded border-stone-300 text-black focus:ring-black"><span class="text-sm font-bold text-stone-500">Manter conectado</span></label>
+                    <a href="recuperar-senha.html" class="text-xs font-bold text-stone-500 hover:text-black">Esqueceu a senha?</a>
+                </div>
+                <button type="submit" id="btn-login" class="w-full bg-black text-white py-4 rounded-2xl font-bold text-lg active:scale-95 transition-transform shadow-xl">Entrar</button>
+            </form>
 
-        <p class="text-center text-sm font-bold text-stone-400 mt-8">
-            Novo por aqui? <a href="cadastro.html" class="text-black hover:underline">Criar uma conta</a>
-        </p>
+            <p class="text-center text-sm font-bold text-stone-400 mt-8">Novo por aqui? <button type="button" onclick="alternarTela('cadastro')" class="text-black hover:underline">Criar uma conta</button></p>
+        </div>
+
+        <div id="modo-cadastro" class="hidden">
+            <div class="text-center mb-6">
+                <h1 class="text-2xl font-bold text-black mb-1">Crie sua conta</h1>
+                <p class="text-stone-500 text-sm">Faça parte da nossa adega digital.</p>
+            </div>
+            
+            <button type="button" onclick="loginComGoogle()" class="w-full bg-white border border-stone-200 text-black py-3.5 px-4 rounded-2xl font-bold text-sm shadow-sm flex items-center justify-center gap-3 hover:bg-stone-50 transition-colors mb-6">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                Continuar com o Google
+            </button>
+
+            <div class="flex items-center gap-4 mb-6">
+                <div class="flex-1 h-px bg-stone-200"></div>
+                <span class="text-xs text-stone-400 font-bold uppercase tracking-wider">Ou cadastre-se</span>
+                <div class="flex-1 h-px bg-stone-200"></div>
+            </div>
+
+            <form onsubmit="fazerCadastro(event)" class="space-y-4">
+                <input type="text" id="cad-nome" placeholder="Nome completo" required class="w-full bg-white border border-stone-200 text-black rounded-2xl py-4 px-5 outline-none focus:border-black transition-colors shadow-sm">
+                <input type="email" id="cad-email" placeholder="E-mail" required class="w-full bg-white border border-stone-200 text-black rounded-2xl py-4 px-5 outline-none focus:border-black transition-colors shadow-sm">
+                <input type="tel" id="cad-whatsapp" placeholder="Telefone / WhatsApp" required class="w-full bg-white border border-stone-200 text-black rounded-2xl py-4 px-5 outline-none focus:border-black transition-colors shadow-sm">
+                <input type="password" id="cad-senha" placeholder="Crie uma senha" required class="w-full bg-white border border-stone-200 text-black rounded-2xl py-4 px-5 outline-none focus:border-black transition-colors shadow-sm">
+                
+                <div class="flex justify-between items-center mb-4 mt-2">
+                    <label class="flex items-center gap-3 cursor-pointer"><input type="checkbox" checked class="w-5 h-5 rounded border-stone-300 text-black focus:ring-black"><span class="text-sm font-bold text-stone-500">Manter-me conectado</span></label>
+                </div>
+                <button type="submit" id="btn-cadastro" class="w-full bg-black text-white py-4 rounded-2xl font-bold text-lg active:scale-95 transition-transform shadow-xl">Criar Conta</button>
+            </form>
+
+            <p class="text-center text-sm font-bold text-stone-400 mt-8">Já tem uma conta? <button type="button" onclick="alternarTela('login')" class="text-black hover:underline">Fazer login</button></p>
+        </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const supabaseUrl = 'https://jfgtafnfuqlysdnvsbhk.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmZ3RhZm5mdXFseXNkbnZzYmhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNDY1NzgsImV4cCI6MjA5MjcyMjU3OH0.mZDnR1A8VIJVUzedb7GU1db628dSqU-8SdvBFXXVaE4';
+        const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        function alternarTela(tela) {
+            if (tela === 'cadastro') {
+                document.getElementById('modo-login').classList.add('hidden');
+                document.getElementById('modo-cadastro').classList.remove('hidden');
+            } else {
+                document.getElementById('modo-cadastro').classList.add('hidden');
+                document.getElementById('modo-login').classList.remove('hidden');
+            }
+        }
+
+        async function fazerLogin(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-login'); btn.innerText = "Aguarde..."; btn.disabled = true;
+            const email = document.getElementById('login-email').value;
+            const senha = document.getElementById('login-senha').value;
+
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
+            
+            if (error) {
+                alert("Erro ao entrar: verifique se o e-mail e a palavra-passe estão corretos.");
+                btn.innerText = "Entrar"; btn.disabled = false;
+            } else if (!data.session) {
+                alert("Ocorreu um erro na criação da sessão. Tente novamente.");
+                btn.innerText = "Entrar"; btn.disabled = false;
+            } else {
+                // Atraso para dar tempo ao telemóvel de gravar a sessão antes de sair da página
+                setTimeout(() => {
+                    window.location.replace('catalogo.html');
+                }, 600);
+            }
+        }
+
+        async function fazerCadastro(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-cadastro'); btn.innerText = "Aguarde..."; btn.disabled = true;
+            const nome = document.getElementById('cad-nome').value;
+            const email = document.getElementById('cad-email').value;
+            const whatsapp = document.getElementById('cad-whatsapp').value;
+            const senha = document.getElementById('cad-senha').value;
+
+            const { data, error } = await supabaseClient.auth.signUp({
+                email, password: senha, options: { data: { nome_completo: nome, telefone: whatsapp } }
+            });
+
+            if (error) {
+                alert("Erro ao criar conta: " + error.message);
+                btn.innerText = "Criar Conta"; btn.disabled = false;
+            } else if (!data.session) {
+                alert("Aviso: Este e-mail já está registado. Por favor, vá a 'Fazer login'.");
+                btn.innerText = "Criar Conta"; btn.disabled = false;
+            } else {
+                // Atraso para dar tempo ao telemóvel de gravar a sessão antes de sair da página
+                setTimeout(() => {
+                    window.location.replace('catalogo.html');
+                }, 600);
+            }
+        }
+
+        async function loginComGoogle() {
+            const { error } = await supabaseClient.auth.signInWithOAuth({
+                provider: 'google', options: { redirectTo: window.location.origin + '/catalogo.html' }
+            });
+            if (error) alert("Erro ao conectar com o Google.");
+        }
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) window.location.replace('catalogo.html');
+        });
+    </script>
 </body>
 </html>

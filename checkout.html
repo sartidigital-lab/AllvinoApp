@@ -71,16 +71,18 @@
         let cart = JSON.parse(localStorage.getItem('allvino_cart')) || [];
 
         async function initCheckout() {
-            // Utilizamos getUser() em vez de getSession() para validar diretamente no servidor
-            const { data: { user }, error } = await supabaseClient.auth.getUser();
+            // Alterado para getSession() para leitura instantânea e sem atraso na rede
+            const { data: { session }, error } = await supabaseClient.auth.getSession();
             
-            if (error || !user) { 
+            if (error || !session) { 
                 window.location.replace('login.html'); 
                 return; 
             }
             
-            document.getElementById('checkout-body').style.opacity = '1';
+            // Revela a página assim que valida com sucesso
+            document.getElementById('checkout-body').classList.remove('opacity-0');
             
+            const user = session.user;
             const userData = user.user_metadata || {};
             document.getElementById('user-name').value = userData.nome_completo || user.email.split('@')[0] || '';
             document.getElementById('user-phone').value = userData.telefone || 'Não informado';
