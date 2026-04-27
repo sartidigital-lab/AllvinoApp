@@ -7,44 +7,205 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,300;0,700&family=Manrope:wght@300;400;700&display=swap" rel="stylesheet"/>
-    <script id="tailwind-config">tailwind.config = { theme: { extend: { colors: { primary: "#000000", secondary: "#B91C1C" }, fontFamily: { "body": ["Manrope", "sans-serif"], "headline": ["Noto Serif", "serif"] } } } }</script>
-    <style>.material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; } body { background-color: #FDFBF7; font-family: 'Manrope', sans-serif; } .no-scrollbar::-webkit-scrollbar { display: none; } .tab-content { display: none; } .tab-content.active { display: block; }</style>
+    
+    <script id="tailwind-config">
+        tailwind.config = {
+          theme: { extend: { colors: { primary: "#000000", secondary: "#B91C1C" }, fontFamily: { "body": ["Manrope", "sans-serif"], "headline": ["Noto Serif", "serif"] } } }
+        }
+    </script>
+    <style>
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
+        body { background-color: #FDFBF7; font-family: 'Manrope', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
 </head>
 <body class="text-primary overflow-x-hidden min-h-screen">
-    <header class="bg-[#111111] border-b border-stone-800 sticky top-0 z-40 flex justify-between items-center w-full px-5 py-4 lg:pl-72 shadow-sm text-white"><div class="flex items-center gap-4"><button onclick="toggleSidebar()" class="lg:hidden p-1 hover:bg-stone-800 rounded-md transition-colors"><span class="material-symbols-outlined">menu</span></button><h2 class="text-lg font-bold hidden sm:block">Gestão Allvino</h2></div><div class="flex items-center gap-3"><span class="text-sm font-bold text-stone-300">Olá, Master</span><span class="text-[10px] bg-stone-300 text-black px-2 py-0.5 rounded-full uppercase font-bold">Admin</span></div></header>
-    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 flex flex-col h-full w-64 bg-[#0a0a0a] border-r border-stone-800 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl lg:shadow-none"><div class="px-6 py-6 border-b border-stone-800 bg-[#111111] flex justify-between"><img src="LOGO-ALLVINO-BRANCO.png" class="h-10" onerror="this.src='https://via.placeholder.com/150x50?text=Allvino'"><button onclick="toggleSidebar()" class="lg:hidden text-stone-400"><span class="material-symbols-outlined">close</span></button></div><nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto no-scrollbar"><button type="button" onclick="showTab('bi')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-secondary">analytics</span> BI Analytics</button><button type="button" onclick="showTab('catalogo')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-blue-400">wine_bar</span> Catálogo</button><button type="button" onclick="showTab('promo')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-green-500">campaign</span> Promoções</button><button type="button" onclick="showTab('usuarios')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-orange-400">group</span> Equipe</button><button type="button" onclick="showTab('perfil')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-purple-400">person_edit</span> Meu Perfil</button></nav><div class="p-6 border-t border-stone-800"><a href="#" onclick="fazerLogout()" class="flex text-secondary font-bold text-sm hover:text-red-400 transition-colors"><span class="material-symbols-outlined mr-2">logout</span> Sair do Sistema</a></div></aside>
+
+    <header class="bg-[#111111] border-b border-stone-800 sticky top-0 z-40 flex justify-between items-center w-full px-5 py-4 lg:pl-72 shadow-sm text-white">
+        <div class="flex items-center gap-4">
+            <button onclick="toggleSidebar()" class="lg:hidden p-1 hover:bg-stone-800 rounded-md transition-colors"><span class="material-symbols-outlined">menu</span></button>
+            <h2 class="text-lg font-bold hidden sm:block">Gestão Allvino</h2>
+        </div>
+        <div class="flex items-center gap-3">
+            <span class="text-sm font-bold text-stone-300">Olá, Master</span>
+            <span class="text-[10px] bg-stone-300 text-black px-2 py-0.5 rounded-full uppercase font-bold">Admin</span>
+        </div>
+    </header>
+
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 flex flex-col h-full w-64 bg-[#0a0a0a] border-r border-stone-800 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl lg:shadow-none">
+        <div class="px-6 py-6 border-b border-stone-800 bg-[#111111] flex justify-between">
+            <img src="LOGO-ALLVINO-BRANCO.png" class="h-10" onerror="this.src='https://via.placeholder.com/150x50?text=Allvino'">
+            <button onclick="toggleSidebar()" class="lg:hidden text-stone-400"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto no-scrollbar">
+            <button type="button" onclick="showTab('bi')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-secondary">analytics</span> BI Analytics</button>
+            <button type="button" onclick="showTab('catalogo')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-blue-400">wine_bar</span> Catálogo</button>
+            <button type="button" onclick="showTab('promo')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-green-500">campaign</span> Promoções</button>
+            <button type="button" onclick="showTab('usuarios')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-orange-400">group</span> Equipe</button>
+            <button type="button" onclick="showTab('perfil')" class="w-full flex items-center px-4 py-3 text-stone-400 hover:bg-stone-800 hover:text-white rounded-xl transition font-bold"><span class="material-symbols-outlined mr-3 text-purple-400">person_edit</span> Meu Perfil</button>
+        </nav>
+        <div class="p-6 border-t border-stone-800">
+            <a href="#" onclick="fazerLogout()" class="flex text-secondary font-bold text-sm hover:text-red-400 transition-colors"><span class="material-symbols-outlined mr-2">logout</span> Sair do Sistema</a>
+        </div>
+    </aside>
     <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/60 z-40 hidden lg:hidden backdrop-blur-sm transition-opacity"></div>
-    
+
     <main class="lg:ml-64 p-5 lg:p-8 max-w-7xl mx-auto pb-32">
+        
         <div id="tab-bi" class="tab-content active space-y-8">
             <div class="flex justify-between items-center border-b border-stone-200 pb-6 flex-wrap gap-4">
                 <h1 class="text-3xl font-bold font-serif">Inteligência Allvino</h1>
                 <div class="flex gap-3 items-center flex-wrap">
                     <div class="flex items-center gap-2 bg-white border border-stone-200 px-3 py-2 rounded-xl shadow-sm">
                         <span class="material-symbols-outlined text-stone-400 text-[20px]">calendar_month</span>
-                        <select id="bi-filtro-tempo" onchange="toggleDataCustom()" class="bg-transparent text-sm font-bold text-black outline-none border-none focus:ring-0 cursor-pointer"><option value="30d">Últimos 30 dias</option><option value="7d">Últimos 7 dias</option><option value="hoje">Hoje</option><option value="ano">Este Ano</option><option value="tudo">Todo o Período</option><option value="custom">Personalizado</option></select>
+                        <select id="bi-filtro-tempo" onchange="toggleDataCustom()" class="bg-transparent text-sm font-bold text-black outline-none border-none focus:ring-0 cursor-pointer">
+                            <option value="30d">Últimos 30 dias</option>
+                            <option value="7d">Últimos 7 dias</option>
+                            <option value="hoje">Hoje</option>
+                            <option value="ano">Este Ano</option>
+                            <option value="tudo">Todo o Período</option>
+                            <option value="custom">Personalizado</option>
+                        </select>
                     </div>
-                    <div id="bi-datas-custom" class="hidden flex items-center gap-2 bg-white border border-stone-200 px-2 py-1 rounded-xl shadow-sm"><input type="date" id="bi-data-inicio" class="bg-transparent text-sm font-bold text-stone-600 outline-none"><span class="text-stone-300">até</span><input type="date" id="bi-data-fim" class="bg-transparent text-sm font-bold text-stone-600 outline-none"><button onclick="carregarBI()" class="bg-black text-white px-3 py-1 rounded-lg text-xs font-bold hover:bg-stone-800 transition">Ir</button></div>
-                    <button type="button" onclick="abrirModalPedido()" class="bg-[#B91C1C] text-white px-6 py-2.5 rounded-xl font-bold shadow-lg hover:bg-red-800 transition flex items-center gap-2"><span class="material-symbols-outlined text-[20px]">add_shopping_cart</span> Lançar Pedido</button>
+                    <div id="bi-datas-custom" class="hidden flex items-center gap-2 bg-white border border-stone-200 px-2 py-1 rounded-xl shadow-sm">
+                        <input type="date" id="bi-data-inicio" class="bg-transparent text-sm font-bold text-stone-600 outline-none">
+                        <span class="text-stone-300">até</span>
+                        <input type="date" id="bi-data-fim" class="bg-transparent text-sm font-bold text-stone-600 outline-none">
+                        <button onclick="carregarBI()" class="bg-black text-white px-3 py-1 rounded-lg text-xs font-bold hover:bg-stone-800 transition">Ir</button>
+                    </div>
+                    <button type="button" onclick="abrirModalPedido()" class="bg-[#B91C1C] text-white px-6 py-2.5 rounded-xl font-bold shadow-lg hover:bg-red-800 transition flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[20px]">add_shopping_cart</span> Lançar Pedido
+                    </button>
                 </div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6"><div class="bg-black text-white p-6 rounded-3xl shadow-lg relative overflow-hidden"><div class="absolute -right-4 -bottom-4 opacity-10"><span class="material-symbols-outlined text-[100px]">payments</span></div><p class="text-white/60 text-xs font-bold uppercase tracking-widest">Faturamento</p><h3 id="bi-faturamento" class="text-4xl font-bold mt-2">R$ 0,00</h3></div><div class="bg-white p-6 rounded-3xl border border-stone-100 shadow-sm"><p class="text-stone-400 text-xs font-bold uppercase tracking-widest">Garrafas Vendidas</p><h3 id="bi-garrafas" class="text-4xl font-bold mt-2">0</h3></div><div class="bg-white p-6 rounded-3xl border border-stone-100 shadow-sm"><p class="text-stone-400 text-xs font-bold uppercase tracking-widest">Total de Pedidos</p><h3 id="bi-pedidos" class="text-4xl font-bold mt-2">0</h3></div></div>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8"><div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-6"><h3 class="font-bold text-lg mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-yellow-500">emoji_events</span> Top 10 Produtos</h3><div class="overflow-x-auto"><table class="w-full text-left text-sm"><thead class="text-stone-400 uppercase text-[10px] tracking-widest border-b"><tr><th class="pb-3">Produto</th><th class="pb-3 text-right">Qtd Vendida</th></tr></thead><tbody id="bi-top-produtos" class="divide-y divide-stone-50"><tr><td colspan="2" class="py-4 text-center text-stone-400">Nenhum dado</td></tr></tbody></table></div></div><div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-6"><h3 class="font-bold text-lg mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-blue-500">storefront</span> Vendas por Vendedor</h3><div class="overflow-x-auto"><table class="w-full text-left text-sm"><thead class="text-stone-400 uppercase text-[10px] tracking-widest border-b"><tr><th class="pb-3">Vendedor</th><th class="pb-3 text-right">Faturamento</th></tr></thead><tbody id="bi-top-vendedores" class="divide-y divide-stone-50"><tr><td colspan="2" class="py-4 text-center text-stone-400">Nenhum dado</td></tr></tbody></table></div></div></div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-black text-white p-6 rounded-3xl shadow-lg relative overflow-hidden">
+                    <div class="absolute -right-4 -bottom-4 opacity-10"><span class="material-symbols-outlined text-[100px]">payments</span></div>
+                    <p class="text-white/60 text-xs font-bold uppercase tracking-widest">Faturamento</p>
+                    <h3 id="bi-faturamento" class="text-4xl font-bold mt-2">R$ 0,00</h3>
+                </div>
+                <div class="bg-white p-6 rounded-3xl border border-stone-100 shadow-sm">
+                    <p class="text-stone-400 text-xs font-bold uppercase tracking-widest">Garrafas Vendidas</p>
+                    <h3 id="bi-garrafas" class="text-4xl font-bold mt-2">0</h3>
+                </div>
+                <div class="bg-white p-6 rounded-3xl border border-stone-100 shadow-sm">
+                    <p class="text-stone-400 text-xs font-bold uppercase tracking-widest">Total de Pedidos</p>
+                    <h3 id="bi-pedidos" class="text-4xl font-bold mt-2">0</h3>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-6">
+                    <h3 class="font-bold text-lg mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-yellow-500">emoji_events</span> Top 10 Produtos</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="text-stone-400 uppercase text-[10px] tracking-widest border-b"><tr><th class="pb-3">Produto</th><th class="pb-3 text-right">Qtd Vendida</th></tr></thead>
+                            <tbody id="bi-top-produtos" class="divide-y divide-stone-50"><tr><td colspan="2" class="py-4 text-center text-stone-400">Nenhum dado no período</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-6">
+                    <h3 class="font-bold text-lg mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-blue-500">storefront</span> Vendas por Vendedor</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="text-stone-400 uppercase text-[10px] tracking-widest border-b"><tr><th class="pb-3">Vendedor</th><th class="pb-3 text-right">Faturamento</th></tr></thead>
+                            <tbody id="bi-top-vendedores" class="divide-y divide-stone-50"><tr><td colspan="2" class="py-4 text-center text-stone-400">Nenhum dado no período</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div id="tab-catalogo" class="tab-content space-y-8"><div class="flex justify-between items-center border-b pb-6 flex-wrap gap-4"><h1 class="text-3xl font-bold font-serif">Gestão do Catálogo</h1><div class="flex gap-2"><button type="button" onclick="abrirModalCategoria()" class="bg-stone-200 text-black px-6 py-3 rounded-xl font-bold hover:bg-stone-300 transition flex items-center gap-2"><span class="material-symbols-outlined text-[20px]">category</span> Categorias</button><button type="button" onclick="abrirModalProduto()" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-blue-700 transition flex items-center gap-2"><span class="material-symbols-outlined text-[20px]">add</span> Novo Vinho</button></div></div><div class="bg-white rounded-2xl border shadow-sm overflow-hidden overflow-x-auto"><table class="w-full text-left min-w-[800px]"><thead class="bg-stone-50 border-b text-xs uppercase font-bold text-stone-400"><tr><th class="px-6 py-4">Vinho</th><th class="px-6 py-4">País</th><th class="px-6 py-4">Preço App</th><th class="px-6 py-4 text-right">Ações</th></tr></thead><tbody class="divide-y divide-stone-100 text-sm" id="tabela-produtos"><tr><td colspan="4" class="px-6 py-8 text-center text-stone-400 font-bold">Carregando catálogo...</td></tr></tbody></table></div></div>
-        
-        <div id="tab-promo" class="tab-content space-y-8"><div class="flex justify-between items-center border-b pb-6 flex-wrap gap-4"><h1 class="text-3xl font-bold font-serif">Promoções e Kits</h1><button type="button" onclick="abrirModalPromocao()" class="bg-green-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-green-700 transition flex items-center gap-2"><span class="material-symbols-outlined text-[20px]">add_photo_alternate</span> Nova Oferta</button></div><div class="bg-white rounded-2xl border shadow-sm overflow-hidden overflow-x-auto"><table class="w-full text-left min-w-[800px]"><thead class="bg-stone-50 border-b text-xs uppercase font-bold text-stone-400"><tr><th class="px-6 py-4 w-40">Arte</th><th class="px-6 py-4">Informações</th><th class="px-6 py-4">Status</th><th class="px-6 py-4 text-right">Ações</th></tr></thead><tbody class="divide-y divide-stone-100 text-sm" id="tabela-promocoes"><tr><td colspan="4" class="px-6 py-8 text-center text-stone-400 font-bold">Carregando promoções...</td></tr></tbody></table></div></div>
-        
-        <div id="tab-usuarios" class="tab-content space-y-8"><div class="border-b pb-6"><h1 class="text-3xl font-bold font-serif">Gestão de Equipe</h1><div class="flex justify-between items-center mt-6"><button onclick="abrirModalEquipe()" class="bg-orange-500 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2"><span class="material-symbols-outlined">person_add</span> Novo Usuário</button></div><div class="bg-white rounded-2xl border shadow-sm mt-6"><table class="w-full text-left min-w-[800px]"><thead class="bg-stone-50 border-b text-xs uppercase font-bold text-stone-400"><tr><th class="px-6 py-4">Nome</th><th class="px-6 py-4">Cargo</th><th class="px-6 py-4">Status</th><th class="px-6 py-4 text-right">Ações</th></tr></thead><tbody class="divide-y divide-stone-100 text-sm" id="tabela-equipe"></tbody></table></div></div></div>
-        <div id="tab-perfil" class="tab-content space-y-8"><div class="border-b pb-6"><h1 class="text-3xl font-bold font-serif">Meu Perfil</h1></div><div class="max-w-md bg-white p-8 rounded-3xl border shadow-sm"><form id="form-perfil" onsubmit="salvarPerfil(event)" class="space-y-4"><div><label class="text-xs font-bold text-stone-400 uppercase">Nome</label><input type="text" id="perfil-nome" class="w-full border p-4 rounded-xl mt-1"></div><div><label class="text-xs font-bold text-stone-400 uppercase">Senha</label><input type="password" id="perfil-senha" placeholder="Nova senha (opcional)" class="w-full border p-4 rounded-xl mt-1"></div><button type="submit" class="w-full bg-black text-white py-4 rounded-xl font-bold">Salvar Perfil</button></form></div></div>
+        <div id="tab-catalogo" class="tab-content space-y-8">
+            <div class="flex justify-between items-center border-b pb-6 flex-wrap gap-4">
+                <h1 class="text-3xl font-bold font-serif">Gestão do Catálogo</h1>
+                <div class="flex gap-2">
+                    <button type="button" onclick="abrirModalCategoria()" class="bg-stone-200 text-black px-6 py-3 rounded-xl font-bold hover:bg-stone-300 transition flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[20px]">category</span> Categorias
+                    </button>
+                    <button type="button" onclick="abrirModalProduto()" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-blue-700 transition flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[20px]">add</span> Novo Vinho
+                    </button>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl border shadow-sm overflow-hidden overflow-x-auto">
+                <table class="w-full text-left min-w-[800px]">
+                    <thead class="bg-stone-50 border-b text-xs uppercase font-bold text-stone-400"><tr><th class="px-6 py-4">Vinho</th><th class="px-6 py-4">País</th><th class="px-6 py-4">Preço App</th><th class="px-6 py-4 text-right">Ações</th></tr></thead>
+                    <tbody class="divide-y divide-stone-100 text-sm" id="tabela-produtos"><tr><td colspan="4" class="px-6 py-8 text-center text-stone-400 font-bold">Carregando catálogo...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="tab-promo" class="tab-content space-y-8">
+            <div class="flex justify-between items-center border-b pb-6 flex-wrap gap-4">
+                <h1 class="text-3xl font-bold font-serif">Promoções e Kits</h1>
+                <button type="button" onclick="abrirModalPromocao()" class="bg-green-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-green-700 transition flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[20px]">add_photo_alternate</span> Nova Oferta
+                </button>
+            </div>
+            <div class="bg-white rounded-2xl border shadow-sm overflow-hidden overflow-x-auto">
+                <table class="w-full text-left min-w-[800px]">
+                    <thead class="bg-stone-50 border-b text-xs uppercase font-bold text-stone-400">
+                        <tr><th class="px-6 py-4 w-40">Arte</th><th class="px-6 py-4">Informações</th><th class="px-6 py-4">Status</th><th class="px-6 py-4 text-right">Ações</th></tr>
+                    </thead>
+                    <tbody class="divide-y divide-stone-100 text-sm" id="tabela-promocoes">
+                        <tr><td colspan="4" class="px-6 py-8 text-center text-stone-400 font-bold">Carregando promoções...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="tab-usuarios" class="tab-content space-y-8">
+            <div class="flex justify-between items-center border-b pb-6 flex-wrap gap-4">
+                <h1 class="text-3xl font-bold font-serif">Gestão de Equipe</h1>
+                <button type="button" onclick="abrirModalEquipe()" class="bg-orange-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-orange-600 transition flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[20px]">person_add</span> Novo Usuário
+                </button>
+            </div>
+            <div class="bg-white rounded-2xl border shadow-sm overflow-hidden overflow-x-auto">
+                <table class="w-full text-left min-w-[800px]">
+                    <thead class="bg-stone-50 border-b text-xs uppercase font-bold text-stone-400">
+                        <tr><th class="px-6 py-4">Nome</th><th class="px-6 py-4">Cargo e Contato</th><th class="px-6 py-4">Status</th><th class="px-6 py-4 text-right">Ações</th></tr>
+                    </thead>
+                    <tbody class="divide-y divide-stone-100 text-sm" id="tabela-equipe">
+                        <tr><td colspan="4" class="px-6 py-8 text-center text-stone-400 font-bold">Carregando equipe...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="tab-perfil" class="tab-content space-y-8">
+            <div class="border-b pb-6"><h1 class="text-3xl font-bold font-serif">Meu Perfil</h1></div>
+            <div class="max-w-md bg-white p-8 rounded-3xl border border-stone-100 shadow-sm">
+                <form id="form-perfil" onsubmit="salvarPerfil(event)" class="space-y-5">
+                    <div>
+                        <label class="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Nome Completo</label>
+                        <input type="text" id="perfil-nome" class="w-full border p-4 rounded-xl font-bold text-sm mt-1" required>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-stone-400 uppercase tracking-widest">E-mail de Acesso</label>
+                        <input type="email" id="perfil-email" class="w-full border p-4 rounded-xl text-sm mt-1 bg-stone-50 text-stone-500" readonly title="Seu e-mail oficial não pode ser alterado por aqui">
+                    </div>
+                    <div class="pt-4 border-t border-stone-100">
+                        <label class="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Definir Nova Senha</label>
+                        <input type="password" id="perfil-senha" placeholder="Deixe em branco para manter a atual" class="w-full border p-4 rounded-xl text-sm mt-1">
+                    </div>
+                    <button type="submit" class="w-full bg-black text-white py-4 rounded-xl font-bold mt-2 shadow-lg hover:bg-stone-800 transition">Atualizar Meus Dados</button>
+                </form>
+            </div>
+        </div>
     </main>
+
+    <datalist id="lista-produtos-datalist"></datalist>
 
     <div id="modal-categoria" class="fixed inset-0 z-[60] flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="toggleModal('modal-categoria')"></div>
         <div class="relative w-full max-w-lg bg-white rounded-3xl p-8 shadow-2xl transform scale-95 transition-transform duration-300 max-h-[85vh] flex flex-col">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold font-serif">Gerenciar Categorias</h2>
+                <h2 class="text-2xl font-bold font-serif">Categorias</h2>
                 <button type="button" onclick="toggleModal('modal-categoria')"><span class="material-symbols-outlined">close</span></button>
             </div>
             
@@ -73,10 +234,152 @@
         </div>
     </div>
 
-    <div id="modal-produto" class="fixed inset-0 z-[60] flex justify-end hidden opacity-0 transition-opacity duration-300"><div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="toggleModal('modal-produto')"></div><div class="relative w-full max-w-md h-full bg-white flex flex-col transform translate-x-full transition-transform duration-300 shadow-2xl"><div class="flex justify-between px-6 py-5 border-b bg-stone-50"><h2 id="titulo-modal-produto" class="text-xl font-bold">Produto</h2><button type="button" onclick="toggleModal('modal-produto')"><span class="material-symbols-outlined">close</span></button></div><div class="flex-1 overflow-y-auto p-6"><form id="form-produto" onsubmit="salvarProduto(event)" class="space-y-4"><input type="hidden" id="produto-id"><label class="border-2 border-dashed border-stone-300 rounded-2xl p-6 flex flex-col items-center cursor-pointer hover:bg-stone-50 relative overflow-hidden group"><input type="file" id="foto-vinho" accept="image/png, image/jpeg" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"><span class="material-symbols-outlined text-[40px] text-stone-400 group-hover:text-blue-500 transition-colors">add_photo_alternate</span><p class="font-bold text-sm text-center mt-2 group-hover:text-blue-500">Enviar Foto</p><p id="nome-arquivo" class="text-[10px] text-stone-400 mt-1 uppercase tracking-widest text-center truncate max-w-[200px]">Opcional se editar</p></label><input type="text" id="nome" placeholder="Nome Comercial" class="w-full border p-4 rounded-xl font-bold text-sm" required><textarea id="descricao" rows="3" placeholder="Descrição do Produto" class="w-full border p-4 rounded-xl text-sm"></textarea><div class="grid grid-cols-2 gap-4"><input type="text" id="sku" placeholder="SKU" class="border p-4 rounded-xl font-mono text-sm" required><input type="number" id="preco" step="0.01" placeholder="Preço R$" class="border p-4 rounded-xl font-bold text-sm" required></div><div class="grid grid-cols-2 gap-4"><div><label class="text-[10px] font-bold text-stone-400">PAÍS</label><select id="pais" class="w-full border p-4 rounded-xl text-sm mt-1" required><option value="">Carregando...</option></select></div><div><label class="text-[10px] font-bold text-stone-400">TIPO</label><select id="tipo" class="w-full border p-4 rounded-xl text-sm mt-1" required><option value="">Carregando...</option></select></div></div><button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold mt-4 shadow-lg">Salvar Produto</button></form></div></div></div>
-    <div id="modal-pedido" class="fixed inset-0 z-[60] flex justify-end hidden opacity-0 transition-opacity duration-300"><div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="toggleModal('modal-pedido')"></div><div class="relative w-full max-w-lg h-full bg-white flex flex-col transform translate-x-full transition-transform duration-300 shadow-2xl"><div class="flex justify-between px-6 py-5 border-b bg-stone-50"><h2 class="text-xl font-bold">Novo Pedido Manual</h2><button type="button" onclick="toggleModal('modal-pedido')"><span class="material-symbols-outlined">close</span></button></div><div class="flex-1 overflow-y-auto p-6 bg-[#FDFBF7]"><form id="form-pedido" onsubmit="salvarPedido(event)" class="space-y-6"><div class="space-y-4 bg-white p-5 rounded-2xl border border-stone-100 shadow-sm"><h3 class="text-xs font-bold text-stone-400 uppercase tracking-widest mb-2">Dados da Venda</h3><input type="text" id="ped-cliente" placeholder="Nome do Cliente" class="w-full border p-3 rounded-xl font-bold text-sm" required><div class="grid grid-cols-2 gap-3"><input type="text" id="ped-vendedor" placeholder="Nome do Vendedor" class="border p-3 rounded-xl text-sm" required><select id="ped-pagamento" class="border p-3 rounded-xl text-sm" required><option value="">Pagamento...</option><option>PIX</option><option>Cartão de Crédito</option><option>Boleto</option><option>Dinheiro</option></select></div></div><div class="space-y-3 bg-white p-5 rounded-2xl border border-stone-100 shadow-sm"><div class="flex justify-between items-center mb-2"><h3 class="text-xs font-bold text-stone-400 uppercase tracking-widest">Itens do Pedido</h3><button type="button" onclick="adicionarLinhaProduto()" class="text-blue-600 text-xs font-bold hover:underline">+ Linha</button></div><div id="container-itens-pedido" class="space-y-2"></div></div><div class="bg-black p-5 rounded-2xl shadow-lg flex justify-between items-center text-white"><span class="font-bold text-sm uppercase tracking-widest text-stone-300">Valor Total</span><div class="flex items-center gap-2"><span class="font-bold">R$</span><input type="number" id="ped-total" step="0.01" placeholder="0.00" class="bg-transparent border-b border-stone-600 outline-none text-right font-bold text-2xl w-32 focus:border-white transition-colors" required></div></div><button type="submit" class="w-full bg-[#B91C1C] text-white py-4 rounded-xl font-bold shadow-lg hover:bg-red-800 transition uppercase tracking-widest">Registrar Venda</button></form></div></div></div>
-    <div id="modal-promocao" class="fixed inset-0 z-[60] flex justify-end hidden opacity-0 transition-opacity duration-300"><div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="toggleModal('modal-promocao')"></div><div class="relative w-full max-w-md h-full bg-white flex flex-col transform translate-x-full transition-transform duration-300 shadow-2xl"><div class="flex justify-between px-6 py-5 border-b bg-stone-50"><h2 id="titulo-modal-promo" class="text-xl font-bold">Nova Oferta</h2><button type="button" onclick="toggleModal('modal-promocao')"><span class="material-symbols-outlined">close</span></button></div><div class="flex-1 overflow-y-auto p-6"><form id="form-promocao" onsubmit="salvarPromocao(event)" class="space-y-4"><input type="hidden" id="promo-id"><div><label class="text-[10px] font-bold text-stone-400">TIPO DE OFERTA</label><select id="promo-tipo" class="w-full border p-3 rounded-xl text-sm mt-1" onchange="toggleFormatoPromo()" required><option value="Banner">Apenas Banner Principal</option><option value="Kit">Kit Promocional</option><option value="Produto Avulso">Produto Avulso</option></select></div><label class="border-2 border-dashed border-stone-300 rounded-2xl p-6 flex flex-col items-center cursor-pointer hover:bg-stone-50 relative overflow-hidden group"><input type="file" id="foto-promo" accept="image/png, image/jpeg" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"><span class="material-symbols-outlined text-[40px] text-stone-400 group-hover:text-green-500 transition-colors">add_photo_alternate</span><p class="font-bold text-sm text-center mt-2 group-hover:text-green-500">Enviar Imagem</p><p id="nome-arquivo-promo" class="text-[10px] text-stone-400 mt-1 uppercase tracking-widest text-center truncate max-w-[200px]">JPG ou PNG</p></label><input type="text" id="promo-titulo" placeholder="Título (Ex: Ofertas da Semana)" class="w-full border p-4 rounded-xl font-bold text-sm" required><textarea id="promo-subtitulo" rows="3" placeholder="Subtítulo ou descrição..." class="w-full border p-4 rounded-xl text-sm" required></textarea><div id="container-promo-textos" class="space-y-4 bg-stone-50 p-4 rounded-xl border border-stone-100"><div><label class="text-[10px] font-bold text-stone-400">TAG DESTAQUE</label><input type="text" id="promo-badge" placeholder="Ex: Seleção Especial" value="Seleção Especial" class="w-full border p-3 rounded-xl text-sm mt-1"></div><div><label class="text-[10px] font-bold text-stone-400">TEXTO DO BOTÃO</label><input type="text" id="promo-botao" placeholder="Ex: Ver Promoções" value="Ver Promoções" class="w-full border p-3 rounded-xl text-sm mt-1"></div></div><div id="container-promo-preco" class="hidden"><label class="text-[10px] font-bold text-stone-400">PREÇO PROMOCIONAL (R$)</label><input type="number" id="promo-preco" step="0.01" placeholder="Ex: 149.90" class="w-full border p-4 rounded-xl font-bold text-sm mt-1"></div><button type="submit" class="w-full bg-green-600 text-white py-4 rounded-xl font-bold mt-4 shadow-lg">Salvar Oferta</button></form></div></div></div>
-    <div id="modal-equipe" class="fixed inset-0 z-[60] flex justify-end hidden opacity-0 transition-opacity duration-300"><div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="toggleModal('modal-equipe')"></div><div class="relative w-full max-w-sm h-full bg-white flex flex-col transform translate-x-full transition-transform duration-300 shadow-2xl"><div class="flex justify-between px-6 py-5 border-b bg-stone-50"><h2 id="titulo-modal-equipe" class="text-xl font-bold">Membro da Equipe</h2><button type="button" onclick="toggleModal('modal-equipe')"><span class="material-symbols-outlined">close</span></button></div><div class="flex-1 overflow-y-auto p-6"><form id="form-equipe" onsubmit="salvarEquipe(event)" class="space-y-4"><input type="hidden" id="equipe-id"><input type="text" id="equipe-nome" placeholder="Nome" class="w-full border p-4 rounded-xl font-bold text-sm" required><input type="email" id="equipe-email" placeholder="E-mail" class="w-full border p-4 rounded-xl text-sm" required><input type="text" id="equipe-cargo" placeholder="Cargo" class="w-full border p-4 rounded-xl text-sm" required><select id="equipe-status" class="w-full border p-4 rounded-xl text-sm"><option value="ativo">Ativo</option><option value="inativo">Inativo</option></select><button type="submit" class="w-full bg-black text-white py-4 rounded-xl font-bold mt-4">Salvar</button></form></div></div></div>
+    <div id="modal-produto" class="fixed inset-0 z-[60] flex justify-end hidden opacity-0 transition-opacity duration-300">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="toggleModal('modal-produto')"></div>
+        <div class="relative w-full max-w-md h-full bg-white flex flex-col transform translate-x-full transition-transform duration-300 shadow-2xl">
+            <div class="flex justify-between px-6 py-5 border-b bg-stone-50"><h2 id="titulo-modal-produto" class="text-xl font-bold">Produto</h2><button type="button" onclick="toggleModal('modal-produto')"><span class="material-symbols-outlined">close</span></button></div>
+            <div class="flex-1 overflow-y-auto p-6">
+                <form id="form-produto" onsubmit="salvarProduto(event)" class="space-y-4">
+                    <input type="hidden" id="produto-id">
+                    <label class="border-2 border-dashed border-stone-300 rounded-2xl p-6 flex flex-col items-center cursor-pointer hover:bg-stone-50 relative overflow-hidden group">
+                        <input type="file" id="foto-vinho" accept="image/png, image/jpeg" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                        <span class="material-symbols-outlined text-[40px] text-stone-400 group-hover:text-blue-500 transition-colors">add_photo_alternate</span>
+                        <p class="font-bold text-sm text-center mt-2 group-hover:text-blue-500">Enviar Foto</p>
+                        <p id="nome-arquivo" class="text-[10px] text-stone-400 mt-1 uppercase tracking-widest text-center truncate max-w-[200px]">Opcional se editar</p>
+                    </label>
+                    <input type="text" id="nome" placeholder="Nome Comercial" class="w-full border p-4 rounded-xl font-bold text-sm" required>
+                    <textarea id="descricao" rows="3" placeholder="Descrição do Produto" class="w-full border p-4 rounded-xl text-sm"></textarea>
+                    <div class="grid grid-cols-2 gap-4">
+                        <input type="text" id="sku" placeholder="SKU" class="border p-4 rounded-xl font-mono text-sm" required>
+                        <input type="number" id="preco" step="0.01" placeholder="Preço R$" class="border p-4 rounded-xl font-bold text-sm" required>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-[10px] font-bold text-stone-400">PAÍS</label>
+                            <select id="pais" class="w-full border p-4 rounded-xl text-sm mt-1" required><option value="">Carregando...</option></select>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-stone-400">TIPO</label>
+                            <select id="tipo" class="w-full border p-4 rounded-xl text-sm mt-1" required><option value="">Carregando...</option></select>
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold mt-4 shadow-lg hover:bg-blue-700 transition">Salvar Produto</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-promocao" class="fixed inset-0 z-[60] flex justify-end hidden opacity-0 transition-opacity duration-300">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="toggleModal('modal-promocao')"></div>
+        <div class="relative w-full max-w-md h-full bg-white flex flex-col transform translate-x-full transition-transform duration-300 shadow-2xl">
+            <div class="flex justify-between px-6 py-5 border-b bg-stone-50"><h2 id="titulo-modal-promo" class="text-xl font-bold">Nova Oferta</h2><button type="button" onclick="toggleModal('modal-promocao')"><span class="material-symbols-outlined">close</span></button></div>
+            <div class="flex-1 overflow-y-auto p-6">
+                <form id="form-promocao" onsubmit="salvarPromocao(event)" class="space-y-4">
+                    <input type="hidden" id="promo-id">
+                    <div>
+                        <label class="text-[10px] font-bold text-stone-400">TIPO DE OFERTA</label>
+                        <select id="promo-tipo" class="w-full border p-3 rounded-xl text-sm mt-1" onchange="toggleFormatoPromo()" required>
+                            <option value="Banner">Apenas Banner Principal</option>
+                            <option value="Kit">Kit Promocional</option>
+                            <option value="Produto Avulso">Produto Avulso</option>
+                        </select>
+                    </div>
+                    <label class="border-2 border-dashed border-stone-300 rounded-2xl p-6 flex flex-col items-center cursor-pointer hover:bg-stone-50 relative overflow-hidden group">
+                        <input type="file" id="foto-promo" accept="image/png, image/jpeg" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                        <span class="material-symbols-outlined text-[40px] text-stone-400 group-hover:text-green-500 transition-colors">add_photo_alternate</span>
+                        <p class="font-bold text-sm text-center mt-2 group-hover:text-green-500">Enviar Imagem</p>
+                        <p id="nome-arquivo-promo" class="text-[10px] text-stone-400 mt-1 uppercase tracking-widest text-center truncate max-w-[200px]">JPG ou PNG</p>
+                    </label>
+                    <input type="text" id="promo-titulo" placeholder="Título (Ex: Ofertas da Semana)" class="w-full border p-4 rounded-xl font-bold text-sm" required>
+                    <textarea id="promo-subtitulo" rows="3" placeholder="Subtítulo ou descrição..." class="w-full border p-4 rounded-xl text-sm" required></textarea>
+                    
+                    <div id="container-promo-textos" class="space-y-4 bg-stone-50 p-4 rounded-xl border border-stone-100">
+                        <div>
+                            <label class="text-[10px] font-bold text-stone-400">TAG DESTAQUE</label>
+                            <input type="text" id="promo-badge" placeholder="Ex: Seleção Especial" value="Seleção Especial" class="w-full border p-3 rounded-xl text-sm mt-1">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-stone-400">TEXTO DO BOTÃO</label>
+                            <input type="text" id="promo-botao" placeholder="Ex: Ver Promoções" value="Ver Promoções" class="w-full border p-3 rounded-xl text-sm mt-1">
+                        </div>
+                    </div>
+                    
+                    <div id="container-promo-preco" class="hidden">
+                        <label class="text-[10px] font-bold text-stone-400">PREÇO PROMOCIONAL (R$)</label>
+                        <input type="number" id="promo-preco" step="0.01" placeholder="Ex: 149.90" class="w-full border p-4 rounded-xl font-bold text-sm mt-1">
+                    </div>
+                    <button type="submit" class="w-full bg-green-600 text-white py-4 rounded-xl font-bold mt-4 shadow-lg hover:bg-green-700 transition">Salvar Oferta</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-pedido" class="fixed inset-0 z-[60] flex justify-end hidden opacity-0 transition-opacity duration-300">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="toggleModal('modal-pedido')"></div>
+        <div class="relative w-full max-w-lg h-full bg-white flex flex-col transform translate-x-full transition-transform duration-300 shadow-2xl">
+            <div class="flex justify-between px-6 py-5 border-b bg-stone-50"><h2 class="text-xl font-bold">Novo Pedido Manual</h2><button type="button" onclick="toggleModal('modal-pedido')"><span class="material-symbols-outlined">close</span></button></div>
+            <div class="flex-1 overflow-y-auto p-6 bg-[#FDFBF7]">
+                <form id="form-pedido" onsubmit="salvarPedido(event)" class="space-y-6">
+                    <div class="space-y-4 bg-white p-5 rounded-2xl border border-stone-100 shadow-sm">
+                        <h3 class="text-xs font-bold text-stone-400 uppercase tracking-widest mb-2">Dados da Venda</h3>
+                        <input type="text" id="ped-cliente" placeholder="Nome do Cliente" class="w-full border p-3 rounded-xl font-bold text-sm" required>
+                        <div class="grid grid-cols-2 gap-3">
+                            <input type="text" id="ped-vendedor" placeholder="Nome do Vendedor" class="border p-3 rounded-xl text-sm" required>
+                            <select id="ped-pagamento" class="border p-3 rounded-xl text-sm" required>
+                                <option value="">Pagamento...</option><option>PIX</option><option>Cartão de Crédito</option><option>Boleto</option><option>Dinheiro</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="space-y-3 bg-white p-5 rounded-2xl border border-stone-100 shadow-sm">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="text-xs font-bold text-stone-400 uppercase tracking-widest">Itens do Pedido</h3>
+                            <button type="button" onclick="adicionarLinhaProduto()" class="text-blue-600 text-xs font-bold hover:underline">+ Linha</button>
+                        </div>
+                        <div id="container-itens-pedido" class="space-y-2"></div>
+                    </div>
+                    <div class="bg-black p-5 rounded-2xl shadow-lg flex justify-between items-center text-white">
+                        <span class="font-bold text-sm uppercase tracking-widest text-stone-300">Valor Total</span>
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold">R$</span>
+                            <input type="number" id="ped-total" step="0.01" placeholder="0.00" class="bg-transparent border-b border-stone-600 outline-none text-right font-bold text-2xl w-32 focus:border-white transition-colors" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-[#B91C1C] text-white py-4 rounded-xl font-bold shadow-lg hover:bg-red-800 transition uppercase tracking-widest">Registrar Venda</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-equipe" class="fixed inset-0 z-[60] flex justify-end hidden opacity-0 transition-opacity duration-300">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="toggleModal('modal-equipe')"></div>
+        <div class="relative w-full max-w-sm h-full bg-white flex flex-col transform translate-x-full transition-transform duration-300 shadow-2xl">
+            <div class="flex justify-between px-6 py-5 border-b bg-stone-50"><h2 id="titulo-modal-equipe" class="text-xl font-bold">Usuário da Equipe</h2><button type="button" onclick="toggleModal('modal-equipe')"><span class="material-symbols-outlined">close</span></button></div>
+            <div class="flex-1 overflow-y-auto p-6">
+                <form id="form-equipe" onsubmit="salvarEquipe(event)" class="space-y-4">
+                    <input type="hidden" id="equipe-id">
+                    <input type="text" id="equipe-nome" placeholder="Nome Completo" class="w-full border p-4 rounded-xl font-bold text-sm" required>
+                    <input type="email" id="equipe-email" placeholder="E-mail de Contato" class="w-full border p-4 rounded-xl text-sm" required>
+                    <div>
+                        <label class="text-[10px] font-bold text-stone-400">CARGO / FUNÇÃO</label>
+                        <select id="equipe-cargo" class="w-full border p-4 rounded-xl text-sm mt-1" required>
+                            <option value="Consultor de Vendas">Consultor de Vendas</option>
+                            <option value="Gerente">Gerente</option>
+                            <option value="Atendente">Atendente</option>
+                            <option value="Administrador">Administrador</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-stone-400">STATUS DO USUÁRIO</label>
+                        <select id="equipe-status" class="w-full border p-4 rounded-xl text-sm mt-1 bg-stone-50" required>
+                            <option value="ativo">Ativo no Sistema</option>
+                            <option value="inativo">Inativo / Bloqueado</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full bg-orange-500 text-white py-4 rounded-xl font-bold mt-4 shadow-lg hover:bg-orange-600 transition">Salvar Usuário</button>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
@@ -84,12 +387,22 @@
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmZ3RhZm5mdXFseXNkbnZzYmhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNDY1NzgsImV4cCI6MjA5MjcyMjU3OH0.mZDnR1A8VIJVUzedb7GU1db628dSqU-8SdvBFXXVaE4';
         const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
+        // --- SISTEMA DE UI ---
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); document.getElementById('sidebar-overlay').classList.toggle('hidden'); }
         function showTab(t) { document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.getElementById('tab-' + t).classList.add('active'); if(window.innerWidth < 1024) toggleSidebar(); }
         function toggleModal(id) { const m = document.getElementById(id); if (m.classList.contains('hidden')) { m.classList.remove('hidden'); setTimeout(() => { m.classList.remove('opacity-0'); if(m.querySelector('.translate-x-full')) m.querySelector('.relative').classList.remove('translate-x-full'); if(m.querySelector('.scale-95')) m.querySelector('.relative').classList.remove('scale-95'); }, 10); } else { m.classList.add('opacity-0'); if(m.querySelector('.relative').classList.contains('translate-x-0')) m.querySelector('.relative').classList.add('translate-x-full'); if(m.querySelector('.relative').classList.contains('scale-100')) m.querySelector('.relative').classList.add('scale-95'); setTimeout(() => m.classList.add('hidden'), 300); } }
         async function fazerLogout() { await supabaseClient.auth.signOut(); window.location.href = 'admin-login.html'; }
 
-        // --- GERENCIAMENTO DE CATEGORIAS ---
+        // Variáveis Globais de Memória
+        let dbProdutos = [];
+        let dbPromocoes = [];
+        let dbEquipe = [];
+
+        // Upload Inputs Events
+        document.getElementById('foto-vinho').addEventListener('change', e => { if(e.target.files[0]) document.getElementById('nome-arquivo').innerText = e.target.files[0].name; });
+        document.getElementById('foto-promo').addEventListener('change', e => { if(e.target.files[0]) document.getElementById('nome-arquivo-promo').innerText = e.target.files[0].name; });
+
+        // --- CATEGORIAS ---
         async function carregarCategorias() {
             const { data, error } = await supabaseClient.from('categorias').select('*').order('nome');
             const selectPais = document.getElementById('pais');
@@ -106,49 +419,57 @@
                     if(c.tipo === 'pais') selectPais.innerHTML += opt;
                     else if(c.tipo === 'tipo') selectTipo.innerHTML += opt;
 
-                    // Adiciona na lista de gerenciamento (modal)
                     listaGerenciamento.innerHTML += `
                         <div class="flex justify-between items-center bg-stone-50 p-3 rounded-xl border border-stone-100">
-                            <div>
-                                <p class="text-sm font-bold text-black">${c.nome}</p>
-                                <p class="text-[10px] text-stone-400 uppercase font-bold">${c.tipo === 'pais' ? 'País' : 'Tipo de Vinho'}</p>
-                            </div>
-                            <button onclick="deletarCategoria('${c.id}')" class="text-red-500 hover:bg-red-50 p-2 rounded-lg transition">
-                                <span class="material-symbols-outlined text-[20px]">delete</span>
-                            </button>
+                            <div><p class="text-sm font-bold text-black">${c.nome}</p><p class="text-[10px] text-stone-400 uppercase font-bold">${c.tipo === 'pais' ? 'País' : 'Tipo de Vinho'}</p></div>
+                            <button onclick="deletarCategoria('${c.id}')" class="text-red-500 hover:bg-red-50 p-2 rounded-lg transition"><span class="material-symbols-outlined text-[20px]">delete</span></button>
                         </div>
                     `;
                 });
             }
         }
-
-        async function salvarCategoria(e) {
-            e.preventDefault();
-            const btn = e.submitter; btn.innerText = "Salvando..."; btn.disabled = true;
-            const tipo = document.getElementById('cat-tipo').value;
-            const nome = document.getElementById('cat-nome').value;
-            const { error } = await supabaseClient.from('categorias').insert([{ tipo, nome }]);
-            if(error) alert("Erro: " + error.message);
-            else { document.getElementById('cat-nome').value = ''; carregarCategorias(); }
-            btn.innerText = "Adicionar Categoria"; btn.disabled = false;
-        }
-
-        async function deletarCategoria(id) {
-            if(confirm("Tem certeza que deseja remover esta categoria? Isso afetará os filtros do catálogo.")) {
-                const { error } = await supabaseClient.from('categorias').delete().eq('id', id);
-                if(error) alert("Erro: " + error.message);
-                else carregarCategorias();
-            }
-        }
-
+        async function salvarCategoria(e) { e.preventDefault(); const btn = e.submitter; btn.innerText = "Salvando..."; btn.disabled = true; const tipo = document.getElementById('cat-tipo').value; const nome = document.getElementById('cat-nome').value; const { error } = await supabaseClient.from('categorias').insert([{ tipo, nome }]); if(error) alert("Erro: " + error.message); else { document.getElementById('cat-nome').value = ''; carregarCategorias(); } btn.innerText = "Adicionar Categoria"; btn.disabled = false; }
+        async function deletarCategoria(id) { if(confirm("Tem certeza? Isso removerá o filtro do catálogo.")) { await supabaseClient.from('categorias').delete().eq('id', id); carregarCategorias(); } }
         function abrirModalCategoria() { carregarCategorias(); toggleModal('modal-categoria'); }
 
-        // --- FUNÇÕES DE PRODUTOS, PROMOÇÕES E BI MANTIDAS ---
-        async function carregarProdutos() { const { data, error } = await supabaseClient.from('produtos').select('*').order('nome'); const tbody = document.getElementById('tabela-produtos'); tbody.innerHTML = ''; if(!error && data) { data.forEach(p => { tbody.innerHTML += `<tr class="hover:bg-stone-50 border-b border-stone-100"><td class="px-6 py-4 font-bold flex items-center gap-4"><img src="${p.imagem_url || 'https://via.placeholder.com/50'}" class="h-10 w-8 object-contain"><div><p class="text-sm">${p.nome}</p><p class="text-[10px] font-mono text-stone-400">${p.sku_sankhya}</p></div></td><td class="px-6 py-4 text-sm">${p.pais}</td><td class="px-6 py-4 font-bold">R$ ${p.preco.toFixed(2)}</td><td class="px-6 py-4 text-right"><button onclick="abrirModalProduto('${p.id}')" class="text-blue-600 mr-3"><span class="material-symbols-outlined">edit</span></button><button onclick="deletarProduto('${p.id}')" class="text-red-600"><span class="material-symbols-outlined">delete</span></button></td></tr>`; }); } }
-        async function carregarPromocoes() { const { data, error } = await supabaseClient.from('promocoes').select('*').order('criado_em', { ascending: false }); const tbody = document.getElementById('tabela-promocoes'); tbody.innerHTML = ''; if(!error && data) { data.forEach(p => { tbody.innerHTML += `<tr class="hover:bg-stone-50 border-b border-stone-100"><td class="px-6 py-4"><img src="${p.imagem_url}" class="h-12 w-20 object-cover rounded-lg"></td><td class="px-6 py-4 font-bold">${p.titulo}</td><td class="px-6 py-4"><span class="px-2 py-1 rounded-full text-xs font-bold ${p.status ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${p.status ? 'Ativo' : 'Inativo'}</span></td><td class="px-6 py-4 text-right"><button onclick="alternarStatusPromo('${p.id}', ${!p.status})" class="text-stone-500 mr-3"><span class="material-symbols-outlined">power_settings_new</span></button><button onclick="deletarPromocao('${p.id}')" class="text-red-600"><span class="material-symbols-outlined">delete</span></button></td></tr>`; }); } }
-        async function carregarBI() { const { data } = await supabaseClient.from('pedidos').select('*'); if(data) { let fat = data.reduce((a, b) => a + Number(b.total), 0); document.getElementById('bi-faturamento').innerText = `R$ ${fat.toLocaleString('pt-BR')}`; document.getElementById('bi-pedidos').innerText = data.length; } }
+        // --- PRODUTOS ---
+        async function carregarProdutos() { const { data, error } = await supabaseClient.from('produtos').select('*').order('criado_em', { ascending: false }); const tbody = document.getElementById('tabela-produtos'); tbody.innerHTML = ''; const datalist = document.getElementById('lista-produtos-datalist'); datalist.innerHTML = ''; if (error) { tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-4 text-center text-red-500">Erro.</td></tr>`; return; } if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-stone-400 font-bold">Nenhum vinho.</td></tr>`; return; } dbProdutos = data; data.forEach(p => { datalist.innerHTML += `<option value="${p.nome}">`; tbody.innerHTML += `<tr class="hover:bg-stone-50 border-b border-stone-100"><td class="px-6 py-4 font-bold flex items-center gap-4"><div class="h-12 w-10 bg-stone-100 rounded-lg flex items-center justify-center p-1"><img src="${p.imagem_url || 'https://via.placeholder.com/50'}" class="h-full w-full object-contain mix-blend-multiply"></div><div class="flex flex-col"><span class="text-sm">${p.nome}</span><span class="text-[10px] text-stone-400 font-mono">${p.sku_sankhya}</span></div></td><td class="px-6 py-4 text-sm">${p.pais || '-'} <br><span class="text-[10px] font-bold uppercase text-stone-400">${p.tipo || '-'}</span></td><td class="px-6 py-4 font-bold text-sm">R$ ${p.preco.toFixed(2).replace('.', ',')}</td><td class="px-6 py-4 text-right"><div class="flex justify-end gap-2"><button type="button" onclick="abrirModalProduto('${p.id}')" class="text-blue-600 bg-blue-50 p-2 rounded-lg hover:bg-blue-100 transition"><span class="material-symbols-outlined text-[18px]">edit</span></button><button type="button" onclick="deletarProduto('${p.id}')" class="text-red-600 bg-red-50 p-2 rounded-lg hover:bg-red-100 transition"><span class="material-symbols-outlined text-[18px]">delete</span></button></div></td></tr>`; }); }
+        function abrirModalProduto(id) { document.getElementById('form-produto').reset(); const inputFoto = document.getElementById('foto-vinho'); const nomeArquivo = document.getElementById('nome-arquivo'); const tituloModal = document.getElementById('titulo-modal-produto'); const idInput = document.getElementById('produto-id'); if (id) { const p = dbProdutos.find(x => x.id === id); tituloModal.innerText = "Editar Produto"; idInput.value = p.id; document.getElementById('nome').value = p.nome; document.getElementById('descricao').value = p.descricao || ''; document.getElementById('sku').value = p.sku_sankhya; document.getElementById('preco').value = p.preco; document.getElementById('pais').value = p.pais || ''; document.getElementById('tipo').value = p.tipo || ''; inputFoto.required = false; nomeArquivo.innerText = "Deixe vazio para manter a foto atual"; } else { tituloModal.innerText = "Novo Vinho"; idInput.value = ""; inputFoto.required = true; nomeArquivo.innerText = "PNG ou JPG transparente"; } toggleModal('modal-produto'); }
+        async function salvarProduto(e) { e.preventDefault(); const btn = e.submitter; const textoOriginal = btn.innerText; btn.innerText = "Salvando..."; btn.disabled = true; const id = document.getElementById('produto-id').value; const nome = document.getElementById('nome').value; const descricao = document.getElementById('descricao').value; const sku = document.getElementById('sku').value; const preco = parseFloat(document.getElementById('preco').value); const pais = document.getElementById('pais').value; const tipo = document.getElementById('tipo').value; const file = document.getElementById('foto-vinho').files[0]; let imagemUrl = null; if (file) { const fileName = `${Date.now()}-${Math.floor(Math.random()*1000)}.${file.name.split('.').pop()}`; const { error: uploadError } = await supabaseClient.storage.from('produtos').upload(fileName, file); if (uploadError) { alert("Erro na foto: " + uploadError.message); btn.innerText = textoOriginal; btn.disabled = false; return; } const { data } = supabaseClient.storage.from('produtos').getPublicUrl(fileName); imagemUrl = data.publicUrl; } const dadosSalvar = { nome, descricao, sku_sankhya: sku, preco, pais, tipo }; if (imagemUrl) dadosSalvar.imagem_url = imagemUrl; let erroDb; if (id) { const { error } = await supabaseClient.from('produtos').update(dadosSalvar).eq('id', id); erroDb = error; } else { const { error } = await supabaseClient.from('produtos').insert([dadosSalvar]); erroDb = error; } if (erroDb) alert("Erro: " + erroDb.message); else { toggleModal('modal-produto'); carregarProdutos(); } btn.innerText = textoOriginal; btn.disabled = false; }
+        async function deletarProduto(id) { if(confirm("Apagar vinho?")) { await supabaseClient.from('produtos').delete().eq('id', id); carregarProdutos(); } }
 
-        document.addEventListener("DOMContentLoaded", () => { carregarProdutos(); carregarPromocoes(); carregarBI(); carregarCategorias(); });
+        // --- PROMOÇÕES ---
+        function toggleFormatoPromo() { const tipo = document.getElementById('promo-tipo').value; const containerPreco = document.getElementById('container-promo-preco'); const containerTextos = document.getElementById('container-promo-textos'); const inputPreco = document.getElementById('promo-preco'); if (tipo === 'Banner') { containerPreco.classList.add('hidden'); inputPreco.required = false; inputPreco.value = ''; containerTextos.classList.remove('hidden'); } else { containerPreco.classList.remove('hidden'); inputPreco.required = true; containerTextos.classList.add('hidden'); } }
+        async function carregarPromocoes() { const { data, error } = await supabaseClient.from('promocoes').select('*').order('criado_em', { ascending: false }); const tbody = document.getElementById('tabela-promocoes'); tbody.innerHTML = ''; if (error) { tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-4 text-center text-red-500">Erro.</td></tr>`; return; } if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-stone-400 font-bold">Nenhuma oferta.</td></tr>`; return; } dbPromocoes = data; data.forEach(p => { const statusBadge = p.status ? '<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-200">Ativo</span>' : '<span class="bg-stone-100 text-stone-500 px-3 py-1 rounded-full text-xs font-bold border border-stone-200">Inativo</span>'; const tagTipo = p.tipo_oferta === 'Banner' ? `<span class="mt-2 inline-block bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-[10px] font-bold">BANNER INFORMATIVO</span>` : `<span class="mt-2 inline-block bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-[10px] font-bold">${p.tipo_oferta.toUpperCase()}: R$ ${p.preco.toFixed(2).replace('.', ',')}</span>`; tbody.innerHTML += `<tr class="hover:bg-stone-50 border-b border-stone-100"><td class="px-6 py-4"><img src="${p.imagem_url}" class="h-16 w-28 object-cover rounded-lg shadow-sm" onerror="this.src='https://via.placeholder.com/150x80'"></td><td class="px-6 py-4 font-bold text-sm">${p.titulo}<br><span class="text-[11px] text-stone-400 font-normal line-clamp-2 mt-1 max-w-xs">${p.subtitulo}</span><br>${tagTipo}</td><td class="px-6 py-4">${statusBadge}</td><td class="px-6 py-4 text-right"><div class="flex justify-end gap-2"><button type="button" onclick="abrirModalPromocao('${p.id}')" class="text-blue-600 bg-blue-50 p-2 rounded-lg hover:bg-blue-100 transition"><span class="material-symbols-outlined text-[18px]">edit</span></button><button type="button" onclick="alternarStatusPromo('${p.id}', ${!p.status})" class="text-stone-600 bg-stone-100 p-2 rounded-lg hover:bg-stone-200 transition"><span class="material-symbols-outlined text-[18px]">power_settings_new</span></button><button type="button" onclick="deletarPromocao('${p.id}')" class="text-red-600 bg-red-50 p-2 rounded-lg hover:bg-red-100 transition"><span class="material-symbols-outlined text-[18px]">delete</span></button></div></td></tr>`; }); }
+        function abrirModalPromocao(id) { document.getElementById('form-promocao').reset(); const idInput = document.getElementById('promo-id'); const tituloModal = document.getElementById('titulo-modal-promo'); const inputFoto = document.getElementById('foto-promo'); const nomeArquivo = document.getElementById('nome-arquivo-promo'); if (id) { const p = dbPromocoes.find(x => x.id === id); tituloModal.innerText = "Editar Oferta"; idInput.value = p.id; document.getElementById('promo-tipo').value = p.tipo_oferta || 'Banner'; document.getElementById('promo-titulo').value = p.titulo; document.getElementById('promo-subtitulo').value = p.subtitulo; document.getElementById('promo-badge').value = p.badge_texto || 'Seleção Especial'; document.getElementById('promo-botao').value = p.botao_texto || 'Ver Promoções'; document.getElementById('promo-preco').value = p.preco || ''; inputFoto.required = false; nomeArquivo.innerText = "Deixe vazio para manter a arte"; } else { tituloModal.innerText = "Nova Oferta"; idInput.value = ""; document.getElementById('promo-badge').value = 'Seleção Especial'; document.getElementById('promo-botao').value = 'Ver Promoções'; inputFoto.required = true; nomeArquivo.innerText = "JPG ou PNG"; } toggleFormatoPromo(); toggleModal('modal-promocao'); }
+        async function salvarPromocao(e) { e.preventDefault(); const btn = e.submitter; const textoOriginal = btn.innerText; btn.innerText = "Enviando..."; btn.disabled = true; const id = document.getElementById('promo-id').value; const tipo_oferta = document.getElementById('promo-tipo').value; const titulo = document.getElementById('promo-titulo').value; const subtitulo = document.getElementById('promo-subtitulo').value; let preco = document.getElementById('promo-preco').value; preco = preco ? parseFloat(preco) : null; const badge_texto = document.getElementById('promo-badge').value || 'Seleção Especial'; const botao_texto = document.getElementById('promo-botao').value || 'Ver Promoções'; const file = document.getElementById('foto-promo').files[0]; let imagemUrl = null; if (file) { const fileName = `promo-${Date.now()}.${file.name.split('.').pop()}`; const { error: uploadError } = await supabaseClient.storage.from('produtos').upload(fileName, file); if (uploadError) { alert("Erro na imagem: " + uploadError.message); btn.innerText = textoOriginal; btn.disabled = false; return; } const { data } = supabaseClient.storage.from('produtos').getPublicUrl(fileName); imagemUrl = data.publicUrl; } const dadosSalvar = { titulo, subtitulo, tipo_oferta, preco, badge_texto, botao_texto }; if (imagemUrl) dadosSalvar.imagem_url = imagemUrl; let erroDb; if (id) { const { error } = await supabaseClient.from('promocoes').update(dadosSalvar).eq('id', id); erroDb = error; } else { dadosSalvar.status = true; const { error } = await supabaseClient.from('promocoes').insert([dadosSalvar]); erroDb = error; } if (erroDb) alert("Erro: " + erroDb.message); else { toggleModal('modal-promocao'); carregarPromocoes(); alert("Oferta salva!"); } btn.innerText = textoOriginal; btn.disabled = false; }
+        async function alternarStatusPromo(id, novoStatus) { await supabaseClient.from('promocoes').update({ status: novoStatus }).eq('id', id); carregarPromocoes(); } 
+        async function deletarPromocao(id) { if(confirm("Apagar oferta?")) { await supabaseClient.from('promocoes').delete().eq('id', id); carregarPromocoes(); } }
+
+        // --- BI E PEDIDOS (FASE 4) ---
+        function abrirModalPedido() { document.getElementById('form-pedido').reset(); document.getElementById('container-itens-pedido').innerHTML = ''; adicionarLinhaProduto(); toggleModal('modal-pedido'); }
+        function adicionarLinhaProduto() { const container = document.getElementById('container-itens-pedido'); const div = document.createElement('div'); div.className = "flex gap-2 items-center"; div.innerHTML = `<input type="text" list="lista-produtos-datalist" placeholder="Buscar produto..." class="item-nome flex-1 border p-3 rounded-xl text-sm" required><input type="number" placeholder="Qtd" class="item-qtd w-20 border p-3 rounded-xl text-sm text-center" min="1" required><button type="button" onclick="this.parentElement.remove()" class="text-stone-400 hover:text-red-500 p-2"><span class="material-symbols-outlined text-[20px]">delete</span></button>`; container.appendChild(div); }
+        async function salvarPedido(e) { e.preventDefault(); const btn = e.submitter; btn.innerText = "Registrando..."; btn.disabled = true; const cliente = document.getElementById('ped-cliente').value; const vendedor = document.getElementById('ped-vendedor').value; const pagamento = document.getElementById('ped-pagamento').value; const total = parseFloat(document.getElementById('ped-total').value); const itensDOM = document.querySelectorAll('#container-itens-pedido .flex'); let itensArray = []; itensDOM.forEach(linha => { const nome = linha.querySelector('.item-nome').value; const qtd = parseInt(linha.querySelector('.item-qtd').value); if(nome && qtd > 0) itensArray.push({ produto: nome, qtd: qtd }); }); if(itensArray.length === 0) { alert("Adicione 1 item!"); btn.innerText = "Registrar Venda"; btn.disabled = false; return; } const { error } = await supabaseClient.from('pedidos').insert([{ cliente_nome: cliente, vendedor_nome: vendedor, forma_pagamento: pagamento, total: total, itens_json: itensArray }]); if(error) alert("Erro: " + error.message); else { toggleModal('modal-pedido'); carregarBI(); alert("Venda registrada!"); } btn.innerText = "Registrar Venda"; btn.disabled = false; }
+        function toggleDataCustom() { const filtro = document.getElementById('bi-filtro-tempo').value; const divCustom = document.getElementById('bi-datas-custom'); if (filtro === 'custom') divCustom.classList.remove('hidden'); else { divCustom.classList.add('hidden'); carregarBI(); } }
+        async function carregarBI() { const filtro = document.getElementById('bi-filtro-tempo').value; let query = supabaseClient.from('pedidos').select('*'); const hoje = new Date(); let dataFiltro = new Date(); if (filtro === 'hoje') { dataFiltro.setHours(0,0,0,0); query = query.gte('criado_em', dataFiltro.toISOString()); } else if (filtro === '7d') { dataFiltro.setDate(hoje.getDate() - 7); query = query.gte('criado_em', dataFiltro.toISOString()); } else if (filtro === '30d') { dataFiltro.setDate(hoje.getDate() - 30); query = query.gte('criado_em', dataFiltro.toISOString()); } else if (filtro === 'ano') { dataFiltro.setMonth(0, 1); dataFiltro.setHours(0,0,0,0); query = query.gte('criado_em', dataFiltro.toISOString()); } else if (filtro === 'custom') { const inicio = document.getElementById('bi-data-inicio').value; const fim = document.getElementById('bi-data-fim').value; if (inicio && fim) { query = query.gte('criado_em', inicio + "T00:00:00Z").lte('criado_em', fim + "T23:59:59Z"); } } const { data, error } = await query; if (error) return; let faturamento = 0; let garrafasVendidas = 0; let totalPedidos = data.length; let mapVendedores = {}; let mapProdutos = {}; data.forEach(pedido => { faturamento += Number(pedido.total); let vend = pedido.vendedor_nome || 'Não informado'; if (!mapVendedores[vend]) mapVendedores[vend] = 0; mapVendedores[vend] += Number(pedido.total); if (pedido.itens_json && Array.isArray(pedido.itens_json)) { pedido.itens_json.forEach(item => { garrafasVendidas += Number(item.qtd); let prod = item.produto; if (!mapProdutos[prod]) mapProdutos[prod] = 0; mapProdutos[prod] += Number(item.qtd); }); } }); document.getElementById('bi-faturamento').innerText = `R$ ${faturamento.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`; document.getElementById('bi-garrafas').innerText = garrafasVendidas; document.getElementById('bi-pedidos').innerText = totalPedidos; const tbodyProd = document.getElementById('bi-top-produtos'); tbodyProd.innerHTML = ''; const sortedProd = Object.entries(mapProdutos).sort((a,b) => b[1] - a[1]).slice(0, 10); if(sortedProd.length === 0) tbodyProd.innerHTML = `<tr><td colspan="2" class="py-4 text-center text-stone-400">Nenhuma venda</td></tr>`; else { sortedProd.forEach(([nome, qtd], index) => { const icone = index === 0 ? '🏆 ' : (index === 1 ? '🥈 ' : (index === 2 ? '🥉 ' : '')); tbodyProd.innerHTML += `<tr class="hover:bg-stone-50"><td class="py-3 font-bold">${icone}${nome}</td><td class="py-3 text-right text-stone-500">${qtd} un</td></tr>`; }); } const tbodyVend = document.getElementById('bi-top-vendedores'); tbodyVend.innerHTML = ''; const sortedVend = Object.entries(mapVendedores).sort((a,b) => b[1] - a[1]); if(sortedVend.length === 0) tbodyVend.innerHTML = `<tr><td colspan="2" class="py-4 text-center text-stone-400">Nenhuma venda</td></tr>`; else { sortedVend.forEach(([nome, valor]) => { tbodyVend.innerHTML += `<tr class="hover:bg-stone-50"><td class="py-3 font-bold">${nome}</td><td class="py-3 text-right text-green-600 font-bold">R$ ${valor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td></tr>`; }); } }
+
+        // --- EQUIPE E PERFIL (FASE 5) ---
+        async function carregarEquipe() { const { data, error } = await supabaseClient.from('equipe').select('*').order('nome'); const tbody = document.getElementById('tabela-equipe'); tbody.innerHTML = ''; if (error) { tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-4 text-center text-red-500">Erro.</td></tr>`; return; } if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-stone-400 font-bold">Nenhum membro.</td></tr>`; return; } dbEquipe = data; data.forEach(u => { const statusBadge = u.status === 'ativo' ? '<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-200">Ativo</span>' : '<span class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold border border-red-200">Inativo</span>'; tbody.innerHTML += `<tr class="hover:bg-stone-50 border-b border-stone-100"><td class="px-6 py-4 font-bold text-sm">${u.nome}</td><td class="px-6 py-4 text-sm">${u.cargo}<br><span class="text-[10px] text-stone-400 font-mono">${u.email}</span></td><td class="px-6 py-4">${statusBadge}</td><td class="px-6 py-4 text-right"><div class="flex justify-end gap-2"><button type="button" onclick="abrirModalEquipe('${u.id}')" class="text-blue-600 bg-blue-50 p-2 rounded-lg hover:bg-blue-100 transition"><span class="material-symbols-outlined text-[18px]">edit</span></button><button type="button" onclick="deletarMembro('${u.id}')" class="text-red-600 bg-red-50 p-2 rounded-lg hover:bg-red-100 transition"><span class="material-symbols-outlined text-[18px]">delete</span></button></div></td></tr>`; }); }
+        function abrirModalEquipe(id) { document.getElementById('form-equipe').reset(); const idInput = document.getElementById('equipe-id'); const tituloModal = document.getElementById('titulo-modal-equipe'); if (id) { const u = dbEquipe.find(x => x.id === id); tituloModal.innerText = "Editar Usuário"; idInput.value = u.id; document.getElementById('equipe-nome').value = u.nome; document.getElementById('equipe-email').value = u.email; document.getElementById('equipe-cargo').value = u.cargo || 'Consultor de Vendas'; document.getElementById('equipe-status').value = u.status || 'ativo'; } else { tituloModal.innerText = "Novo Usuário"; idInput.value = ""; document.getElementById('equipe-status').value = 'ativo'; } toggleModal('modal-equipe'); }
+        async function salvarEquipe(e) { e.preventDefault(); const btn = e.submitter; const textoOriginal = btn.innerText; btn.innerText = "Salvando..."; btn.disabled = true; const id = document.getElementById('equipe-id').value; const nome = document.getElementById('equipe-nome').value; const email = document.getElementById('equipe-email').value; const cargo = document.getElementById('equipe-cargo').value; const status = document.getElementById('equipe-status').value; const dadosSalvar = { nome, email, cargo, status }; let erroDb; if (id) { const { error } = await supabaseClient.from('equipe').update(dadosSalvar).eq('id', id); erroDb = error; } else { const { error } = await supabaseClient.from('equipe').insert([dadosSalvar]); erroDb = error; } if (erroDb) alert("Erro: " + erroDb.message); else { toggleModal('modal-equipe'); carregarEquipe(); alert("Membro salvo!"); } btn.innerText = textoOriginal; btn.disabled = false; }
+        async function deletarMembro(id) { if(confirm("Apagar membro da equipe?")) { await supabaseClient.from('equipe').delete().eq('id', id); carregarEquipe(); } }
+        async function carregarPerfil() { const { data: { user } } = await supabaseClient.auth.getUser(); if (user) { document.getElementById('perfil-email').value = user.email; document.getElementById('perfil-nome').value = user.user_metadata?.nome_completo || 'Administrador Master'; } }
+        async function salvarPerfil(e) { e.preventDefault(); const btn = e.submitter; const textoOriginal = btn.innerText; btn.innerText = "Atualizando..."; btn.disabled = true; const nome = document.getElementById('perfil-nome').value; const senha = document.getElementById('perfil-senha').value; const updates = { data: { nome_completo: nome } }; if (senha) updates.password = senha; const { error } = await supabaseClient.auth.updateUser(updates); if (error) alert("Erro: " + error.message); else { alert("Perfil atualizado!"); document.getElementById('perfil-senha').value = ''; } btn.innerText = textoOriginal; btn.disabled = false; }
+
+        // --- INICIALIZAÇÃO GERAL ---
+        document.addEventListener("DOMContentLoaded", () => { 
+            carregarCategorias(); 
+            carregarProdutos(); 
+            carregarPromocoes(); 
+            carregarBI(); 
+            carregarEquipe(); 
+            carregarPerfil(); 
+        });
     </script>
 </body>
 </html>
