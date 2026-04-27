@@ -3,141 +3,191 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
-    <title>Allvino - Finalizar Pedido</title>
+    <title>Allvino - Checkout</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,300;0,700&family=Manrope:wght@400;700&display=swap" rel="stylesheet"/>
     <style>
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
         body { background-color: #FDFBF7; font-family: 'Manrope', sans-serif; }
     </style>
 </head>
-<body class="pb-32">
-    <header class="bg-white sticky top-0 z-40 border-b border-stone-100 flex items-center px-5 py-4">
-        <a href="catalogo.html" class="p-1 flex items-center justify-center"><span class="material-symbols-outlined text-black">arrow_back</span></a>
-        <h1 class="flex-1 text-center font-bold text-lg">Finalizar Pedido</h1>
+<body class="pb-24">
+    <header class="bg-white/90 backdrop-blur-md sticky top-0 z-40 border-b border-stone-100 flex justify-between items-center w-full px-5 py-4">
+        <a href="catalogo.html" class="p-1"><span class="material-symbols-outlined text-black">arrow_back</span></a>
+        <div class="h-10 flex items-center justify-center">
+            <img src="LOGO-ALLVINO-PRETO.png" alt="Allvino" class="h-full w-auto object-contain scale-150 transform origin-center">
+        </div>
         <div class="w-8"></div>
     </header>
 
-    <main class="max-w-md mx-auto px-5 pt-6 space-y-8">
-        
-        <section class="bg-white p-6 rounded-3xl border border-stone-100 shadow-sm">
-            <h2 class="text-xs font-bold text-stone-400 uppercase tracking-widest mb-4">Resumo da Seleção</h2>
-            <div id="checkout-items" class="space-y-3 mb-4 border-b border-stone-100 pb-4"></div>
-            <div class="flex justify-between items-center text-lg font-bold">
-                <span>Total</span>
-                <span id="checkout-total">R$ 0,00</span>
+    <main class="max-w-xl mx-auto px-5 pt-8 space-y-8">
+        <div class="space-y-2">
+            <h1 class="text-3xl font-bold font-serif text-black text-center">Finalizar Pedido</h1>
+            <p class="text-stone-500 text-sm text-center">Confirme seus dados para enviarmos ao WhatsApp.</p>
+        </div>
+
+        <div class="bg-white rounded-3xl p-6 border border-stone-100 shadow-sm space-y-4">
+            <h2 class="text-xs font-bold text-stone-400 uppercase tracking-widest border-b pb-2">Seus Itens</h2>
+            <div id="checkout-items" class="space-y-3">
+                </div>
+            <div class="border-t pt-4 space-y-2">
+                <div class="flex justify-between text-sm text-stone-500"><span>Subtotal</span> <span id="subtotal">R$ 0,00</span></div>
+                <div id="desconto-container" class="flex justify-between text-sm text-green-600 hidden"><span>Desconto Retirada (10%)</span> <span id="desconto">- R$ 0,00</span></div>
+                <div class="flex justify-between text-xl font-bold pt-2"><span>Total</span> <span id="total">R$ 0,00</span></div>
             </div>
-        </section>
+        </div>
 
-        <form id="formCheckout" class="space-y-6">
-            <section class="space-y-4">
-                <h2 class="text-xs font-bold text-stone-400 uppercase tracking-widest">Seus Dados</h2>
-                <input type="text" id="nomeCliente" placeholder="Seu Nome" required class="w-full bg-white border border-stone-200 rounded-xl py-3 px-4 focus:border-black outline-none transition-colors">
-            </section>
-
-            <section class="space-y-4">
-                <h2 class="text-xs font-bold text-stone-400 uppercase tracking-widest">Forma de Entrega</h2>
-                <div class="grid grid-cols-2 gap-3">
-                    <label class="border border-stone-200 rounded-xl p-4 flex flex-col items-center gap-2 cursor-pointer hover:border-black has-[:checked]:border-[#B91C1C] has-[:checked]:bg-red-50 transition-all">
-                        <input type="radio" name="tipoEntrega" value="Retirar na Loja" class="hidden" checked onchange="toggleEndereco()">
-                        <span class="material-symbols-outlined text-[#B91C1C]">storefront</span>
-                        <span class="text-xs font-bold text-center">Retirar na Loja<br><span class="text-green-600">-10% OFF</span></span>
-                    </label>
-                    <label class="border border-stone-200 rounded-xl p-4 flex flex-col items-center gap-2 cursor-pointer hover:border-black has-[:checked]:border-[#B91C1C] has-[:checked]:bg-red-50 transition-all">
-                        <input type="radio" name="tipoEntrega" value="Entrega em Casa" class="hidden" onchange="toggleEndereco()">
-                        <span class="material-symbols-outlined text-[#B91C1C]">local_shipping</span>
-                        <span class="text-xs font-bold text-center">Entrega em Casa</span>
-                    </label>
+        <div class="bg-white rounded-3xl p-6 border border-stone-100 shadow-sm space-y-5">
+            <h2 class="text-xs font-bold text-stone-400 uppercase tracking-widest border-b pb-2">Seus Dados</h2>
+            <div class="grid grid-cols-1 gap-4">
+                <div>
+                    <label class="text-[10px] font-bold text-stone-400 uppercase tracking-widest ml-1">Nome</label>
+                    <input type="text" id="user-name" readonly class="w-full border-stone-200 bg-stone-50 rounded-xl text-sm font-bold text-stone-500 mt-1 focus:ring-0">
                 </div>
-                <div id="campoEndereco" class="hidden mt-4 animate-fade-in">
-                    <textarea id="moradaCliente" rows="2" placeholder="Endereço Completo (Rua, Nº, Bairro)" class="w-full bg-white border border-stone-200 rounded-xl py-3 px-4 focus:border-black outline-none transition-colors"></textarea>
+                <div>
+                    <label class="text-[10px] font-bold text-stone-400 uppercase tracking-widest ml-1">WhatsApp</label>
+                    <input type="text" id="user-phone" readonly class="w-full border-stone-200 bg-stone-50 rounded-xl text-sm font-bold text-stone-500 mt-1 focus:ring-0">
                 </div>
-            </section>
+            </div>
+        </div>
 
-            <section class="space-y-4">
-                <h2 class="text-xs font-bold text-stone-400 uppercase tracking-widest">Forma de Pagamento</h2>
+        <div class="space-y-4">
+            <div class="bg-white rounded-3xl p-6 border border-stone-100 shadow-sm space-y-5">
+                <h2 class="text-xs font-bold text-stone-400 uppercase tracking-widest border-b pb-2">Entrega</h2>
                 <div class="space-y-3">
-                    <label class="flex items-center gap-3 p-4 bg-white border border-stone-200 rounded-xl cursor-pointer hover:border-black has-[:checked]:border-black transition-all">
-                        <input type="radio" name="pagamento" value="PIX" class="text-black focus:ring-0" checked>
-                        <span class="material-symbols-outlined text-green-600">qr_code_2</span>
-                        <span class="font-bold text-sm">PIX (Pagamento Instantâneo)</span>
+                    <label class="flex items-center gap-3 p-4 border rounded-2xl border-stone-200 cursor-pointer has-[:checked]:border-black has-[:checked]:bg-stone-50 transition">
+                        <input type="radio" name="entrega" value="entrega" checked onchange="toggleEndereco(true)" class="text-black focus:ring-0">
+                        <div class="flex-1 text-sm font-bold">Entrega no Endereço</div>
                     </label>
-                    <label class="flex items-center gap-3 p-4 bg-white border border-stone-200 rounded-xl cursor-pointer hover:border-black has-[:checked]:border-black transition-all">
-                        <input type="radio" name="pagamento" value="Cartão de Crédito" class="text-black focus:ring-0">
-                        <span class="material-symbols-outlined text-blue-600">credit_card</span>
-                        <span class="font-bold text-sm">Cartão de Crédito</span>
+                    <label class="flex items-center gap-3 p-4 border rounded-2xl border-stone-200 cursor-pointer has-[:checked]:border-black has-[:checked]:bg-stone-50 transition">
+                        <input type="radio" name="entrega" value="retirada" onchange="toggleEndereco(false)" class="text-black focus:ring-0">
+                        <div class="flex-1 text-sm font-bold">Retirada na Loja <span class="text-green-600 text-[10px] ml-2">10% OFF</span></div>
                     </label>
                 </div>
-            </section>
-
-            <div class="fixed bottom-0 left-0 w-full bg-white border-t border-stone-100 p-5 z-50">
-                <button type="submit" class="w-full max-w-md mx-auto block bg-[#25D366] text-white py-4 rounded-2xl font-bold uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg hover:bg-green-600 active:scale-95 transition-all">
-                    <span class="material-symbols-outlined">send</span> Finalizar no WhatsApp
-                </button>
+                <div id="endereco-container" class="space-y-3">
+                    <textarea id="endereco" placeholder="Rua, número, bairro e cidade para entrega..." class="w-full border-stone-200 rounded-2xl p-4 text-sm outline-none focus:border-black transition-colors" rows="3"></textarea>
+                </div>
             </div>
-        </form>
+
+            <div class="bg-white rounded-3xl p-6 border border-stone-100 shadow-sm space-y-5">
+                <h2 class="text-xs font-bold text-stone-400 uppercase tracking-widest border-b pb-2">Pagamento</h2>
+                <select id="pagamento" class="w-full border-stone-200 rounded-2xl p-4 text-sm outline-none focus:border-black transition-colors font-bold">
+                    <option value="Pix">Pix (Rápido e Seguro)</option>
+                    <option value="Cartão (Link)">Cartão de Crédito (Link de Pagamento)</option>
+                    <option value="Cartão (Maquininha)">Cartão (Levar maquininha)</option>
+                </select>
+            </div>
+        </div>
+
+        <button onclick="finalizarPedido()" class="w-full bg-[#B91C1C] text-white py-5 rounded-3xl font-bold text-lg shadow-xl shadow-red-900/20 active:scale-95 transition-transform flex items-center justify-center gap-3">
+            <span class="material-symbols-outlined">send</span> ENVIAR PEDIDO
+        </button>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        const WHATSAPP_LOJA = "552732619494"; 
-        let carrinho = JSON.parse(localStorage.getItem('allvino_cart')) || [];
-        let totalFinal = 0;
+        const supabaseUrl = 'https://jfgtafnfuqlysdnvsbhk.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmZ3RhZm5mdXFseXNkbnZzYmhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNDY1NzgsImV4cCI6MjA5MjcyMjU3OH0.mZDnR1A8VIJVUzedb7GU1db628dSqU-8SdvBFXXVaE4';
+        const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        function carregarResumo() {
-            const container = document.getElementById('checkout-items');
-            if (carrinho.length === 0) {
-                container.innerHTML = '<p class="text-center py-4 text-stone-400">Carrinho vazio.</p>';
+        let cart = JSON.parse(localStorage.getItem('allvino_cart')) || [];
+        let userData = null;
+
+        async function initCheckout() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) {
+                window.location.href = 'login.html';
                 return;
             }
-            container.innerHTML = '';
-            let subtotal = 0;
-            carrinho.forEach(item => {
-                subtotal += item.preco * item.qtd;
-                container.innerHTML += `
-                    <div class="flex justify-between text-sm">
-                        <span>${item.qtd}x ${item.nome}</span>
-                        <span class="font-bold">R$ ${(item.preco * item.qtd).toFixed(2).replace('.', ',')}</span>
+            
+            // Puxa metadados do login (Google ou Cadastro Manual)
+            userData = session.user.user_metadata;
+            document.getElementById('user-name').value = userData.nome_completo || session.user.email.split('@')[0];
+            document.getElementById('user-phone').value = userData.telefone || 'Não informado';
+            
+            renderItems();
+        }
+
+        function renderItems() {
+            const cont = document.getElementById('checkout-items');
+            let sub = 0;
+            cont.innerHTML = '';
+            
+            if(cart.length === 0) {
+                cont.innerHTML = '<p class="text-center py-4 text-stone-400">Seu carrinho está vazio.</p>';
+                return;
+            }
+
+            cart.forEach(x => {
+                sub += x.preco * x.qtd;
+                cont.innerHTML += `
+                    <div class="flex justify-between items-center text-sm">
+                        <div class="flex gap-2">
+                            <span class="font-bold text-stone-400">${x.qtd}x</span>
+                            <span class="font-bold text-black">${x.nome}</span>
+                        </div>
+                        <span class="font-bold">R$ ${(x.preco * x.qtd).toFixed(2).replace('.', ',')}</span>
                     </div>`;
             });
-            atualizarValores(subtotal);
+            updateTotal(sub);
         }
 
-        function atualizarValores(subtotal) {
-            const entrega = document.querySelector('input[name="tipoEntrega"]:checked').value;
-            const desconto = (entrega === 'Retirar na Loja') ? subtotal * 0.10 : 0;
-            totalFinal = subtotal - desconto;
-            document.getElementById('checkout-total').innerText = `R$ ${totalFinal.toFixed(2).replace('.', ',')}`;
+        function updateTotal(sub) {
+            const isRetirada = document.querySelector('input[name="entrega"]:checked').value === 'retirada';
+            const desc = isRetirada ? sub * 0.1 : 0;
+            
+            document.getElementById('subtotal').innerText = `R$ ${sub.toFixed(2).replace('.', ',')}`;
+            document.getElementById('total').innerText = `R$ ${(sub - desc).toFixed(2).replace('.', ',')}`;
+            
+            const descCont = document.getElementById('desconto-container');
+            if (desc > 0) {
+                descCont.classList.remove('hidden');
+                document.getElementById('desconto').innerText = `- R$ ${desc.toFixed(2).replace('.', ',')}`;
+            } else {
+                descCont.classList.add('hidden');
+            }
         }
 
-        function toggleEndereco() {
-            const entrega = document.querySelector('input[name="tipoEntrega"]:checked').value;
-            document.getElementById('campoEndereco').classList.toggle('hidden', entrega === 'Retirar na Loja');
-            document.getElementById('moradaCliente').required = (entrega === 'Entrega em Casa');
-            const sub = carrinho.reduce((a, b) => a + (b.preco * b.qtd), 0);
-            atualizarValores(sub);
+        function toggleEndereco(show) {
+            document.getElementById('endereco-container').style.display = show ? 'block' : 'none';
+            let sub = cart.reduce((a, b) => a + (b.preco * b.qtd), 0);
+            updateTotal(sub);
         }
 
-        document.getElementById('formCheckout').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const nome = document.getElementById('nomeCliente').value;
-            const entrega = document.querySelector('input[name="tipoEntrega"]:checked').value;
-            const endereco = document.getElementById('moradaCliente').value;
-            const pgto = document.querySelector('input[name="pagamento"]:checked').value;
+        function finalizarPedido() {
+            const entrega = document.querySelector('input[name="entrega"]:checked').value;
+            const endereco = document.getElementById('endereco').value;
+            const pagamento = document.getElementById('pagamento').value;
+            const total = document.getElementById('total').innerText;
 
-            let msg = `*NOVO PEDIDO - ALLVINO* 🍷\n\n`;
-            msg += `*Cliente:* ${nome}\n`;
-            msg += `*Entrega:* ${entrega}\n`;
-            if(entrega === 'Entrega em Casa') msg += `*Endereço:* ${endereco}\n`;
-            msg += `*Pagamento:* ${pgto}\n\n`;
-            msg += `*PRODUTOS:*\n`;
-            carrinho.forEach(i => msg += `- ${i.qtd}x ${i.nome} (R$ ${(i.preco*i.qtd).toFixed(2)})\n`);
-            msg += `\n*TOTAL: R$ ${totalFinal.toFixed(2).replace('.', ',')}*`;
+            if (entrega === 'entrega' && !endereco) {
+                alert("Por favor, informe seu endereço para entrega.");
+                return;
+            }
 
-            window.open(`https://wa.me/${WHATSAPP_LOJA}?text=${encodeURIComponent(msg)}`, '_blank');
-        });
+            let itensMsg = cart.map(x => `🍷 *${x.qtd}x ${x.nome}*`).join('\n');
+            
+            let msg = `*NOVO PEDIDO - ALLVINO*\n\n`;
+            msg += `👤 *Cliente:* ${document.getElementById('user-name').value}\n`;
+            msg += `📞 *WhatsApp:* ${document.getElementById('user-phone').value}\n\n`;
+            msg += `📦 *ITENS DO PEDIDO:* \n${itensMsg}\n\n`;
+            msg += `💳 *Forma de Pagamento:* ${pagamento}\n`;
+            msg += `🚚 *Modalidade:* ${entrega === 'retirada' ? 'Retirada na Loja (-10% OFF)' : 'Entrega no Endereço'}\n`;
+            
+            if(entrega === 'entrega') msg += `📍 *Endereço:* ${endereco}\n`;
+            
+            msg += `\n💰 *VALOR TOTAL: ${total}*`;
 
-        document.addEventListener("DOMContentLoaded", carregarResumo);
+            const foneVendas = "5527999999999"; // Augusto, altere para o seu número comercial
+            const link = `https://wa.me/${foneVendas}?text=${encodeURIComponent(msg)}`;
+            
+            localStorage.removeItem('allvino_cart');
+            window.open(link, '_blank');
+            window.location.href = 'catalogo.html';
+        }
+
+        document.addEventListener("DOMContentLoaded", initCheckout);
     </script>
 </body>
 </html>
