@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,300;0,700&family=Manrope:wght@400;700&display=swap" rel="stylesheet"/>
     <style> .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; } body { background-color: #FDFBF7; font-family: 'Manrope', sans-serif; } </style>
 </head>
-<body class="pb-24">
+<body class="pb-24 transition-opacity duration-300 opacity-0" id="checkout-body">
     <header class="bg-white/90 backdrop-blur-md sticky top-0 z-40 border-b border-stone-100 flex justify-between items-center w-full px-5 py-4">
         <a href="catalogo.html" class="p-1"><span class="material-symbols-outlined text-black">arrow_back</span></a>
         <div class="h-10 flex items-center justify-center">
@@ -21,7 +21,7 @@
     <main class="max-w-xl mx-auto px-5 pt-8 space-y-8">
         <div class="space-y-2">
             <h1 class="text-3xl font-bold font-serif text-black text-center">Finalizar Pedido</h1>
-            <p class="text-stone-500 text-sm text-center">Confirme seus dados para enviarmos ao WhatsApp.</p>
+            <p class="text-stone-500 text-sm text-center">Confirme os seus dados para enviarmos o pedido.</p>
         </div>
 
         <div class="bg-white rounded-3xl p-6 border border-stone-100 shadow-sm space-y-4">
@@ -71,11 +71,18 @@
         let cart = JSON.parse(localStorage.getItem('allvino_cart')) || [];
 
         async function initCheckout() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (!session) { window.location.href = 'login.html'; return; }
+            // Utilizamos getUser() em vez de getSession() para validar diretamente no servidor
+            const { data: { user }, error } = await supabaseClient.auth.getUser();
             
-            const userData = session.user.user_metadata;
-            document.getElementById('user-name').value = userData.nome_completo || session.user.email.split('@')[0];
+            if (error || !user) { 
+                window.location.replace('login.html'); 
+                return; 
+            }
+            
+            document.getElementById('checkout-body').style.opacity = '1';
+            
+            const userData = user.user_metadata || {};
+            document.getElementById('user-name').value = userData.nome_completo || user.email.split('@')[0] || '';
             document.getElementById('user-phone').value = userData.telefone || 'Não informado';
             
             renderItems();
@@ -83,7 +90,7 @@
 
         function renderItems() {
             const cont = document.getElementById('checkout-items'); let sub = 0; cont.innerHTML = '';
-            if(cart.length === 0) { cont.innerHTML = '<p class="text-center py-4 text-stone-400">Seu carrinho está vazio.</p>'; updateTotal(0); return; }
+            if(cart.length === 0) { cont.innerHTML = '<p class="text-center py-4 text-stone-400">O seu carrinho está vazio.</p>'; updateTotal(0); return; }
 
             cart.forEach((x, i) => {
                 sub += x.preco * x.qtd;
@@ -116,18 +123,17 @@
         function finalizarPedido() {
             if(cart.length === 0) { alert("Carrinho vazio!"); return; }
             const entrega = document.querySelector('input[name="entrega"]:checked').value; const endereco = document.getElementById('endereco').value; const pagamento = document.getElementById('pagamento').value; const total = document.getElementById('total').innerText;
-            if (entrega === 'entrega' && !endereco) { alert("Informe seu endereço para entrega."); return; }
+            if (entrega === 'entrega' && !endereco) { alert("Informe o seu endereço para entrega."); return; }
 
             let itensMsg = cart.map(x => `🍷 *${x.qtd}x ${x.nome}*`).join('\n');
             let msg = `*NOVO PEDIDO - ALLVINO*\n\n👤 *Cliente:* ${document.getElementById('user-name').value}\n📞 *WhatsApp:* ${document.getElementById('user-phone').value}\n\n📦 *ITENS DO PEDIDO:* \n${itensMsg}\n\n💳 *Pagamento:* ${pagamento}\n🚚 *Modalidade:* ${entrega === 'retirada' ? 'Retirada na Loja (-10% OFF)' : 'Entrega no Endereço'}\n`;
             if(entrega === 'entrega') msg += `📍 *Endereço:* ${endereco}\n`;
             msg += `\n💰 *VALOR TOTAL: ${total}*`;
 
-            // NÚMERO DE VENDAS ATUALIZADO
             const foneVendas = "5527997933537"; 
             const link = `https://wa.me/${foneVendas}?text=${encodeURIComponent(msg)}`;
             
-            localStorage.removeItem('allvino_cart'); window.open(link, '_blank'); window.location.href = 'catalogo.html';
+            localStorage.removeItem('allvino_cart'); window.open(link, '_blank'); window.location.replace('catalogo.html');
         }
 
         document.addEventListener("DOMContentLoaded", initCheckout);

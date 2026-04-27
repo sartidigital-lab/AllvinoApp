@@ -95,7 +95,7 @@
         }
 
         async function fazerLogin(e) {
-            e.preventDefault(); // Impede o recarregamento "cego"
+            e.preventDefault();
             const btn = document.getElementById('btn-login'); btn.innerText = "Aguarde..."; btn.disabled = true;
             const email = document.getElementById('login-email').value;
             const senha = document.getElementById('login-senha').value;
@@ -103,15 +103,18 @@
             const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
             
             if (error) {
-                alert("Erro ao entrar: verifique se o e-mail e senha estão corretos.");
+                alert("Erro ao entrar: verifique se o e-mail e a palavra-passe estão corretos.");
+                btn.innerText = "Entrar"; btn.disabled = false;
+            } else if (!data.session) {
+                alert("Ocorreu um erro na criação da sessão. Tente novamente.");
                 btn.innerText = "Entrar"; btn.disabled = false;
             } else {
-                window.location.href = 'catalogo.html'; // Agora vai pro catálogo com o crachá!
+                window.location.replace('catalogo.html');
             }
         }
 
         async function fazerCadastro(e) {
-            e.preventDefault(); // Impede o recarregamento "cego"
+            e.preventDefault();
             const btn = document.getElementById('btn-cadastro'); btn.innerText = "Aguarde..."; btn.disabled = true;
             const nome = document.getElementById('cad-nome').value;
             const email = document.getElementById('cad-email').value;
@@ -125,8 +128,12 @@
             if (error) {
                 alert("Erro ao criar conta: " + error.message);
                 btn.innerText = "Criar Conta"; btn.disabled = false;
+            } else if (!data.session) {
+                // A SOLUÇÃO ESTÁ AQUI: Evita o falso sucesso quando o e-mail já existe
+                alert("Aviso: Este e-mail já está registado ou necessita de verificação. Por favor, vá a 'Fazer login'.");
+                btn.innerText = "Criar Conta"; btn.disabled = false;
             } else {
-                window.location.href = 'catalogo.html'; // Loga automaticamente e vai pro catálogo!
+                window.location.replace('catalogo.html'); 
             }
         }
 
@@ -137,10 +144,10 @@
             if (error) alert("Erro ao conectar com o Google.");
         }
 
-        // Pula o login se o cliente já tiver o crachá no navegador
+        // Bloqueia ecrã de login se já tiver sessão ativa
         document.addEventListener("DOMContentLoaded", async () => {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (session) window.location.href = 'catalogo.html';
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (user) window.location.replace('catalogo.html');
         });
     </script>
 </body>
