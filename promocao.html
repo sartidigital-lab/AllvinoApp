@@ -29,11 +29,13 @@
         const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         async function carregarPaginaPromocoes() {
-            // 1. CARREGAR TOPO (Banner Temático - Responsivo)
+            // 1. CARREGAR TOPO (Banner Temático - Responsivo e Opcional)
             const { data: bannerData } = await supabaseClient.from('promocoes').select('*').eq('status', true).eq('tipo_oferta', 'Banner').order('criado_em', { ascending: false }).limit(1);
             if (bannerData && bannerData.length > 0) {
                 const b = bannerData[0];
                 const badgeHtml = b.badge_texto ? `<span class="text-[10px] text-white uppercase tracking-widest bg-white/20 px-3 py-1 rounded-full backdrop-blur-sm">${b.badge_texto}</span>` : '';
+                const tituloHtml = b.titulo ? `<h1 class="text-3xl md:text-4xl text-white font-bold font-serif">${b.titulo}</h1>` : '';
+                const subHtml = b.subtitulo ? `<p class="text-white/80 text-sm max-w-md mx-auto">${b.subtitulo}</p>` : '';
                 
                 const imgDesktop = b.imagem_url;
                 const imgMobile = b.imagem_mobile_url || b.imagem_url;
@@ -42,12 +44,12 @@
                     <div class="relative overflow-hidden rounded-3xl bg-black h-[250px] flex flex-col justify-center items-center text-center p-8 shadow-lg">
                         <picture class="absolute inset-0 w-full h-full">
                             <source media="(min-width: 768px)" srcset="${imgDesktop}">
-                            <img src="${imgMobile}" class="w-full h-full object-cover opacity-50" alt="${b.titulo}">
+                            <img src="${imgMobile}" class="w-full h-full object-cover opacity-50" alt="${b.titulo || 'Oferta Especial'}">
                         </picture>
                         <div class="relative z-10 space-y-2">
                             ${badgeHtml}
-                            <h1 class="text-3xl md:text-4xl text-white font-bold font-serif">${b.titulo}</h1>
-                            <p class="text-white/80 text-sm max-w-md mx-auto">${b.subtitulo}</p>
+                            ${tituloHtml}
+                            ${subHtml}
                         </div>
                     </div>`;
             }
@@ -71,13 +73,13 @@
                     <div class="bg-white p-4 rounded-3xl shadow-sm border border-[#B91C1C]/20 flex flex-col h-full hover:shadow-md transition-shadow relative">
                         <div class="absolute -top-3 left-6 z-10"><span class="bg-[#B91C1C] text-white text-[10px] font-bold px-3 py-1 rounded uppercase tracking-widest shadow-sm">Oferta</span></div>
                         <div class="aspect-[3/4] ${bgClass} rounded-2xl flex items-center justify-center mb-4 relative overflow-hidden group">
-                            <img src="${kit.imagem_url}" class="${imgClass} group-hover:scale-105 transition-transform duration-500" alt="${kit.titulo}">
+                            <img src="${kit.imagem_url}" class="${imgClass} group-hover:scale-105 transition-transform duration-500" alt="${kit.titulo || 'Oferta'}">
                         </div>
-                        <h3 class="font-bold text-xl line-clamp-2">${kit.titulo}</h3>
-                        <p class="text-xs text-stone-400 mt-1 line-clamp-2">${kit.subtitulo}</p>
+                        <h3 class="font-bold text-xl line-clamp-2">${kit.titulo || 'Produto Especial'}</h3>
+                        <p class="text-xs text-stone-400 mt-1 line-clamp-2">${kit.subtitulo || ''}</p>
                         <div class="flex justify-between items-end mt-auto pt-5">
                             <span class="text-2xl font-bold text-[#B91C1C]">R$ ${kit.preco.toFixed(2).replace('.', ',')}</span>
-                            <button onclick="addToCart('${kit.titulo}', ${kit.preco}, '${kit.imagem_url}')" class="bg-black text-white px-4 py-3 rounded-2xl active:scale-90 transition hover:bg-stone-800 shadow-sm font-bold text-sm flex items-center gap-2">
+                            <button onclick="addToCart('${kit.titulo || 'Produto Especial'}', ${kit.preco}, '${kit.imagem_url}')" class="bg-black text-white px-4 py-3 rounded-2xl active:scale-90 transition hover:bg-stone-800 shadow-sm font-bold text-sm flex items-center gap-2">
                                 Adicionar <span class="material-symbols-outlined text-[18px]">shopping_cart</span>
                             </button>
                         </div>
