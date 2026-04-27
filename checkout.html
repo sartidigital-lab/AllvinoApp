@@ -123,7 +123,8 @@
             if(entrega === 'entrega') msg += `📍 *Endereço:* ${endereco}\n`;
             msg += `\n💰 *VALOR TOTAL: ${total}*`;
 
-            const foneVendas = "5527999999999"; 
+            // NÚMERO DE VENDAS ATUALIZADO
+            const foneVendas = "5527997933537"; 
             const link = `https://wa.me/${foneVendas}?text=${encodeURIComponent(msg)}`;
             
             localStorage.removeItem('allvino_cart'); window.open(link, '_blank'); window.location.href = 'catalogo.html';
