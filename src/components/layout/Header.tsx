@@ -13,9 +13,8 @@ export function Header() {
         <span className="material-symbols-outlined text-black">tune</span>
       </button>
       
-      <Link href="/catalogo" className="h-10 flex items-center justify-center">
-        {/* Placeholder text for logo if image is missing, we use standard text since we don't have the image file locally in Next.js public yet unless copied */}
-        <span className="font-serif text-2xl font-bold tracking-tighter uppercase">Allvino</span>
+      <Link href="/" className="h-12 flex items-center justify-center">
+        <img src="/LOGO-ALLVINO-PRETO.png" alt="Allvino" className="h-12 w-auto object-contain" />
       </Link>
       
       <button 
