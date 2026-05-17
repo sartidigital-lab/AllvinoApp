@@ -11,8 +11,8 @@ See: .planning/PROJECT.md (updated 2026-05-17)
 
 Phase: 3 of 5 (Catalog & Offline)
 Plan: 0 of 3 in current phase
-Status: Ready for planning
-Last activity: 2026-05-17 — Phase 2 complete, ready to plan Phase 3
+Status: Ready for execution
+Last activity: 2026-05-17 — Phase 3 planned, ready for execution
 
 Progress: [▓▓▓▓░░░░░░] 40%
 
@@ -64,5 +64,5 @@ Items acknowledged and carried forward from previous milestone close:
 ## Session Continuity
 
 Last session: 2026-05-17
-Stopped at: Phase 2 complete
-Resume file: .planning/ROADMAP.md
+Stopped at: Phase 3 planned
+Resume file: .planning/phases/03-catalog-offline/03-01-PLAN.md
