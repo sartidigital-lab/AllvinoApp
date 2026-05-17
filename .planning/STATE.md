@@ -11,8 +11,8 @@ See: .planning/PROJECT.md (updated 2026-05-17)
 
 Phase: 4 of 5 (Shopping Flow)
 Plan: 0 of 2 in current phase
-Status: Ready for planning
-Last activity: 2026-05-17 — Phase 3 complete, ready to plan Phase 4
+Status: Ready for execution
+Last activity: 2026-05-17 — Phase 4 planned, ready for execution
 
 Progress: [▓▓▓▓▓▓░░░░] 60%
 
@@ -64,5 +64,5 @@ Items acknowledged and carried forward from previous milestone close:
 ## Session Continuity
 
 Last session: 2026-05-17
-Stopped at: Phase 3 complete
-Resume file: .planning/ROADMAP.md
+Stopped at: Phase 4 planned
+Resume file: .planning/phases/04-shopping-flow/04-01-PLAN.md
