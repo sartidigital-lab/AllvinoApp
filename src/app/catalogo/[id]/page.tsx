@@ -1,12 +1,14 @@
 "use client";
 
 import { useWine } from '@/hooks/useWines';
+import { useCart } from '@/context/CartContext';
 import Link from 'next/link';
 import { use } from 'react';
 
 export default function WineDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const { wine, isLoading, isOffline } = useWine(resolvedParams.id);
+  const { addToCart } = useCart();
 
   if (isLoading) {
     return (
@@ -58,7 +60,10 @@ export default function WineDetailPage({ params }: { params: Promise<{ id: strin
             <p className="text-sm text-stone-500 mb-1">Estoque: {wine.stock} disponíveis</p>
             <div className="flex items-center justify-between">
               <span className="text-3xl font-bold">R$ {wine.price.toFixed(2).replace('.', ',')}</span>
-              <button className="bg-[#B91C1C] text-white px-8 py-4 rounded-2xl font-bold shadow-lg shadow-red-900/20 active:scale-95 transition">
+              <button 
+                onClick={() => addToCart(wine)}
+                className="bg-[#B91C1C] text-white px-8 py-4 rounded-2xl font-bold shadow-lg shadow-red-900/20 active:scale-95 transition"
+              >
                 Adicionar
               </button>
             </div>

@@ -1,6 +1,9 @@
 import { Suspense } from 'react';
 import { AuthModal } from '../components/auth/AuthModal';
 import { Navbar } from '../components/layout/Navbar';
+import { Header } from '../components/layout/Header';
+import { CartProvider } from '../context/CartContext';
+import { CartOverlay } from '../components/cart/CartOverlay';
 import './globals.css';
 
 export const metadata = {
@@ -17,11 +20,15 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className="pb-24">
-        {children}
-        <Navbar />
-        <Suspense fallback={null}>
-          <AuthModal />
-        </Suspense>
+        <CartProvider>
+          <Header />
+          {children}
+          <Navbar />
+          <CartOverlay />
+          <Suspense fallback={null}>
+            <AuthModal />
+          </Suspense>
+        </CartProvider>
       </body>
     </html>
   );

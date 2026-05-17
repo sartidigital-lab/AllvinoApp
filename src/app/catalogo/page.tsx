@@ -1,10 +1,12 @@
 "use client";
 
 import { useWines } from '@/hooks/useWines';
+import { useCart } from '@/context/CartContext';
 import Link from 'next/link';
 
 export default function CatalogoPage() {
   const { wines, isLoading, isOffline } = useWines();
+  const { addToCart } = useCart();
 
   return (
     <main className="max-w-4xl mx-auto px-5 pt-6 pb-24">
@@ -39,9 +41,15 @@ export default function CatalogoPage() {
                 </p>
                 <div className="flex justify-between items-end mt-auto pt-5">
                   <span className="text-2xl font-bold">R$ {wine.price.toFixed(2).replace('.', ',')}</span>
-                  <div className="bg-black text-white p-3 rounded-2xl flex items-center justify-center hover:bg-stone-800 transition">
-                    Ver Detalhes
-                  </div>
+                  <button 
+                    onClick={(e) => {
+                      e.preventDefault(); // Prevent navigating to details
+                      addToCart(wine);
+                    }}
+                    className="bg-black text-white p-3 rounded-2xl flex items-center justify-center hover:bg-stone-800 transition active:scale-90"
+                  >
+                    <span className="material-symbols-outlined">add_shopping_cart</span>
+                  </button>
                 </div>
               </Link>
             </div>
