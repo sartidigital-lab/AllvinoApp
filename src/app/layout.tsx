@@ -1,3 +1,5 @@
+import { Suspense } from 'react';
+import { AuthModal } from '../components/auth/AuthModal';
 import './globals.css';
 
 export const metadata = {
@@ -13,7 +15,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body>{children}</body>
+      <body>
+        {children}
+        <Suspense fallback={null}>
+          <AuthModal />
+        </Suspense>
+      </body>
     </html>
   );
 }

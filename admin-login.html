@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Allvino - Login Administrativo</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap" rel="stylesheet"/>
+    <style>body { background-color: #0a0a0a; font-family: 'Manrope', sans-serif; }</style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-5 text-white">
+    <div class="w-full max-w-sm">
+        <div class="flex justify-center mb-10 h-12">
+            <img src="LOGO-ALLVINO-BRANCO.png" alt="Allvino Admin" class="h-full w-auto object-contain scale-150">
+        </div>
+
+        <div class="text-center mb-8">
+            <h1 class="text-2xl font-bold mb-1">Acesso Master</h1>
+            <p class="text-stone-400 text-sm">Gestão e Inteligência de Dados</p>
+        </div>
+
+        <form onsubmit="loginAdmin(event)" class="space-y-4">
+            <input type="email" id="email" placeholder="E-mail Administrativo" required class="w-full bg-stone-900 border-stone-800 text-white rounded-2xl py-4 px-5 outline-none focus:border-red-600 transition-colors shadow-sm">
+            <input type="password" id="senha" placeholder="Senha Master" required class="w-full bg-stone-900 border-stone-800 text-white rounded-2xl py-4 px-5 outline-none focus:border-red-600 transition-colors shadow-sm">
+            
+            <button type="submit" id="btn-entrar" class="w-full bg-[#B91C1C] text-white py-4 rounded-2xl font-bold text-lg active:scale-95 transition-transform shadow-xl mt-4">
+                Acessar Painel
+            </button>
+        </form>
+        
+        <p class="text-center text-xs text-stone-500 mt-8">Allvino S.A. - Área Restrita</p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const supabaseUrl = 'https://jfgtafnfuqlysdnvsbhk.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmZ3RhZm5mdXFseXNkbnZzYmhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNDY1NzgsImV4cCI6MjA5MjcyMjU3OH0.mZDnR1A8VIJVUzedb7GU1db628dSqU-8SdvBFXXVaE4';
+        const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        async function loginAdmin(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-entrar'); btn.innerText = "Validando..."; btn.disabled = true;
+            const email = document.getElementById('email').value;
+            const senha = document.getElementById('senha').value;
+
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
+            
+            if (error) {
+                alert("Acesso negado: Verifique suas credenciais master.");
+                btn.innerText = "Acessar Painel"; btn.disabled = false;
+            } else {
+                // Redireciona para o ADMIN com sucesso
+                window.location.replace('admin.html');
+            }
+        }
+    </script>
+</body>
+</html>
