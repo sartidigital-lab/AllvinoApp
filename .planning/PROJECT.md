@@ -17,14 +17,14 @@ Proporcionar uma experiência de compra de vinhos fluida, rápida e elegante, qu
 - ✓ Telas de fluxo do usuário (Conta, Login, Checkout).
 - ✓ Painel administrativo (Admin).
 - ✓ Design System base construído com utilitários Tailwind.
+- ✓ Migrar arquitetura de HTML estático/MPA para Next.js (App Router/SPA) — Phase 1.
+- ✓ Configurar build pipeline do Tailwind CSS (remoção do CDN) — Phase 1.
+- ✓ Automatizar CI/CD via GitHub e Vercel — Phase 1.
 
 ### Active
 
-- [ ] Migrar arquitetura de HTML estático/MPA para Next.js (App Router/SPA).
-- [ ] Configurar build pipeline do Tailwind CSS (remoção do CDN).
 - [ ] Integrar Supabase (PostgreSQL para dados de catálogo e pedidos, Auth para contas de clientes/admin).
 - [ ] Implementar suporte offline-first (IndexedDB) para navegação no catálogo sem internet.
-- [ ] Automatizar CI/CD via GitHub e Vercel.
 
 ### Out of Scope
 
@@ -45,7 +45,7 @@ O projeto atual é um MVP construído apenas com arquivos HTML, Tailwind via CDN
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Next.js SPA | Resolve recarregamentos lentos, melhora SEO do catálogo e encapsula componentes repetidos. | — Pending |
+| Next.js SPA | Resolve recarregamentos lentos, melhora SEO do catálogo e encapsula componentes repetidos. | Next.js App Router configurado com Tailwind e PWA. |
 | Supabase | Fornece Auth pronto e PostgreSQL para queries complexas de pedidos, combinando com o know-how existente. | — Pending |
 
 ## Evolution
@@ -66,4 +66,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-17 after initialization*
+*Last updated: 2026-05-17 after Phase 1*

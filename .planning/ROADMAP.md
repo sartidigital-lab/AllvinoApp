@@ -10,7 +10,7 @@ O projeto migrará a aplicação estática (Multi-Page) de E-commerce de Vinhos 
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: Architecture & Base** - Configuração do Next.js, Tailwind build, PWA e CI/CD.
+- [x] **Phase 1: Architecture & Base** - Configuração do Next.js, Tailwind build, PWA e CI/CD.
 - [ ] **Phase 2: Authentication** - Integração do Supabase Auth e rotas protegidas.
 - [ ] **Phase 3: Catalog & Offline** - Integração de banco de dados para produtos e estratégia offline-first.
 - [ ] **Phase 4: Shopping Flow** - Fluxo de carrinho e finalização de pedido integrado.
@@ -29,9 +29,9 @@ O projeto migrará a aplicação estática (Multi-Page) de E-commerce de Vinhos 
 **Plans**: TBD
 
 Plans:
-- [ ] 01-01: Configurar Next.js e Tailwind nativo
-- [ ] 01-02: Configurar PWA
-- [ ] 01-03: Setup CI/CD no GitHub/Vercel
+- [x] 01-01: Configurar Next.js e Tailwind nativo
+- [x] 01-02: Configurar PWA
+- [x] 01-03: Setup CI/CD no GitHub/Vercel
 
 ### Phase 2: Authentication
 **Goal**: Integrar o Supabase Auth para gerenciar sessões globais de usuários e proteger rotas críticas.
@@ -94,7 +94,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Architecture & Base | 0/3 | Not started | - |
+| 1. Architecture & Base | 3/3 | Complete | 2026-05-17 |
 | 2. Authentication | 0/2 | Not started | - |
 | 3. Catalog & Offline | 0/3 | Not started | - |
 | 4. Shopping Flow | 0/2 | Not started | - |

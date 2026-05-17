@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-05-17)
 
 **Core value:** Proporcionar uma experiência de compra de vinhos fluida, rápida e elegante, que se comporte como um aplicativo nativo no celular, com máxima estabilidade e segurança.
-**Current focus:** Inicialização do Projeto
+**Current focus:** Authentication (Phase 2)
 
 ## Current Position
 
-Phase: 1 of 5 (Architecture & Base)
-Plan: 3 of 3 in current phase
-Status: Pending verification
-Last activity: 2026-05-17 — Completed plan 01-03
+Phase: 2 of 5 (Authentication)
+Plan: 0 of 2 in current phase
+Status: Ready to plan
+Last activity: 2026-05-17 — Phase 1 complete, ready to plan Phase 2
 
-Progress: [██████████] 100%
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -27,7 +27,7 @@ Progress: [██████████] 100%
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1 | 0 | 0 | 0 |
+| 1 | 3 | 3 | 1 |
 
 **Recent Trend:**
 - Last 5 plans: N/A
@@ -43,6 +43,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
 - [Project Setup]: Escolha de Next.js SPA com Supabase e Tailwind build.
+- [CI/CD & PWA]: Implementado PWA com next-pwa e CI/CD no GitHub Actions rodando Zod e linter.
 
 ### Pending Todos
 
@@ -63,5 +64,5 @@ Items acknowledged and carried forward from previous milestone close:
 ## Session Continuity
 
 Last session: 2026-05-17
-Stopped at: Phase 1 planned
-Resume file: .planning/phases/01-architecture-and-base/01-01-PLAN.md
+Stopped at: Phase 1 complete, ready to plan Phase 2
+Resume file: None
