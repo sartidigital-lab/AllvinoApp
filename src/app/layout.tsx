@@ -3,6 +3,7 @@ import './globals.css';
 export const metadata = {
   title: 'Allvino App',
   description: 'Aplicativo de degustação e catálogo de vinhos Allvino',
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({

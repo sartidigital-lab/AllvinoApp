@@ -1,0 +1,16 @@
+{
+  "name": "Allvino",
+  "short_name": "Allvino",
+  "start_url": "/catalogo.html",
+  "display": "standalone",
+  "background_color": "#FDFBF7",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "icone-app.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
