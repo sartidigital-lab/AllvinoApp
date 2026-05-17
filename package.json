@@ -14,13 +14,18 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@t3-oss/env-nextjs": "^0.13.11",
     "next": "^16.2.6",
     "react": "^19.2.6",
-    "react-dom": "^19.2.6"
+    "react-dom": "^19.2.6",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^25.8.0",
     "@types/react": "^19.2.14",
+    "autoprefixer": "^10.5.0",
+    "postcss": "^8.5.14",
+    "tailwindcss": "^4.3.0",
     "typescript": "^6.0.3"
   }
 }
