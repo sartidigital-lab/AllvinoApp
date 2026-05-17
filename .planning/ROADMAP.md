@@ -13,7 +13,7 @@ O projeto migrará a aplicação estática (Multi-Page) de E-commerce de Vinhos 
 - [x] **Phase 1: Architecture & Base** - Configuração do Next.js, Tailwind build, PWA e CI/CD.
 - [x] **Phase 2: Authentication** - Integração do Supabase Auth e rotas protegidas.
 - [x] **Phase 3: Catalog & Offline** - Integração de banco de dados para produtos e estratégia offline-first.
-- [ ] **Phase 4: Shopping Flow** - Fluxo de carrinho e finalização de pedido integrado.
+- [x] **Phase 4: Shopping Flow** - Fluxo de carrinho e finalização de pedido integrado.
 - [ ] **Phase 5: Admin Dashboard** - Refatoração do painel de administração e CRUD de vinhos.
 
 ## Phase Details
@@ -71,8 +71,8 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 04-01: Componentes e Estado do Carrinho
-- [ ] 04-02: Fluxo de Checkout e Histórico de Compras
+- [x] 04-01: Componentes e Estado do Carrinho
+- [x] 04-02: Fluxo de Checkout e Histórico de Compras
 
 ### Phase 5: Admin Dashboard
 **Goal**: Finalizar a reestruturação convertendo o ambiente de admin existente em uma interface protegida e conectada ao backend para manipulação do catálogo.
@@ -97,5 +97,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Architecture & Base | 3/3 | Complete | 2026-05-17 |
 | 2. Authentication | 2/2 | Complete | 2026-05-17 |
 | 3. Catalog & Offline | 3/3 | Complete | 2026-05-17 |
-| 4. Shopping Flow | 0/2 | Not started | - |
+| 4. Shopping Flow | 2/2 | Complete | 2026-05-17 |
 | 5. Admin Dashboard | 0/2 | Not started | - |
