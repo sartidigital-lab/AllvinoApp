@@ -12,7 +12,7 @@ O projeto migrará a aplicação estática (Multi-Page) de E-commerce de Vinhos 
 
 - [x] **Phase 1: Architecture & Base** - Configuração do Next.js, Tailwind build, PWA e CI/CD.
 - [x] **Phase 2: Authentication** - Integração do Supabase Auth e rotas protegidas.
-- [ ] **Phase 3: Catalog & Offline** - Integração de banco de dados para produtos e estratégia offline-first.
+- [x] **Phase 3: Catalog & Offline** - Integração de banco de dados para produtos e estratégia offline-first.
 - [ ] **Phase 4: Shopping Flow** - Fluxo de carrinho e finalização de pedido integrado.
 - [ ] **Phase 5: Admin Dashboard** - Refatoração do painel de administração e CRUD de vinhos.
 
@@ -56,9 +56,9 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 03-01: Integração Banco de Dados Supabase (Catálogo/Vinhos)
-- [ ] 03-02: Páginas Dinâmicas de Catálogo e Detalhe de Vinho
-- [ ] 03-03: Implementação da Estratégia Offline (IndexedDB)
+- [x] 03-01: Integração Banco de Dados Supabase (Catálogo/Vinhos)
+- [x] 03-02: Páginas Dinâmicas de Catálogo e Detalhe de Vinho
+- [x] 03-03: Implementação da Estratégia Offline (IndexedDB)
 
 ### Phase 4: Shopping Flow
 **Goal**: Habilitar a jornada de compra e verificação do histórico pelo usuário.
@@ -96,6 +96,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 1. Architecture & Base | 3/3 | Complete | 2026-05-17 |
 | 2. Authentication | 2/2 | Complete | 2026-05-17 |
-| 3. Catalog & Offline | 0/3 | Not started | - |
+| 3. Catalog & Offline | 3/3 | Complete | 2026-05-17 |
 | 4. Shopping Flow | 0/2 | Not started | - |
 | 5. Admin Dashboard | 0/2 | Not started | - |
