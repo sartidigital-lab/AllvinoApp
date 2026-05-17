@@ -1,5 +1,14 @@
 # Allvino App (Reestruturação)
 
+## Current State
+- **Version**: 1.0 (Shipped)
+- **Status**: Milestone v1.0 foi concluído com sucesso. O MVP com PWA, Supabase, Fluxo de Compras e Painel Administrativo está 100% funcional.
+
+## Next Milestone Goals
+- **Pagamentos**: Integração com Stripe/Mercado Pago para transações financeiras reais.
+- **Logística**: Integração de frete dinâmico via API dos Correios.
+- **Gestão de Promoções**: Implementação de campanhas dinâmicas no painel admin.
+
 ## What This Is
 
 O Allvino App é um aplicativo web (PWA) de e-commerce de vinhos premium focado em uma experiência mobile-first e responsiva. A reestruturação visa transformar o projeto estático atual em uma Single Page Application (SPA) robusta utilizando Next.js e Supabase, garantindo navegação sem atritos, transações seguras, suporte offline e gerenciamento centralizado de produtos e autenticação.
