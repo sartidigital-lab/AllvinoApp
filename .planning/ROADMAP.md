@@ -74,10 +74,14 @@ Plans:
 - [x] 04-01: Componentes e Estado do Carrinho
 - [x] 04-02: Fluxo de Checkout e Histórico de Compras
 
-### Phase 5: Admin Dashboard
-**Goal**: Finalizar a reestruturação convertendo o ambiente de admin existente em uma interface protegida e conectada ao backend para manipulação do catálogo.
-**Depends on**: Phase 4
-**Requirements**: ADMN-01, ADMN-02
+### Phase 5: Admin Dashboard (Finalizado)
+- **Objetivo**: Proteger rota administrativa e criar dashboard de gestão.
+- **Entregáveis**:
+  - Implementação de `src/app/admin/layout.tsx` com verificação Supabase Auth (redirecionamento se não logado).
+  - Componentização da Sidebar (`Sidebar.tsx`) baseada no design do `admin.html`.
+  - Página `/admin` com BI Analytics (Faturamento, Garrafas, Pedidos).
+  - Tabela de gerenciamento de Catálogo em `/admin/catalogo` (CRUD e Supabase Storage).
+  - Estruturação base para Promoções e Equipe.s**: ADMN-01, ADMN-02
 **Success Criteria** (what must be TRUE):
   1. Usuário Admin visualiza a listagem real do DB em `/admin`.
   2. Ações CRUD operam diretamente no Supabase a partir do painel.
