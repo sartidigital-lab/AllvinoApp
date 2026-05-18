@@ -41,6 +41,13 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  if (request.nextUrl.pathname.startsWith('/admin') && user?.app_metadata?.role !== 'admin') {
+    const url = request.nextUrl.clone()
+    url.pathname = '/'
+    url.searchParams.set('admin', 'unauthorized')
+    return NextResponse.redirect(url)
+  }
+
   return supabaseResponse
 }
 

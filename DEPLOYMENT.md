@@ -40,4 +40,22 @@ supabase db push
 
 As tabelas públicas têm RLS habilitado. O catálogo (`wines`) tem leitura pública, e pedidos só podem ser criados/lidos pelo usuário autenticado dono do pedido.
 
-Edição administrativa de catálogo ainda precisa de uma política de admin ou rota server-side com chave privada. Não exponha `service_role` no frontend.
+## Acesso admin
+
+O painel `/admin` exige que o usuário autenticado tenha `app_metadata.role = "admin"` no Supabase Auth.
+
+Para conceder acesso:
+
+1. Abra Supabase Dashboard.
+2. Vá em `Authentication > Users`.
+3. Abra o usuário desejado.
+4. Edite o `Raw app meta data`.
+5. Defina:
+
+```json
+{
+  "role": "admin"
+}
+```
+
+Não use `user_metadata` para permissão administrativa, porque o usuário pode editar esses dados em alguns fluxos. Não exponha `service_role` no frontend.
