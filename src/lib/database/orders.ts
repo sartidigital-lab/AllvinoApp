@@ -18,7 +18,7 @@ export async function createOrder(
         user_id: userId,
         status: 'pending',
         total_amount: total,
-        delivery_method: deliveryMethod,
+        delivery_type: deliveryMethod,
       })
       .select()
       .single();
@@ -31,7 +31,7 @@ export async function createOrder(
       order_id: order.id,
       wine_id: item.id,
       quantity: item.quantity,
-      price_at_time: item.price,
+      unit_price: item.price,
     }));
 
     const { error: itemsError } = await supabase

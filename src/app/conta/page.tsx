@@ -113,7 +113,7 @@ export default function ContaPage() {
                   </span>
                 </div>
                 <div className="flex justify-between items-end">
-                  <span className="text-xs text-stone-500 line-clamp-1 flex-1 pr-4">{order.delivery_method}</span>
+                  <span className="text-xs text-stone-500 line-clamp-1 flex-1 pr-4">{order.delivery_type}</span>
                   <span className="font-bold text-sm">R$ {order.total_amount.toFixed(2).replace('.', ',')}</span>
                 </div>
               </div>

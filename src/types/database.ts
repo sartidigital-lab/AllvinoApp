@@ -4,6 +4,9 @@ export type Wine = {
   description: string | null;
   price: number;
   image_url: string | null;
+  type: string | null;
+  region: string | null;
+  grape: string | null;
   category: string | null;
   stock: number;
   created_at: string;
@@ -15,7 +18,7 @@ export type Order = {
   status: string;
   total_amount: number;
   created_at: string;
-  delivery_method: string;
+  delivery_type: string;
 };
 
 export type OrderItem = {
@@ -23,5 +26,5 @@ export type OrderItem = {
   order_id: string;
   wine_id: string;
   quantity: number;
-  price_at_time: number;
+  unit_price: number;
 };

@@ -1,3 +1,5 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import "./src/env.mjs";
 import withPWAInit from "next-pwa";
 
@@ -11,7 +13,9 @@ const withPWA = withPWAInit({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  turbopack: {},
+  turbopack: {
+    root: path.dirname(fileURLToPath(import.meta.url)),
+  },
 };
 
 export default withPWA(nextConfig);

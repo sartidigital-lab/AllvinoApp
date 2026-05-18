@@ -64,14 +64,14 @@ export default function AdminCatalogPage() {
               ) : wines.map((wine) => (
                 <tr key={wine.id} className="hover:bg-stone-50 transition-colors">
                   <td className="p-4 flex items-center gap-4">
-                    <img src={wine.imageUrl || 'https://via.placeholder.com/50x150'} alt={wine.name} className="h-16 object-contain" />
+                    <img src={wine.image_url || 'https://via.placeholder.com/50x150'} alt={wine.name} className="h-16 object-contain" />
                     <div>
                       <p className="font-bold text-black">{wine.name}</p>
-                      <p className="text-xs text-stone-400 font-bold">{wine.grape} • {wine.region}</p>
+                      <p className="text-xs text-stone-400 font-bold">{wine.grape || 'Uva'} • {wine.region || 'Região'}</p>
                     </div>
                   </td>
                   <td className="p-4">
-                    <span className="bg-stone-100 text-stone-600 px-3 py-1 rounded-full text-xs font-bold uppercase">{wine.type}</span>
+                    <span className="bg-stone-100 text-stone-600 px-3 py-1 rounded-full text-xs font-bold uppercase">{wine.type || wine.category || 'Vinho'}</span>
                   </td>
                   <td className="p-4 font-bold text-black">R$ {wine.price.toFixed(2)}</td>
                   <td className="p-4">
