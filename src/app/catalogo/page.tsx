@@ -11,6 +11,8 @@ type PriceRange = {
   max: number;
 };
 
+type SortOrder = 'recent' | 'name' | 'price-asc' | 'price-desc';
+
 const priceRanges: PriceRange[] = [
   { label: 'Ate R$ 40', min: 0, max: 40 },
   { label: 'R$ 40 a R$ 100', min: 40.01, max: 100 },
@@ -33,29 +35,56 @@ export default function CatalogoPage() {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedGrape, setSelectedGrape] = useState<string | null>(null);
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('recent');
 
   const types = useMemo(() => uniqueSorted(wines.map((wine) => wine.type)), [wines]);
   const grapes = useMemo(() => uniqueSorted(wines.map((wine) => wine.grape)), [wines]);
   const countries = useMemo(() => uniqueSorted(wines.map((wine) => wine.region)), [wines]);
 
   const filteredWines = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
     return wines.filter((wine) => {
       const matchesPrice = !selectedPrice || (wine.price >= selectedPrice.min && wine.price <= selectedPrice.max);
       const matchesType = !selectedType || wine.type === selectedType;
       const matchesGrape = !selectedGrape || wine.grape === selectedGrape;
       const matchesCountry = !selectedCountry || wine.region === selectedCountry;
+      const searchableText = [wine.name, wine.type, wine.grape, wine.region, wine.category]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      const matchesSearch = !normalizedSearch || searchableText.includes(normalizedSearch);
 
-      return matchesPrice && matchesType && matchesGrape && matchesCountry;
+      return matchesPrice && matchesType && matchesGrape && matchesCountry && matchesSearch;
+    }).sort((firstWine, secondWine) => {
+      if (sortOrder === 'name') {
+        return firstWine.name.localeCompare(secondWine.name, 'pt-BR');
+      }
+
+      if (sortOrder === 'price-asc') {
+        return firstWine.price - secondWine.price;
+      }
+
+      if (sortOrder === 'price-desc') {
+        return secondWine.price - firstWine.price;
+      }
+
+      return new Date(secondWine.created_at).getTime() - new Date(firstWine.created_at).getTime();
     });
-  }, [wines, selectedPrice, selectedType, selectedGrape, selectedCountry]);
+  }, [wines, selectedPrice, selectedType, selectedGrape, selectedCountry, searchTerm, sortOrder]);
 
-  const activeFilterCount = [selectedPrice, selectedType, selectedGrape, selectedCountry].filter(Boolean).length;
+  const activeFilterCount =
+    [selectedPrice, selectedType, selectedGrape, selectedCountry].filter(Boolean).length +
+    (searchTerm.trim() ? 1 : 0);
 
   const clearFilters = () => {
     setSelectedPrice(null);
     setSelectedType(null);
     setSelectedGrape(null);
     setSelectedCountry(null);
+    setSearchTerm('');
+    setSortOrder('recent');
   };
 
   const filterButtonClass = (isSelected: boolean) =>
@@ -87,8 +116,49 @@ export default function CatalogoPage() {
         </button>
       </div>
 
+      <div className="mb-5 grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
+        <label className="relative block">
+          <span className="material-symbols-outlined pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[22px] text-stone-400">
+            search
+          </span>
+          <input
+            type="search"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Buscar por nome, uva, pais ou tipo"
+            className="h-12 w-full rounded-2xl border border-stone-200 bg-white pl-12 pr-4 text-sm font-bold text-stone-800 shadow-sm outline-none transition placeholder:text-stone-400 focus:border-black"
+            aria-label="Buscar vinhos"
+          />
+        </label>
+
+        <label className="relative block">
+          <span className="material-symbols-outlined pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[22px] text-stone-400">
+            sort
+          </span>
+          <select
+            value={sortOrder}
+            onChange={(event) => setSortOrder(event.target.value as SortOrder)}
+            className="h-12 w-full appearance-none rounded-2xl border border-stone-200 bg-white pl-12 pr-10 text-sm font-bold text-stone-800 shadow-sm outline-none transition focus:border-black"
+            aria-label="Ordenar catalogo"
+          >
+            <option value="recent">Mais recentes</option>
+            <option value="name">Nome A-Z</option>
+            <option value="price-asc">Menor preco</option>
+            <option value="price-desc">Maior preco</option>
+          </select>
+          <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[20px] text-stone-400">
+            expand_more
+          </span>
+        </label>
+      </div>
+
       {activeFilterCount > 0 && (
         <div className="mb-5 flex flex-wrap items-center gap-2">
+          {searchTerm.trim() && (
+            <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-bold text-stone-600">
+              Busca: {searchTerm.trim()}
+            </span>
+          )}
           {selectedPrice && <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-bold text-stone-600">{selectedPrice.label}</span>}
           {selectedType && <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-bold text-stone-600">{selectedType}</span>}
           {selectedGrape && <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-bold text-stone-600">{selectedGrape}</span>}
