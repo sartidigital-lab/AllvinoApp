@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { createWine, deleteWine, fetchWinesFromSupabase, updateWine } from '@/lib/database/wines';
+import { createClient } from '@/utils/supabase/client';
 import { Wine } from '@/types/database';
 
 type WineForm = {
@@ -27,6 +28,8 @@ const emptyForm: WineForm = {
   stock: '0',
   category: '',
 };
+
+const allowedImageTypes = ['image/png', 'image/jpeg', 'image/webp'];
 
 function toForm(wine: Wine): WineForm {
   return {
@@ -60,6 +63,7 @@ export default function AdminCatalogPage() {
   const [wines, setWines] = useState<Wine[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [search, setSearch] = useState('');
   const [form, setForm] = useState<WineForm>(emptyForm);
   const [editingWine, setEditingWine] = useState<Wine | null>(null);
@@ -113,6 +117,46 @@ export default function AdminCatalogPage() {
     setIsFormOpen(false);
     setEditingWine(null);
     setForm(emptyForm);
+  };
+
+  const handleImageUpload = async (file: File | undefined) => {
+    if (!file) return;
+
+    if (!allowedImageTypes.includes(file.type)) {
+      setMessage('Envie uma imagem PNG, JPG, JPEG ou WebP.');
+      return;
+    }
+
+    setIsUploadingImage(true);
+    setMessage(null);
+
+    try {
+      const supabase = createClient();
+      const extension = file.name.split('.').pop()?.toLowerCase() || 'png';
+      const safeName = form.name.trim()
+        ? form.name.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+        : 'produto';
+      const filePath = `${Date.now()}-${safeName}.${extension}`;
+
+      const { error } = await supabase.storage
+        .from('produtos')
+        .upload(filePath, file, {
+          cacheControl: '31536000',
+          upsert: false,
+          contentType: file.type,
+        });
+
+      if (error) {
+        setMessage('Nao foi possivel enviar a imagem. Verifique sua permissao de admin.');
+        return;
+      }
+
+      const { data } = supabase.storage.from('produtos').getPublicUrl(filePath);
+      setForm((current) => ({ ...current, image_url: data.publicUrl }));
+      setMessage('Imagem enviada com sucesso.');
+    } finally {
+      setIsUploadingImage(false);
+    }
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -245,10 +289,40 @@ export default function AdminCatalogPage() {
               <span className="text-xs font-bold uppercase text-stone-400">Regiao</span>
               <input value={form.region} onChange={(event) => setForm({ ...form, region: event.target.value })} className="w-full border border-stone-200 rounded-lg p-3 text-sm font-bold outline-none focus:border-black" />
             </label>
-            <label className="space-y-1 lg:col-span-2">
-              <span className="text-xs font-bold uppercase text-stone-400">Imagem URL</span>
-              <input value={form.image_url} onChange={(event) => setForm({ ...form, image_url: event.target.value })} className="w-full border border-stone-200 rounded-lg p-3 text-sm font-bold outline-none focus:border-black" />
-            </label>
+            <div className="space-y-2 lg:col-span-2">
+              <span className="text-xs font-bold uppercase text-stone-400">Imagem do produto</span>
+              <div className="flex flex-col gap-3 rounded-lg border border-stone-200 p-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-24 w-20 shrink-0 items-center justify-center rounded bg-stone-50">
+                    {form.image_url ? (
+                      <img src={form.image_url} alt="Preview do produto" className="h-full w-full object-contain rounded" />
+                    ) : (
+                      <span className="material-symbols-outlined text-stone-300">image</span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-black px-4 py-2.5 text-sm font-bold text-white transition hover:bg-stone-800">
+                      <span className="material-symbols-outlined text-[18px]">upload</span>
+                      {isUploadingImage ? 'Enviando...' : 'Subir imagem'}
+                      <input
+                        type="file"
+                        accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
+                        disabled={isUploadingImage}
+                        onChange={(event) => handleImageUpload(event.target.files?.[0])}
+                        className="hidden"
+                      />
+                    </label>
+                    <p className="text-xs font-bold text-stone-400">PNG, JPG, JPEG ou WebP. A URL sera preenchida automaticamente.</p>
+                  </div>
+                </div>
+                <input
+                  value={form.image_url}
+                  readOnly
+                  placeholder="URL gerada automaticamente apos upload"
+                  className="w-full border border-stone-200 bg-stone-50 rounded-lg p-3 text-xs font-bold text-stone-500 outline-none"
+                />
+              </div>
+            </div>
             <label className="space-y-1 lg:col-span-2">
               <span className="text-xs font-bold uppercase text-stone-400">Descricao</span>
               <textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} rows={3} className="w-full border border-stone-200 rounded-lg p-3 text-sm font-bold outline-none focus:border-black resize-none" />
