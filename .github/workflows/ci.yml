@@ -24,6 +24,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Smoke checks
+        run: npm run smoke
+
       - name: Build
         run: npm run build
         env:
