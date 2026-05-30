@@ -16,6 +16,20 @@ const nextConfig = {
   turbopack: {
     root: path.dirname(fileURLToPath(import.meta.url)),
   },
+  async redirects() {
+    return [
+      { source: "/index.html", destination: "/", permanent: true },
+      { source: "/catalogo.html", destination: "/catalogo", permanent: true },
+      { source: "/checkout.html", destination: "/checkout", permanent: true },
+      { source: "/conta.html", destination: "/conta", permanent: true },
+      { source: "/promocao.html", destination: "/catalogo", permanent: true },
+      { source: "/login.html", destination: "/", permanent: true },
+      { source: "/cadastro.html", destination: "/", permanent: true },
+      { source: "/recuperar-senha.html", destination: "/", permanent: true },
+      { source: "/admin.html", destination: "/admin", permanent: true },
+      { source: "/admin-login.html", destination: "/admin", permanent: true },
+    ];
+  },
 };
 
 export default withPWA(nextConfig);
