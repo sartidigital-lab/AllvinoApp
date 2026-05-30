@@ -87,4 +87,11 @@ jobs:
           printf '{"orgId":"%s","projectId":"%s"}' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > .vercel/project.json
 
       - name: Deploy to Vercel
-        run: vercel deploy --prod --yes --token="$VERCEL_TOKEN"
+        id: vercel_deploy
+        run: |
+          DEPLOYMENT_URL="$(vercel deploy --prod --yes --token="$VERCEL_TOKEN")"
+          echo "deployment_url=$DEPLOYMENT_URL" >> "$GITHUB_OUTPUT"
+          echo "Deployed to $DEPLOYMENT_URL"
+
+      - name: Alias production domain
+        run: vercel alias set "${{ steps.vercel_deploy.outputs.deployment_url }}" allvino-app.vercel.app --token="$VERCEL_TOKEN"
