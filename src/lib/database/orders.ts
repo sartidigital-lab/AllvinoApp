@@ -1,5 +1,5 @@
 import { createClient } from '@/utils/supabase/client';
-import { Order, OrderItem } from '@/types/database';
+import { Order, OrderItem, OrderWithItems } from '@/types/database';
 import { CartItem } from '@/context/CartContext';
 
 export async function createOrder(
@@ -50,7 +50,9 @@ export async function createOrder(
     // 2. Insert order items
     const itemsToInsert = cartItems.map((item) => ({
       order_id: order.id,
-      wine_id: item.id,
+      wine_id: null,
+      product_id: item.id,
+      product_name: item.name,
       quantity: item.quantity,
       unit_price: item.price,
     }));
@@ -68,20 +70,20 @@ export async function createOrder(
   }
 }
 
-export async function getUserOrders(userId: string, limit = 10): Promise<{ orders: Order[]; error: Error | null }> {
+export async function getUserOrders(userId: string, limit = 10): Promise<{ orders: OrderWithItems[]; error: Error | null }> {
   const supabase = createClient();
   
   try {
     const { data, error } = await supabase
       .from('orders')
-      .select('id,user_id,status,total_amount,created_at,delivery_type,customer_name,customer_phone')
+      .select('id,user_id,status,total_amount,created_at,delivery_type,customer_name,customer_phone,order_items(id,order_id,wine_id,product_id,product_name,quantity,unit_price)')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(limit);
 
     if (error) throw error;
     
-    return { orders: data as Order[], error: null };
+    return { orders: data as OrderWithItems[], error: null };
   } catch (error) {
     console.error('Error fetching user orders:', error);
     return { orders: [], error: error as Error };

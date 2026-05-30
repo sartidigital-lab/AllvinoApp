@@ -32,3 +32,7 @@ export type OrderItem = {
   quantity: number;
   unit_price: number;
 };
+
+export type OrderWithItems = Order & {
+  order_items: OrderItem[];
+};

@@ -10,6 +10,7 @@ type CartContextType = {
   isCartOpen: boolean;
   setIsCartOpen: (isOpen: boolean) => void;
   addToCart: (wine: Wine) => void;
+  addManyToCart: (items: CartItem[]) => void;
   removeFromCart: (id: string) => void;
   updateQuantity: (id: string, delta: number) => void;
   clearCart: () => void;
@@ -56,6 +57,29 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setIsCartOpen(true);
   };
 
+  const addManyToCart = (items: CartItem[]) => {
+    setCart((prev) => {
+      const next = [...prev];
+
+      items.forEach((item) => {
+        const existingIndex = next.findIndex((cartItem) => cartItem.id === item.id);
+
+        if (existingIndex >= 0) {
+          next[existingIndex] = {
+            ...next[existingIndex],
+            quantity: next[existingIndex].quantity + item.quantity,
+          };
+          return;
+        }
+
+        next.push(item);
+      });
+
+      return next;
+    });
+    setIsCartOpen(true);
+  };
+
   const removeFromCart = (id: string) => {
     setCart((prev) => prev.filter((item) => item.id !== id));
   };
@@ -85,6 +109,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         isCartOpen,
         setIsCartOpen,
         addToCart,
+        addManyToCart,
         removeFromCart,
         updateQuantity,
         clearCart,
