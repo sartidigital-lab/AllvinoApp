@@ -250,13 +250,19 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      <button
-        onClick={handleFinalizar}
-        disabled={isLoading}
-        className="w-full bg-[#B91C1C] text-white py-5 rounded-3xl font-bold text-lg shadow-xl shadow-red-900/20 active:scale-95 transition-transform flex items-center justify-center disabled:opacity-50"
-      >
-        {isLoading ? 'ENVIANDO...' : 'ENVIAR PEDIDO'}
-      </button>
+      <div className="space-y-3">
+        <p className="text-center text-sm font-bold text-stone-500">O pedido sera recebido em nosso WhatsApp.</p>
+        <button
+          onClick={handleFinalizar}
+          disabled={isLoading}
+          className="w-full bg-[#25D366] text-white py-5 rounded-3xl font-bold text-lg shadow-xl shadow-emerald-900/20 active:scale-95 transition-transform flex items-center justify-center gap-3 hover:bg-[#1ebe5d] disabled:opacity-50"
+        >
+          <svg aria-hidden="true" viewBox="0 0 32 32" className="h-6 w-6 fill-current">
+            <path d="M16.03 4C9.39 4 4 9.28 4 15.78c0 2.24.65 4.34 1.78 6.12L4.61 28l6.29-1.62A12.2 12.2 0 0 0 16.03 27C22.67 27 28 21.72 28 15.22 28 8.72 22.67 4 16.03 4Zm0 20.83c-1.66 0-3.28-.43-4.7-1.25l-.34-.2-3.73.96.99-3.55-.23-.37a9.36 9.36 0 0 1-1.49-5.07c0-5.3 4.38-9.62 9.76-9.62 5.37 0 9.19 4.02 9.19 9.49 0 5.3-4.09 9.61-9.45 9.61Zm5.37-7.2c-.29-.14-1.72-.83-1.99-.92-.27-.1-.46-.14-.66.14-.19.28-.76.92-.93 1.11-.17.19-.34.21-.63.07-.29-.14-1.23-.44-2.34-1.4-.86-.75-1.44-1.68-1.61-1.96-.17-.28-.02-.43.13-.57.13-.13.29-.34.43-.51.14-.16.19-.28.29-.47.1-.19.05-.35-.02-.5-.07-.14-.66-1.55-.9-2.13-.24-.56-.49-.49-.66-.5h-.56c-.19 0-.5.07-.76.35-.27.28-1 1-1 2.42 0 1.42 1.03 2.79 1.17 2.98.14.19 2.03 3.02 4.91 4.24.69.29 1.22.46 1.64.59.69.21 1.31.18 1.8.11.55-.08 1.72-.69 1.96-1.35.24-.67.24-1.24.17-1.35-.07-.11-.26-.18-.55-.32Z" />
+          </svg>
+          {isLoading ? 'ENVIANDO...' : 'ENVIAR PEDIDO'}
+        </button>
+      </div>
     </main>
   );
 }
