@@ -13,7 +13,7 @@ export function Header() {
         <span className="material-symbols-outlined text-black">tune</span>
       </button>
       
-      <Link href="/" className="h-12 flex items-center justify-center">
+      <Link href="/catalogo" className="h-12 flex items-center justify-center">
         <img src="/logo-allvino-header.png" alt="Allvino" className="w-36 h-auto object-contain" />
       </Link>
       
