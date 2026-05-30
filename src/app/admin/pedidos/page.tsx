@@ -4,6 +4,8 @@ import { createClient } from '@/utils/supabase/client';
 import { useEffect, useMemo, useState } from 'react';
 
 type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'delivered' | 'cancelled';
+type DateFilter = 'all' | 'today' | '7d' | '30d';
+type SortOrder = 'recent' | 'oldest' | 'value-desc' | 'value-asc';
 
 type AdminOrderItem = {
   quantity: number;
@@ -44,6 +46,14 @@ const statusStyles: Record<OrderStatus, string> = {
 };
 
 const statusFlow: OrderStatus[] = ['pending', 'confirmed', 'preparing', 'delivered'];
+const statusOptions: Array<'all' | OrderStatus> = ['all', ...statusFlow, 'cancelled'];
+
+const dateFilterLabels: Record<DateFilter, string> = {
+  all: 'Todo periodo',
+  today: 'Hoje',
+  '7d': 'Ultimos 7 dias',
+  '30d': 'Ultimos 30 dias',
+};
 
 function getItemName(item: AdminOrderItem) {
   if (item.product_name) return item.product_name;
@@ -61,10 +71,45 @@ function nextStatus(status: OrderStatus) {
   return statusFlow[currentIndex + 1];
 }
 
+function normalizeSearch(value: string | null | undefined) {
+  return (value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+function getDateLimit(filter: DateFilter) {
+  if (filter === 'all') return null;
+
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+
+  if (filter === '7d') {
+    date.setDate(date.getDate() - 6);
+  }
+
+  if (filter === '30d') {
+    date.setDate(date.getDate() - 29);
+  }
+
+  return date.getTime();
+}
+
+function getWhatsAppUrl(phone: string | null) {
+  const digits = (phone || '').replace(/\D/g, '');
+  if (!digits) return null;
+
+  const normalizedPhone = digits.startsWith('55') ? digits : `55${digits}`;
+  return `https://wa.me/${normalizedPhone}`;
+}
+
 export default function AdminPedidosPage() {
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<'all' | OrderStatus>('all');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [dateFilter, setDateFilter] = useState<DateFilter>('all');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('recent');
   const [isLoading, setIsLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -97,9 +142,45 @@ export default function AdminPedidosPage() {
   }, []);
 
   const filteredOrders = useMemo(() => {
-    if (selectedStatus === 'all') return orders;
-    return orders.filter((order) => order.status === selectedStatus);
-  }, [orders, selectedStatus]);
+    const normalizedSearch = normalizeSearch(searchTerm.trim());
+    const dateLimit = getDateLimit(dateFilter);
+
+    return orders
+      .filter((order) => {
+        const matchesStatus = selectedStatus === 'all' || order.status === selectedStatus;
+        const matchesDate = !dateLimit || new Date(order.created_at).getTime() >= dateLimit;
+        const itemNames = order.order_items?.map(getItemName).join(' ') || '';
+        const searchableText = normalizeSearch(
+          [
+            order.id,
+            order.customer_name,
+            order.customer_phone,
+            order.delivery_type,
+            order.payment_method,
+            order.delivery_address,
+            itemNames,
+          ].join(' ')
+        );
+        const matchesSearch = !normalizedSearch || searchableText.includes(normalizedSearch);
+
+        return matchesStatus && matchesDate && matchesSearch;
+      })
+      .sort((firstOrder, secondOrder) => {
+        if (sortOrder === 'oldest') {
+          return new Date(firstOrder.created_at).getTime() - new Date(secondOrder.created_at).getTime();
+        }
+
+        if (sortOrder === 'value-desc') {
+          return secondOrder.total_amount - firstOrder.total_amount;
+        }
+
+        if (sortOrder === 'value-asc') {
+          return firstOrder.total_amount - secondOrder.total_amount;
+        }
+
+        return new Date(secondOrder.created_at).getTime() - new Date(firstOrder.created_at).getTime();
+      });
+  }, [orders, selectedStatus, searchTerm, dateFilter, sortOrder]);
 
   const selectedOrder = useMemo(
     () => orders.find((order) => order.id === selectedOrderId) || filteredOrders[0] || null,
@@ -115,6 +196,17 @@ export default function AdminPedidosPage() {
         return acc;
       },
       { total: 0, revenue: 0, pending: 0, confirmed: 0, preparing: 0, delivered: 0, cancelled: 0 }
+    );
+  }, [orders]);
+
+  const statusCounts = useMemo(() => {
+    return orders.reduce(
+      (acc, order) => {
+        acc.all += 1;
+        acc[order.status] += 1;
+        return acc;
+      },
+      { all: 0, pending: 0, confirmed: 0, preparing: 0, delivered: 0, cancelled: 0 }
     );
   }, [orders]);
 
@@ -187,7 +279,7 @@ export default function AdminPedidosPage() {
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-1">
-        {(['all', ...statusFlow, 'cancelled'] as Array<'all' | OrderStatus>).map((status) => (
+        {statusOptions.map((status) => (
           <button
             key={status}
             type="button"
@@ -196,15 +288,68 @@ export default function AdminPedidosPage() {
               selectedStatus === status ? 'bg-black text-white' : 'bg-white text-stone-500 border border-stone-200'
             }`}
           >
-            {status === 'all' ? 'Todos' : statusLabels[status]}
+            {status === 'all' ? 'Todos' : statusLabels[status]} ({statusCounts[status]})
           </button>
         ))}
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
         <div className="overflow-hidden rounded-lg border border-stone-100 bg-white shadow-sm">
-          <div className="border-b border-stone-100 px-5 py-4">
-            <h2 className="font-bold text-black">Fila de pedidos</h2>
+          <div className="space-y-4 border-b border-stone-100 px-5 py-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="font-bold text-black">Fila de pedidos</h2>
+              <span className="text-xs font-bold text-stone-400">{filteredOrders.length} pedidos encontrados</span>
+            </div>
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_180px_180px]">
+              <label className="relative block">
+                <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-stone-400">
+                  search
+                </span>
+                <input
+                  type="search"
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder="Buscar por cliente, telefone, pedido ou produto"
+                  className="h-11 w-full rounded-lg border border-stone-200 bg-white pl-10 pr-3 text-sm font-bold text-stone-800 outline-none transition placeholder:text-stone-400 focus:border-black"
+                  aria-label="Buscar pedidos"
+                />
+              </label>
+
+              <label className="relative block">
+                <select
+                  value={dateFilter}
+                  onChange={(event) => setDateFilter(event.target.value as DateFilter)}
+                  className="h-11 w-full appearance-none rounded-lg border border-stone-200 bg-white px-3 pr-9 text-sm font-bold text-stone-800 outline-none transition focus:border-black"
+                  aria-label="Filtrar periodo"
+                >
+                  {(Object.keys(dateFilterLabels) as DateFilter[]).map((filter) => (
+                    <option key={filter} value={filter}>
+                      {dateFilterLabels[filter]}
+                    </option>
+                  ))}
+                </select>
+                <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[20px] text-stone-400">
+                  expand_more
+                </span>
+              </label>
+
+              <label className="relative block">
+                <select
+                  value={sortOrder}
+                  onChange={(event) => setSortOrder(event.target.value as SortOrder)}
+                  className="h-11 w-full appearance-none rounded-lg border border-stone-200 bg-white px-3 pr-9 text-sm font-bold text-stone-800 outline-none transition focus:border-black"
+                  aria-label="Ordenar pedidos"
+                >
+                  <option value="recent">Mais recentes</option>
+                  <option value="oldest">Mais antigos</option>
+                  <option value="value-desc">Maior valor</option>
+                  <option value="value-asc">Menor valor</option>
+                </select>
+                <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[20px] text-stone-400">
+                  expand_more
+                </span>
+              </label>
+            </div>
           </div>
           {isLoading ? (
             <div className="p-8 text-center text-sm font-bold text-stone-400">Carregando pedidos...</div>
@@ -271,6 +416,17 @@ export default function AdminPedidosPage() {
                 {selectedOrder.delivery_address && (
                   <p className="text-xs font-bold text-stone-400">Endereco: {selectedOrder.delivery_address}</p>
                 )}
+                {getWhatsAppUrl(selectedOrder.customer_phone) && (
+                  <a
+                    href={getWhatsAppUrl(selectedOrder.customer_phone)!}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-2 inline-flex items-center gap-2 rounded-lg bg-[#25D366] px-3 py-2 text-xs font-bold text-white transition hover:bg-[#1FAF55]"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">chat</span>
+                    Chamar no WhatsApp
+                  </a>
+                )}
               </div>
 
               <div>
@@ -302,6 +458,23 @@ export default function AdminPedidosPage() {
               </div>
 
               <div className="space-y-3">
+                <label className="block">
+                  <span className="mb-2 block text-xs font-bold uppercase tracking-widest text-stone-400">
+                    Alterar status
+                  </span>
+                  <select
+                    value={selectedOrder.status}
+                    disabled={updatingId === selectedOrder.id}
+                    onChange={(event) => updateOrderStatus(selectedOrder, event.target.value as OrderStatus)}
+                    className="h-12 w-full rounded-xl border border-stone-200 bg-white px-3 text-sm font-bold text-black outline-none transition focus:border-black disabled:opacity-50"
+                  >
+                    {statusFlow.concat('cancelled').map((status) => (
+                      <option key={status} value={status}>
+                        {statusLabels[status]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 {nextStatus(selectedOrder.status) && (
                   <button
                     type="button"
