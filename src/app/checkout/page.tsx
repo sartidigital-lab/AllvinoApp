@@ -22,7 +22,7 @@ export default function CheckoutPage() {
       const currentUser = await getCurrentUserFast();
       
       if (!currentUser) {
-        router.replace('/auth/login?redirectTo=/checkout');
+        router.replace('/?login=true&redirectTo=/checkout');
         return;
       }
       

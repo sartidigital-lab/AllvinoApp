@@ -23,7 +23,7 @@ export default function ContaPage() {
       const currentUser = await getCurrentUserFast();
       
       if (!currentUser) {
-        router.replace('/auth/login?redirectTo=/conta');
+        router.replace('/?login=true&redirectTo=/conta');
         return;
       }
       
@@ -66,7 +66,7 @@ export default function ContaPage() {
     if (confirm("Deseja realmente sair da sua conta?")) {
       const supabase = createClient();
       await supabase.auth.signOut();
-      router.replace('/auth/login');
+      router.replace('/?login=true');
     }
   };
 

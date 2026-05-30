@@ -16,7 +16,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       const { data: { session } } = await supabase.auth.getSession();
 
       if (!session) {
-        router.replace('/auth/login?redirectTo=/admin');
+        router.replace('/?login=true&redirectTo=/admin');
         return;
       }
 
