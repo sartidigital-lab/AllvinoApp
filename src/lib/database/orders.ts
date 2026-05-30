@@ -41,7 +41,7 @@ export async function createOrder(
         total_amount: total,
         delivery_type: deliveryMethod,
       })
-      .select()
+      .select('id,user_id,status,total_amount,created_at,delivery_type,customer_name,customer_phone')
       .single();
 
     if (orderError) throw orderError;
@@ -74,7 +74,7 @@ export async function getUserOrders(userId: string, limit = 10): Promise<{ order
   try {
     const { data, error } = await supabase
       .from('orders')
-      .select('id,user_id,status,total_amount,created_at,delivery_type')
+      .select('id,user_id,status,total_amount,created_at,delivery_type,customer_name,customer_phone')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(limit);

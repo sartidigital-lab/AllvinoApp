@@ -19,6 +19,8 @@ export type Order = {
   total_amount: number;
   created_at: string;
   delivery_type: string;
+  customer_name: string | null;
+  customer_phone: string | null;
 };
 
 export type OrderItem = {

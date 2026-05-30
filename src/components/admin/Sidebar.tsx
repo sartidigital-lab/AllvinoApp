@@ -30,8 +30,9 @@ export default function Sidebar() {
 
   const navLinks = [
     { href: '/admin', label: 'BI Analytics', icon: 'analytics', color: 'text-[#B91C1C]' },
-    { href: '/admin/catalogo', label: 'Catálogo', icon: 'wine_bar', color: 'text-blue-400' },
-    { href: '/admin/promocoes', label: 'Promoções', icon: 'campaign', color: 'text-green-500' },
+    { href: '/admin/pedidos', label: 'Pedidos', icon: 'receipt_long', color: 'text-emerald-400' },
+    { href: '/admin/catalogo', label: 'Catalogo', icon: 'wine_bar', color: 'text-blue-400' },
+    { href: '/admin/promocoes', label: 'Promocoes', icon: 'campaign', color: 'text-green-500' },
     { href: '/admin/equipe', label: 'Equipe', icon: 'group', color: 'text-orange-400' },
     { href: '/admin/perfil', label: 'Meu Perfil', icon: 'person_edit', color: 'text-purple-400' },
   ];
@@ -43,10 +44,10 @@ export default function Sidebar() {
           <button onClick={() => setIsOpen(!isOpen)} className="lg:hidden p-1 hover:bg-stone-800 rounded-md transition-colors">
             <span className="material-symbols-outlined">menu</span>
           </button>
-          <h2 className="text-lg font-bold hidden sm:block">Gestão Allvino</h2>
+          <h2 className="text-lg font-bold hidden sm:block">Gestao Allvino</h2>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-sm font-bold text-stone-300">Olá, {userName.split(' ')[0]}</span>
+          <span className="text-sm font-bold text-stone-300">Ola, {userName.split(' ')[0]}</span>
           <span className="text-[10px] bg-stone-300 text-black px-2 py-0.5 rounded-full uppercase font-bold">Admin</span>
         </div>
       </header>

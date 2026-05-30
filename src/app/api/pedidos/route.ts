@@ -40,8 +40,10 @@ export async function POST(request: Request) {
       status: 'pending',
       total_amount: total,
       delivery_type: deliveryMethod,
+      customer_name: user.user_metadata?.nome_completo || user.email?.split('@')[0] || null,
+      customer_phone: user.user_metadata?.telefone || null,
     })
-    .select('id,user_id,status,total_amount,created_at,delivery_type')
+    .select('id,user_id,status,total_amount,created_at,delivery_type,customer_name,customer_phone')
     .single();
 
   if (orderError || !order) {
