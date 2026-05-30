@@ -1,47 +1,27 @@
 import { createClient } from '@/utils/supabase/client';
+import { LegacyProduct, mapProductToWine, mapWineToProduct } from '@/lib/catalog/products';
 import { Wine } from '@/types/database';
 
-type LegacyProduct = {
-  id: string;
-  nome: string;
-  descricao: string | null;
-  preco: number;
-  imagem_url: string | null;
-  pais: string | null;
-  tipo: string | null;
-  uva: string | null;
-  criado_em: string;
-};
+async function fetchCachedPublicCatalog(): Promise<Wine[] | null> {
+  if (typeof window === 'undefined') return null;
 
-function mapProductToWine(product: LegacyProduct): Wine {
-  return {
-    id: product.id,
-    name: product.nome,
-    description: product.descricao,
-    price: Number(product.preco),
-    image_url: product.imagem_url,
-    type: product.tipo,
-    region: product.pais,
-    grape: product.uva,
-    category: [product.pais, product.tipo].filter(Boolean).join(' • ') || 'Vinho',
-    stock: 0,
-    created_at: product.criado_em,
-  };
+  const response = await fetch('/api/catalogo', {
+    headers: { Accept: 'application/json' },
+  });
+
+  if (!response.ok) return null;
+
+  return (await response.json()) as Wine[];
 }
 
-function mapWineToProduct(wineData: Partial<Wine>) {
-  return {
-    nome: wineData.name,
-    descricao: wineData.description,
-    preco: wineData.price,
-    imagem_url: wineData.image_url,
-    pais: wineData.region,
-    tipo: wineData.type || wineData.category,
-    uva: wineData.grape,
-  };
-}
+export async function fetchWinesFromSupabase(options: { usePublicCache?: boolean } = {}): Promise<Wine[]> {
+  if (options.usePublicCache !== false) {
+    const cachedCatalog = await fetchCachedPublicCatalog();
+    if (cachedCatalog) {
+      return cachedCatalog;
+    }
+  }
 
-export async function fetchWinesFromSupabase(): Promise<Wine[]> {
   const supabase = createClient();
 
   const { data: products, error: productsError } = await supabase

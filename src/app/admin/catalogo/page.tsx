@@ -85,7 +85,7 @@ export default function AdminCatalogPage() {
     setIsLoading(true);
     setMessage(null);
     try {
-      const data = await fetchWinesFromSupabase();
+      const data = await fetchWinesFromSupabase({ usePublicCache: false });
       setWines(data);
     } catch (error) {
       console.error(error);
