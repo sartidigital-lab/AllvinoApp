@@ -17,6 +17,10 @@ type AdminOrder = {
   status: OrderStatus;
   total_amount: number;
   delivery_type: string;
+  payment_method: string | null;
+  delivery_address: string | null;
+  discount_amount: number;
+  subtotal_amount: number | null;
   created_at: string;
   customer_name: string | null;
   customer_phone: string | null;
@@ -72,7 +76,7 @@ export default function AdminPedidosPage() {
     const supabase = createClient();
     const { data, error } = await supabase
       .from('orders')
-      .select('id,status,total_amount,delivery_type,created_at,customer_name,customer_phone,order_items(quantity,unit_price,product_name,wines(name))')
+      .select('id,status,total_amount,delivery_type,payment_method,delivery_address,discount_amount,subtotal_amount,created_at,customer_name,customer_phone,order_items(quantity,unit_price,product_name,wines(name))')
       .order('created_at', { ascending: false })
       .limit(100);
 
@@ -263,6 +267,10 @@ export default function AdminPedidosPage() {
                 <p className="font-bold text-black">{selectedOrder.customer_name || 'Cliente sem nome'}</p>
                 <p className="text-sm font-bold text-stone-500">{selectedOrder.customer_phone || 'Telefone nao informado'}</p>
                 <p className="text-xs font-bold text-stone-400">{selectedOrder.delivery_type}</p>
+                <p className="text-xs font-bold text-stone-400">Pagamento: {selectedOrder.payment_method || 'Nao informado'}</p>
+                {selectedOrder.delivery_address && (
+                  <p className="text-xs font-bold text-stone-400">Endereco: {selectedOrder.delivery_address}</p>
+                )}
               </div>
 
               <div>
@@ -281,6 +289,12 @@ export default function AdminPedidosPage() {
               </div>
 
               <div className="border-t border-stone-100 pt-4">
+                {selectedOrder.discount_amount > 0 && (
+                  <div className="mb-2 flex items-center justify-between text-sm font-bold text-emerald-700">
+                    <span>Desconto</span>
+                    <span>- {formatMoney(selectedOrder.discount_amount)}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between text-lg font-bold text-black">
                   <span>Total</span>
                   <span>{formatMoney(selectedOrder.total_amount)}</span>

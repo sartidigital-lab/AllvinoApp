@@ -19,6 +19,10 @@ export type Order = {
   total_amount: number;
   created_at: string;
   delivery_type: string;
+  payment_method: string | null;
+  delivery_address: string | null;
+  discount_amount: number;
+  subtotal_amount: number | null;
   customer_name: string | null;
   customer_phone: string | null;
 };

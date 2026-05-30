@@ -14,6 +14,14 @@ export default function CheckoutPage() {
   const [pagamento, setPagamento] = useState('Pix');
   const [isLoading, setIsLoading] = useState(false);
   const [successOrderId, setSuccessOrderId] = useState<string | null>(null);
+  const [successSummary, setSuccessSummary] = useState<{
+    total: number;
+    subtotal: number;
+    discount: number;
+    payment: string;
+    delivery: string;
+    address: string | null;
+  } | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -52,7 +60,9 @@ export default function CheckoutPage() {
       user.id,
       cart,
       finalTotal,
-      entrega === 'retirada' ? 'Retirada na Loja' : `Entrega: ${endereco}`
+      entrega === 'retirada' ? 'Retirada na Loja' : 'Entrega no Endereco',
+      pagamento,
+      entrega === 'entrega' ? endereco : undefined
     );
 
     if (error || !order) {
@@ -68,7 +78,7 @@ export default function CheckoutPage() {
       msg += `*Endereco:* ${endereco}\n`;
     }
 
-    msg += `\n*VALOR TOTAL: R$ ${finalTotal.toFixed(2).replace('.', ',')}*`;
+    msg += `\n*VALOR TOTAL: R$ ${order.total_amount.toFixed(2).replace('.', ',')}*`;
 
     const foneVendas = '552723453060';
     const link = `https://wa.me/${foneVendas}?text=${encodeURIComponent(msg)}`;
@@ -76,6 +86,14 @@ export default function CheckoutPage() {
     window.open(link, '_blank');
     clearCart();
     setSuccessOrderId(order.id);
+    setSuccessSummary({
+      total: order.total_amount,
+      subtotal: order.subtotal_amount || cartTotal,
+      discount: order.discount_amount || 0,
+      payment: order.payment_method || pagamento,
+      delivery: order.delivery_type,
+      address: order.delivery_address,
+    });
     setIsLoading(false);
   };
 
@@ -83,7 +101,7 @@ export default function CheckoutPage() {
     return <p className="text-center mt-20 animate-pulse font-bold">Carregando Checkout...</p>;
   }
 
-  if (successOrderId) {
+  if (successOrderId && successSummary) {
     return (
       <main className="max-w-xl mx-auto px-5 pt-10 pb-32">
         <div className="rounded-3xl border border-emerald-100 bg-white p-8 text-center shadow-sm space-y-5">
@@ -99,6 +117,32 @@ export default function CheckoutPage() {
           <p className="rounded-2xl bg-stone-50 px-4 py-3 text-xs font-bold uppercase tracking-widest text-stone-500">
             Pedido #{successOrderId.slice(0, 8)}
           </p>
+          <div className="space-y-2 rounded-2xl bg-stone-50 p-4 text-left text-sm">
+            <div className="flex justify-between gap-4">
+              <span className="font-bold text-stone-500">Pagamento</span>
+              <span className="font-bold text-black">{successSummary.payment}</span>
+            </div>
+            <div className="flex justify-between gap-4">
+              <span className="font-bold text-stone-500">Entrega</span>
+              <span className="font-bold text-black">{successSummary.delivery}</span>
+            </div>
+            {successSummary.address && (
+              <div className="flex justify-between gap-4">
+                <span className="font-bold text-stone-500">Endereco</span>
+                <span className="text-right font-bold text-black">{successSummary.address}</span>
+              </div>
+            )}
+            {successSummary.discount > 0 && (
+              <div className="flex justify-between gap-4 text-emerald-700">
+                <span className="font-bold">Desconto</span>
+                <span className="font-bold">- R$ {successSummary.discount.toFixed(2).replace('.', ',')}</span>
+              </div>
+            )}
+            <div className="flex justify-between gap-4 border-t border-stone-200 pt-2 text-base">
+              <span className="font-bold text-black">Total</span>
+              <span className="font-bold text-black">R$ {successSummary.total.toFixed(2).replace('.', ',')}</span>
+            </div>
+          </div>
           <div className="grid grid-cols-1 gap-3">
             <Link href="/conta" className="rounded-2xl bg-[#B91C1C] py-4 text-sm font-bold text-white">
               Ver meus pedidos

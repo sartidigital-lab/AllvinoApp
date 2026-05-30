@@ -187,6 +187,11 @@ export default function ContaPage() {
                       </div>
 
                       <div className="space-y-2">
+                        <div className="rounded-xl bg-white p-3 text-xs font-bold text-stone-500">
+                          <p>Pagamento: <span className="text-black">{order.payment_method || 'Nao informado'}</span></p>
+                          <p>Entrega: <span className="text-black">{order.delivery_type}</span></p>
+                          {order.delivery_address && <p>Endereco: <span className="text-black">{order.delivery_address}</span></p>}
+                        </div>
                         {order.order_items.map((item) => (
                           <div key={item.id} className="flex justify-between gap-3 rounded-xl bg-white p-3">
                             <div className="min-w-0">

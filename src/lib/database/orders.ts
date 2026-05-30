@@ -5,15 +5,17 @@ import { CartItem } from '@/context/CartContext';
 export async function createOrder(
   userId: string, 
   cartItems: CartItem[], 
-  total: number, 
-  deliveryMethod: string
+  total: number,
+  deliveryMethod: string,
+  paymentMethod?: string,
+  deliveryAddress?: string
 ): Promise<{ order: Order | null; error: Error | null }> {
   if (typeof window !== 'undefined') {
     try {
       const response = await fetch('/api/pedidos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, cartItems, total, deliveryMethod }),
+        body: JSON.stringify({ userId, cartItems, deliveryMethod, paymentMethod, deliveryAddress }),
       });
 
       const payload = await response.json();
@@ -40,8 +42,12 @@ export async function createOrder(
         status: 'pending',
         total_amount: total,
         delivery_type: deliveryMethod,
+        payment_method: paymentMethod || null,
+        delivery_address: deliveryAddress || null,
+        discount_amount: 0,
+        subtotal_amount: total,
       })
-      .select('id,user_id,status,total_amount,created_at,delivery_type,customer_name,customer_phone')
+      .select('id,user_id,status,total_amount,created_at,delivery_type,payment_method,delivery_address,discount_amount,subtotal_amount,customer_name,customer_phone')
       .single();
 
     if (orderError) throw orderError;
@@ -76,7 +82,7 @@ export async function getUserOrders(userId: string, limit = 10): Promise<{ order
   try {
     const { data, error } = await supabase
       .from('orders')
-      .select('id,user_id,status,total_amount,created_at,delivery_type,customer_name,customer_phone,order_items(id,order_id,wine_id,product_id,product_name,quantity,unit_price)')
+      .select('id,user_id,status,total_amount,created_at,delivery_type,payment_method,delivery_address,discount_amount,subtotal_amount,customer_name,customer_phone,order_items(id,order_id,wine_id,product_id,product_name,quantity,unit_price)')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(limit);
