@@ -8,6 +8,27 @@ export async function createOrder(
   total: number, 
   deliveryMethod: string
 ): Promise<{ order: Order | null; error: Error | null }> {
+  if (typeof window !== 'undefined') {
+    try {
+      const response = await fetch('/api/pedidos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, cartItems, total, deliveryMethod }),
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload.error || 'Erro ao criar pedido.');
+      }
+
+      return { order: payload.order as Order, error: null };
+    } catch (error) {
+      console.error('Error creating order through API:', error);
+      return { order: null, error: error as Error };
+    }
+  }
+
   const supabase = createClient();
 
   try {
@@ -47,15 +68,16 @@ export async function createOrder(
   }
 }
 
-export async function getUserOrders(userId: string): Promise<{ orders: Order[]; error: Error | null }> {
+export async function getUserOrders(userId: string, limit = 10): Promise<{ orders: Order[]; error: Error | null }> {
   const supabase = createClient();
   
   try {
     const { data, error } = await supabase
       .from('orders')
-      .select('*')
+      .select('id,user_id,status,total_amount,created_at,delivery_type')
       .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(limit);
 
     if (error) throw error;
     

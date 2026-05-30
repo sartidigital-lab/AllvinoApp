@@ -24,7 +24,9 @@ export type Order = {
 export type OrderItem = {
   id: string;
   order_id: string;
-  wine_id: string;
+  wine_id: string | null;
+  product_id: string | null;
+  product_name: string | null;
   quantity: number;
   unit_price: number;
 };

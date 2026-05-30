@@ -1,6 +1,7 @@
 "use client";
 
 import { createClient } from '@/utils/supabase/client';
+import { CurrentUser, getCurrentUserFast } from '@/lib/auth/currentUser';
 import { getUserOrders } from '@/lib/database/orders';
 import { Order } from '@/types/database';
 import { useRouter } from 'next/navigation';
@@ -8,7 +9,7 @@ import { useState, useEffect } from 'react';
 
 export default function ContaPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<CurrentUser | null>(null);
   const [nome, setNome] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [nascimento, setNascimento] = useState('');
@@ -19,24 +20,19 @@ export default function ContaPage() {
 
   useEffect(() => {
     const fetchUserAndOrders = async () => {
-      const supabase = createClient();
-      const { data: { session }, error } = await supabase.auth.getSession();
+      const currentUser = await getCurrentUserFast();
       
-      if (error || !session) {
+      if (!currentUser) {
         router.replace('/auth/login?redirectTo=/conta');
         return;
       }
       
-      const u = session.user;
-      const userData = u.user_metadata || {};
-      
-      setUser(u);
-      setNome(userData.nome_completo || '');
-      setWhatsapp(userData.telefone || '');
-      setNascimento(userData.data_nascimento || '');
+      setUser(currentUser);
+      setNome(currentUser.name);
+      setWhatsapp(currentUser.phone);
+      setNascimento(currentUser.birthDate);
 
-      // Fetch Orders
-      const { orders } = await getUserOrders(u.id);
+      const { orders } = await getUserOrders(currentUser.id);
       setOrders(orders);
       setIsLoadingOrders(false);
     };

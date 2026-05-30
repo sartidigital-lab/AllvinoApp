@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 type OrderItemWithWine = {
   quantity: number;
   unit_price: number;
+  product_name: string | null;
   wines: { name: string } | { name: string }[] | null;
 };
 
@@ -24,7 +25,12 @@ type ProductRanking = {
   revenue: number;
 };
 
-function getWineName(wines: OrderItemWithWine['wines']) {
+function getWineName(item: OrderItemWithWine) {
+  if (item.product_name) {
+    return item.product_name;
+  }
+
+  const wines = item.wines;
   if (Array.isArray(wines)) {
     return wines[0]?.name || 'Produto removido';
   }
@@ -47,7 +53,7 @@ export default function AdminAnalyticsPage() {
       
       const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
-        .select('id, status, total_amount, delivery_type, created_at, order_items(quantity, unit_price, wines(name))')
+        .select('id, status, total_amount, delivery_type, created_at, order_items(quantity, unit_price, product_name, wines(name))')
         .order('created_at', { ascending: false });
 
       if (ordersError) {
@@ -65,7 +71,7 @@ export default function AdminAnalyticsPage() {
         totalFaturamento += order.total_amount;
 
         order.order_items?.forEach((item) => {
-          const productName = getWineName(item.wines);
+          const productName = getWineName(item);
           const current = ranking.get(productName) || { name: productName, quantity: 0, revenue: 0 };
 
           current.quantity += item.quantity;

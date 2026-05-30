@@ -1,8 +1,8 @@
 "use client";
 
 import { useCart } from '@/context/CartContext';
+import { CurrentUser, getCurrentUserFast } from '@/lib/auth/currentUser';
 import { createOrder } from '@/lib/database/orders';
-import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -11,7 +11,7 @@ export default function CheckoutPage() {
   const { cart, cartTotal, clearCart } = useCart();
   const router = useRouter();
   
-  const [user, setUser] = useState<{ id: string; name: string; phone: string } | null>(null);
+  const [user, setUser] = useState<CurrentUser | null>(null);
   const [entrega, setEntrega] = useState('entrega');
   const [endereco, setEndereco] = useState('');
   const [pagamento, setPagamento] = useState('Pix');
@@ -19,20 +19,14 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
+      const currentUser = await getCurrentUserFast();
       
-      if (!session) {
+      if (!currentUser) {
         router.replace('/auth/login?redirectTo=/checkout');
         return;
       }
       
-      const userData = session.user.user_metadata || {};
-      setUser({
-        id: session.user.id,
-        name: userData.nome_completo || session.user.email?.split('@')[0] || '',
-        phone: userData.telefone || 'Não informado',
-      });
+      setUser(currentUser);
     };
     fetchUser();
   }, [router]);
