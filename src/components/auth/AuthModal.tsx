@@ -10,6 +10,7 @@ export function AuthModal() {
   const router = useRouter()
   const pathname = usePathname()
   const isLoginOpen = searchParams.get('login') === 'true'
+  const redirectTo = searchParams.get('redirectTo') || '/'
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -31,20 +32,33 @@ export function AuthModal() {
     e.preventDefault()
     setLoading(true)
     setError(null)
-    
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
 
-    if (error) {
-      setError(error.message)
+    try {
+      const timeout = new Promise<never>((_, reject) => {
+        window.setTimeout(() => reject(new Error('Tempo esgotado. Verifique sua conexao e tente novamente.')), 15000)
+      })
+
+      const { error } = await Promise.race([
+        supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        }),
+        timeout,
+      ])
+
+      if (error) {
+        setError(error.message)
+        return
+      }
+
+      closeModal()
+      router.replace(redirectTo)
+      router.refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Nao foi possivel entrar agora.')
+    } finally {
       setLoading(false)
-      return
     }
-
-    closeModal()
-    router.refresh()
   }
 
   const handleGoogleLogin = async () => {
