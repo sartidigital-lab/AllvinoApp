@@ -70,7 +70,7 @@ export default function CheckoutPage() {
 
     msg += `\n*VALOR TOTAL: R$ ${finalTotal.toFixed(2).replace('.', ',')}*`;
 
-    const foneVendas = '5527997933537';
+    const foneVendas = '552723453060';
     const link = `https://wa.me/${foneVendas}?text=${encodeURIComponent(msg)}`;
 
     window.open(link, '_blank');
