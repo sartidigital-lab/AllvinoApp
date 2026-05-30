@@ -14,7 +14,7 @@ export function Header() {
       </button>
       
       <Link href="/" className="h-12 flex items-center justify-center">
-        <img src="/LOGO-ALLVINO-PRETO.png" alt="Allvino" className="h-12 w-auto object-contain" />
+        <img src="/logo-allvino-header.png" alt="Allvino" className="w-36 h-auto object-contain" />
       </Link>
       
       <button 
