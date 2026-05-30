@@ -22,7 +22,7 @@ export function mapProductToWine(product: LegacyProduct): Wine {
     type: product.tipo,
     region: product.pais,
     grape: product.uva,
-    category: [product.pais, product.tipo].filter(Boolean).join(' • ') || 'Vinho',
+    category: [product.pais, product.tipo].filter(Boolean).join(' - ') || 'Vinho',
     stock: 0,
     created_at: product.criado_em,
   };
