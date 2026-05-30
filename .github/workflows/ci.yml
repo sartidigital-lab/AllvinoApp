@@ -86,16 +86,10 @@ jobs:
           mkdir -p .vercel
           printf '{"orgId":"%s","projectId":"%s"}' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > .vercel/project.json
 
-      - name: Pull Vercel environment
-        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
-
-      - name: Build Vercel output
-        run: vercel build --prod --token="$VERCEL_TOKEN"
-
       - name: Deploy to Vercel
         id: vercel_deploy
         run: |
-          DEPLOYMENT_URL="$(vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN")"
+          DEPLOYMENT_URL="$(vercel deploy --prod --yes --token="$VERCEL_TOKEN")"
           echo "deployment_url=$DEPLOYMENT_URL" >> "$GITHUB_OUTPUT"
           echo "Deployed to $DEPLOYMENT_URL"
 
