@@ -41,6 +41,10 @@ const checks = [
     includes: ['Clientes', 'Base de clientes', 'Produto favorito', 'Chamar no WhatsApp', 'totalSpent'],
   },
   {
+    file: 'src/app/admin/estoque/page.tsx',
+    includes: ['Estoque', 'Subir Excel', 'Codigo avulso', 'parseStockRows', 'importStockLevels'],
+  },
+  {
     file: 'src/app/admin/logistica/page.tsx',
     includes: ['Logistica & Frete', 'Nova Regiao', 'saveDeliveryZone', 'deleteDeliveryZone'],
   },
@@ -54,11 +58,15 @@ const checks = [
   },
   {
     file: 'src/app/api/pedidos/route.ts',
-    includes: ['productsById', 'subtotal', 'promotionCode', 'deliveryZipCode', 'calculateShippingFee', 'reserve_product_stock_for_order', 'total'],
+    includes: ['productsById', 'subtotal', 'promotionCode', 'deliveryZipCode', 'get_stock_levels_for_codes', 'reserve_product_stock_for_order', 'total'],
   },
   {
     file: 'src/lib/catalog/products.ts',
-    includes: ['estoque', 'stock: Number', 'wineData.stock'],
+    includes: ['sku_sankhya', 'product_code', 'stock: Number', 'wineData.stock'],
+  },
+  {
+    file: 'src/lib/database/stock.ts',
+    includes: ['stock_levels', 'stock_imports', 'upsertStockRows', 'sku_sankhya'],
   },
   {
     file: 'supabase/migrations/20260531000033_add_promotions.sql',
@@ -74,7 +82,7 @@ const checks = [
   },
   {
     file: 'supabase/migrations/20260531123314_add_customer_crm_and_stock_reservation.sql',
-    includes: ['add column if not exists estoque', 'stock_reserved_at', 'app_private.reserve_product_stock_for_order', 'Estoque insuficiente'],
+    includes: ['create table if not exists public.stock_levels', 'stock_reserved_at', 'get_stock_levels_for_codes', 'app_private.reserve_product_stock_for_order', 'Estoque insuficiente'],
   },
   {
     file: '.github/workflows/ci.yml',

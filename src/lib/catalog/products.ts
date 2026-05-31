@@ -5,6 +5,7 @@ export type LegacyProduct = {
   nome: string;
   descricao: string | null;
   preco: number;
+  sku_sankhya: string | null;
   imagem_url: string | null;
   pais: string | null;
   tipo: string | null;
@@ -25,6 +26,7 @@ export function mapProductToWine(product: LegacyProduct): Wine {
     grape: product.uva,
     category: [product.pais, product.tipo].filter(Boolean).join(' - ') || 'Vinho',
     stock: Number(product.estoque ?? 0),
+    product_code: product.sku_sankhya,
     created_at: product.criado_em,
   };
 }
@@ -33,6 +35,7 @@ export function mapWineToProduct(wineData: Partial<Wine>) {
   return {
     nome: wineData.name,
     descricao: wineData.description,
+    sku_sankhya: wineData.product_code,
     preco: wineData.price,
     imagem_url: wineData.image_url,
     pais: wineData.region,

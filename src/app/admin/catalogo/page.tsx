@@ -9,6 +9,7 @@ type WineForm = {
   name: string;
   description: string;
   price: string;
+  product_code: string;
   image_url: string;
   type: string;
   region: string;
@@ -21,6 +22,7 @@ const emptyForm: WineForm = {
   name: '',
   description: '',
   price: '',
+  product_code: '',
   image_url: '',
   type: '',
   region: '',
@@ -36,6 +38,7 @@ function toForm(wine: Wine): WineForm {
     name: wine.name,
     description: wine.description || '',
     price: String(wine.price),
+    product_code: wine.product_code || '',
     image_url: wine.image_url || '',
     type: wine.type || '',
     region: wine.region || '',
@@ -50,6 +53,7 @@ function toPayload(form: WineForm): Partial<Wine> {
     name: form.name.trim(),
     description: form.description.trim() || null,
     price: Number(form.price),
+    product_code: form.product_code.trim() || null,
     image_url: form.image_url.trim() || null,
     type: form.type.trim() || null,
     region: form.region.trim() || null,
@@ -79,7 +83,7 @@ export default function AdminCatalogPage() {
     if (!term) return wines;
 
     return wines.filter((wine) =>
-      [wine.name, wine.type, wine.category, wine.grape, wine.region]
+      [wine.name, wine.product_code, wine.type, wine.category, wine.grape, wine.region]
         .filter(Boolean)
         .some((value) => value!.toLowerCase().includes(term))
     );
@@ -270,6 +274,10 @@ export default function AdminCatalogPage() {
               <input type="number" min="0" step="0.01" value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} className="w-full border border-stone-200 rounded-lg p-3 text-sm font-bold outline-none focus:border-black" />
             </label>
             <label className="space-y-1">
+              <span className="text-xs font-bold uppercase text-stone-400">Codigo estoque</span>
+              <input value={form.product_code} onChange={(event) => setForm({ ...form, product_code: event.target.value.trim().toUpperCase() })} className="w-full border border-stone-200 rounded-lg p-3 text-sm font-bold uppercase outline-none focus:border-black" />
+            </label>
+            <label className="space-y-1">
               <span className="text-xs font-bold uppercase text-stone-400">Estoque</span>
               <input type="number" min="0" value={form.stock} onChange={(event) => setForm({ ...form, stock: event.target.value })} className="w-full border border-stone-200 rounded-lg p-3 text-sm font-bold outline-none focus:border-black" />
             </label>
@@ -369,7 +377,7 @@ export default function AdminCatalogPage() {
                       <img src={wine.image_url || 'https://via.placeholder.com/50x150'} alt={wine.name} className="h-16 w-12 object-contain bg-stone-50 rounded" />
                       <div>
                         <p className="font-bold text-black">{wine.name}</p>
-                        <p className="text-xs text-stone-400 font-bold">{wine.grape || 'Uva'} | {wine.region || 'Regiao'}</p>
+                        <p className="text-xs text-stone-400 font-bold">{wine.product_code || 'Sem codigo'} | {wine.grape || 'Uva'} | {wine.region || 'Regiao'}</p>
                       </div>
                     </div>
                   </td>

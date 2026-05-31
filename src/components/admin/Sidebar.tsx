@@ -33,6 +33,7 @@ export default function Sidebar() {
     { href: '/admin/pedidos', label: 'Pedidos', icon: 'receipt_long', color: 'text-emerald-400' },
     { href: '/admin/clientes', label: 'Clientes', icon: 'groups', color: 'text-pink-400' },
     { href: '/admin/catalogo', label: 'Catalogo', icon: 'wine_bar', color: 'text-blue-400' },
+    { href: '/admin/estoque', label: 'Estoque', icon: 'inventory_2', color: 'text-yellow-400' },
     { href: '/admin/promocoes', label: 'Promocoes', icon: 'campaign', color: 'text-green-500' },
     { href: '/admin/logistica', label: 'Logistica', icon: 'local_shipping', color: 'text-cyan-400' },
     { href: '/admin/equipe', label: 'Equipe', icon: 'group', color: 'text-orange-400' },

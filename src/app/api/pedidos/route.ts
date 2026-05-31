@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   const productIds = Array.from(new Set(cartItems.map((item) => item.id)));
   const { data: products, error: productsError } = await supabase
     .from('produtos')
-    .select('id,nome,preco,estoque')
+    .select('id,nome,preco,sku_sankhya')
     .in('id', productIds);
 
   if (productsError || !products || products.length !== productIds.length) {
@@ -57,12 +57,29 @@ export async function POST(request: Request) {
   }
 
   const productsById = new Map(products.map((product) => [product.id, product]));
+  const productCodes = Array.from(
+    new Set(
+      products
+        .map((product) => product.sku_sankhya?.trim())
+        .filter((code): code is string => Boolean(code))
+    )
+  );
+  const { data: stockLevels, error: stockError } = await supabase.rpc('get_stock_levels_for_codes', {
+    p_codes: productCodes,
+  });
+
+  if (stockError) {
+    return NextResponse.json({ error: 'Nao foi possivel validar o estoque.' }, { status: 400 });
+  }
+
+  const stockByCode = new Map((stockLevels || []).map((stock) => [stock.product_code, stock.quantity]));
   const validatedItems = cartItems.map((item) => {
     const product = productsById.get(item.id);
     const quantity = Math.max(1, Number(item.quantity || 1));
 
     return {
       id: item.id,
+      productCode: product?.sku_sankhya?.trim() || null,
       name: product?.nome || item.name,
       quantity,
       price: Number(product?.preco || 0),
@@ -70,13 +87,13 @@ export async function POST(request: Request) {
   });
 
   const outOfStockItem = validatedItems.find((item) => {
-    const product = productsById.get(item.id);
-    return Number(product?.estoque ?? 0) < item.quantity;
+    if (!item.productCode) return true;
+    return Number(stockByCode.get(item.productCode) ?? -1) < item.quantity;
   });
 
   if (outOfStockItem) {
     return NextResponse.json(
-      { error: `${outOfStockItem.name} nao tem estoque suficiente.` },
+      { error: `${outOfStockItem.name} nao tem saldo atualizado suficiente no estoque.` },
       { status: 409 }
     );
   }
@@ -184,11 +201,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Nao foi possivel criar os itens do pedido.' }, { status: 500 });
   }
 
-  const { error: stockError } = await supabase.rpc('reserve_product_stock_for_order', {
+  const { error: reserveStockError } = await supabase.rpc('reserve_product_stock_for_order', {
     p_order_id: order.id,
   });
 
-  if (stockError) {
+  if (reserveStockError) {
     await supabase
       .from('orders')
       .update({ status: 'cancelled' })

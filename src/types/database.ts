@@ -9,6 +9,7 @@ export type Wine = {
   grape: string | null;
   category: string | null;
   stock: number;
+  product_code: string | null;
   created_at: string;
 };
 
@@ -74,4 +75,20 @@ export type DeliveryZone = {
   free_shipping_min_subtotal: number | null;
   estimate_days: number;
   is_active: boolean;
+};
+
+export type StockLevel = {
+  product_code: string;
+  quantity: number;
+  updated_at: string;
+  source: string;
+  import_id: string | null;
+};
+
+export type StockImport = {
+  id: string;
+  created_at: string;
+  file_name: string | null;
+  total_rows: number;
+  source: string;
 };
