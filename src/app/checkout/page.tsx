@@ -192,7 +192,7 @@ export default function CheckoutPage() {
     );
 
     if (error || !order) {
-      alert('Erro ao criar pedido. Tente novamente.');
+      alert(error?.message || 'Erro ao criar pedido. Tente novamente.');
       setIsLoading(false);
       return;
     }

@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   const productIds = Array.from(new Set(cartItems.map((item) => item.id)));
   const { data: products, error: productsError } = await supabase
     .from('produtos')
-    .select('id,nome,preco')
+    .select('id,nome,preco,estoque')
     .in('id', productIds);
 
   if (productsError || !products || products.length !== productIds.length) {
@@ -68,6 +68,18 @@ export async function POST(request: Request) {
       price: Number(product?.preco || 0),
     };
   });
+
+  const outOfStockItem = validatedItems.find((item) => {
+    const product = productsById.get(item.id);
+    return Number(product?.estoque ?? 0) < item.quantity;
+  });
+
+  if (outOfStockItem) {
+    return NextResponse.json(
+      { error: `${outOfStockItem.name} nao tem estoque suficiente.` },
+      { status: 409 }
+    );
+  }
 
   const subtotal = validatedItems.reduce((sum, item) => sum + item.quantity * item.price, 0);
   const pickupDiscount = deliveryMethod === 'Retirada na Loja' ? subtotal * 0.1 : 0;
@@ -170,6 +182,22 @@ export async function POST(request: Request) {
 
   if (itemsError) {
     return NextResponse.json({ error: 'Nao foi possivel criar os itens do pedido.' }, { status: 500 });
+  }
+
+  const { error: stockError } = await supabase.rpc('reserve_product_stock_for_order', {
+    p_order_id: order.id,
+  });
+
+  if (stockError) {
+    await supabase
+      .from('orders')
+      .update({ status: 'cancelled' })
+      .eq('id', order.id);
+
+    return NextResponse.json(
+      { error: 'Estoque insuficiente para concluir o pedido.' },
+      { status: 409 }
+    );
   }
 
   return NextResponse.json({ order });

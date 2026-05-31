@@ -30,6 +30,7 @@ export type Order = {
   delivery_zone_name: string | null;
   delivery_estimate_days: number | null;
   shipping_fee: number;
+  stock_reserved_at: string | null;
 };
 
 export type OrderItem = {

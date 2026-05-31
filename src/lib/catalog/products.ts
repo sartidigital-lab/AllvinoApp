@@ -9,6 +9,7 @@ export type LegacyProduct = {
   pais: string | null;
   tipo: string | null;
   uva: string | null;
+  estoque: number | null;
   criado_em: string;
 };
 
@@ -23,7 +24,7 @@ export function mapProductToWine(product: LegacyProduct): Wine {
     region: product.pais,
     grape: product.uva,
     category: [product.pais, product.tipo].filter(Boolean).join(' - ') || 'Vinho',
-    stock: 0,
+    stock: Number(product.estoque ?? 0),
     created_at: product.criado_em,
   };
 }
@@ -37,5 +38,6 @@ export function mapWineToProduct(wineData: Partial<Wine>) {
     pais: wineData.region,
     tipo: wineData.type || wineData.category,
     uva: wineData.grape,
+    estoque: wineData.stock,
   };
 }

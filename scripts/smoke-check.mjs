@@ -37,6 +37,10 @@ const checks = [
     includes: ['Buscar por cliente', 'Chamar no WhatsApp', 'Alterar status', 'statusCounts', 'promotion_code', 'shipping_fee'],
   },
   {
+    file: 'src/app/admin/clientes/page.tsx',
+    includes: ['Clientes', 'Base de clientes', 'Produto favorito', 'Chamar no WhatsApp', 'totalSpent'],
+  },
+  {
     file: 'src/app/admin/logistica/page.tsx',
     includes: ['Logistica & Frete', 'Nova Regiao', 'saveDeliveryZone', 'deleteDeliveryZone'],
   },
@@ -50,7 +54,11 @@ const checks = [
   },
   {
     file: 'src/app/api/pedidos/route.ts',
-    includes: ['productsById', 'subtotal', 'promotionCode', 'deliveryZipCode', 'calculateShippingFee', 'total'],
+    includes: ['productsById', 'subtotal', 'promotionCode', 'deliveryZipCode', 'calculateShippingFee', 'reserve_product_stock_for_order', 'total'],
+  },
+  {
+    file: 'src/lib/catalog/products.ts',
+    includes: ['estoque', 'stock: Number', 'wineData.stock'],
   },
   {
     file: 'supabase/migrations/20260531000033_add_promotions.sql',
@@ -63,6 +71,10 @@ const checks = [
   {
     file: 'supabase/migrations/20260531120430_seed_initial_delivery_zones.sql',
     includes: ['Vitoria', 'Vila Velha', 'Cariacica', 'Serra', 'Guarapari', 'where not exists'],
+  },
+  {
+    file: 'supabase/migrations/20260531123314_add_customer_crm_and_stock_reservation.sql',
+    includes: ['add column if not exists estoque', 'stock_reserved_at', 'app_private.reserve_product_stock_for_order', 'Estoque insuficiente'],
   },
   {
     file: '.github/workflows/ci.yml',
