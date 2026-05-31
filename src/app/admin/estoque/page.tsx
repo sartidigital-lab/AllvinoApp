@@ -38,6 +38,14 @@ function getCell(row: Record<string, unknown>, candidates: string[]) {
   return entry?.[1];
 }
 
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === 'object' && error && 'message' in error) {
+    return String((error as { message?: unknown }).message || '');
+  }
+  return '';
+}
+
 function parseQuantity(value: unknown) {
   if (typeof value === 'number') return Math.trunc(value);
   const normalized = String(value || '')
@@ -50,8 +58,37 @@ function parseQuantity(value: unknown) {
 function parseStockRows(rows: Record<string, unknown>[]): StockLevelInput[] {
   const parsedRows = rows
     .map((row) => {
-      const code = getCell(row, ['codigo', 'codigoproduto', 'codproduto', 'sku', 'produto', 'cod']);
-      const quantity = getCell(row, ['quantidade', 'qtd', 'estoque', 'saldo', 'saldoestoque']);
+      const code = getCell(row, [
+        'codigo',
+        'cod',
+        'codigoproduto',
+        'codigodoproduto',
+        'codproduto',
+        'codprod',
+        'codigointerno',
+        'sku',
+        'skuproduto',
+        'produto',
+        'idproduto',
+        'referencia',
+        'ref',
+        'ean',
+      ]);
+      const quantity = getCell(row, [
+        'quantidade',
+        'quantidadeestoque',
+        'qtd',
+        'qtde',
+        'qtdestoque',
+        'estoque',
+        'estoqueatual',
+        'estoquedisponivel',
+        'saldo',
+        'saldoatual',
+        'saldoestoque',
+        'saldodisponivel',
+        'disponivel',
+      ]);
 
       return {
         product_code: normalizeProductCode(String(code || '')),
@@ -129,27 +166,35 @@ export default function AdminEstoquePage() {
 
     try {
       const buffer = await file.arrayBuffer();
-      const workbook = XLSX.read(buffer, { type: 'array' });
+      const workbook = XLSX.read(buffer, { type: 'array', raw: true });
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
+
+      if (!sheet) {
+        setMessage('Nao encontrei uma aba valida na planilha.');
+        return;
+      }
+
       const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' });
       const parsedRows = parseStockRows(rows);
 
       if (parsedRows.length === 0) {
-        setMessage('Nao encontrei colunas de codigo e quantidade na planilha.');
-        setIsImporting(false);
+        setMessage('Nao encontrei colunas de codigo e quantidade. Use, por exemplo: Codigo do Produto e Estoque.');
         return;
       }
 
       const { count, error } = await importStockLevels(parsedRows, file.name);
 
       if (error) {
-        setMessage('Nao foi possivel importar o estoque.');
-        setIsImporting(false);
+        const detail = getErrorMessage(error);
+        setMessage(`Nao foi possivel importar o estoque.${detail ? ` Detalhe: ${detail}` : ''}`);
         return;
       }
 
       await loadStock();
       setMessage(`${count} codigos de estoque importados.`);
+    } catch (error) {
+      const detail = getErrorMessage(error);
+      setMessage(`Nao foi possivel ler o arquivo.${detail ? ` Detalhe: ${detail}` : ''}`);
     } finally {
       event.target.value = '';
       setIsImporting(false);
@@ -171,11 +216,12 @@ export default function AdminEstoquePage() {
 
     const { error } = await saveManualStockLevel({
       product_code: productCode,
-    quantity: Math.trunc(quantity),
+      quantity: Math.trunc(quantity),
     });
 
     if (error) {
-      setMessage('Nao foi possivel salvar o codigo avulso.');
+      const detail = getErrorMessage(error);
+      setMessage(`Nao foi possivel salvar o codigo avulso.${detail ? ` Detalhe: ${detail}` : ''}`);
       setIsSavingManual(false);
       return;
     }

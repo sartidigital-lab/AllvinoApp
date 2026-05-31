@@ -97,6 +97,10 @@ export async function importStockLevels(
   const supabase = createClient();
 
   try {
+    if (rows.length === 0) {
+      throw new Error('Nenhuma linha valida para importar.');
+    }
+
     const { data: stockImport, error: importError } = await supabase
       .from('stock_imports')
       .insert({
@@ -150,6 +154,10 @@ async function upsertStockRows(
     .filter((row) => row.product_code);
 
   try {
+    if (normalizedRows.length === 0) {
+      throw new Error('Nenhuma linha valida para salvar.');
+    }
+
     const { data, error } = await supabase
       .from('stock_levels')
       .upsert(normalizedRows, { onConflict: 'product_code' })
