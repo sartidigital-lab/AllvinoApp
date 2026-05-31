@@ -27,6 +27,27 @@ function uniqueSorted(values: Array<string | null>) {
   );
 }
 
+function getStockStatus(stock: number) {
+  if (stock <= 0) {
+    return {
+      label: 'Esgotado',
+      className: 'bg-red-50 text-red-700',
+    };
+  }
+
+  if (stock <= 5) {
+    return {
+      label: `Ultimas ${stock} un.`,
+      className: 'bg-amber-50 text-amber-700',
+    };
+  }
+
+  return {
+    label: `${stock} un. disponiveis`,
+    className: 'bg-emerald-50 text-emerald-700',
+  };
+}
+
 export default function CatalogoPage() {
   const { wines, isLoading, isOffline } = useWines();
   const { addToCart } = useCart();
@@ -175,10 +196,17 @@ export default function CatalogoPage() {
         <p className="text-center text-stone-400 font-bold py-12">Nenhum vinho encontrado.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
-          {filteredWines.map((wine) => (
+          {filteredWines.map((wine) => {
+            const stockStatus = getStockStatus(wine.stock);
+            const isOutOfStock = wine.stock <= 0;
+
+            return (
             <div key={wine.id} className="bg-white p-4 rounded-3xl shadow-sm border border-stone-100 flex flex-col h-full hover:shadow-md transition-shadow">
               <Link href={`/catalogo/${wine.id}`} className="block h-full flex flex-col">
                 <div className="aspect-[3/4] bg-stone-50 rounded-2xl flex items-center justify-center p-6 mb-4 relative overflow-hidden group">
+                  <span className={`absolute left-3 top-3 z-10 rounded-full px-3 py-1 text-[11px] font-bold ${stockStatus.className}`}>
+                    {stockStatus.label}
+                  </span>
                   <img
                     src={wine.image_url || 'https://via.placeholder.com/300x400?text=Sem+Imagem'}
                     alt={wine.name}
@@ -192,18 +220,22 @@ export default function CatalogoPage() {
                 <div className="flex justify-between items-end mt-auto pt-5">
                   <span className="text-2xl font-bold">R$ {wine.price.toFixed(2).replace('.', ',')}</span>
                   <button
+                    type="button"
+                    disabled={isOutOfStock}
                     onClick={(event) => {
                       event.preventDefault();
+                      if (isOutOfStock) return;
                       addToCart(wine);
                     }}
-                    className="bg-black text-white p-3 rounded-2xl flex items-center justify-center hover:bg-stone-800 transition active:scale-90"
+                    className="bg-black text-white p-3 rounded-2xl flex items-center justify-center hover:bg-stone-800 transition active:scale-90 disabled:cursor-not-allowed disabled:bg-stone-200 disabled:text-stone-400"
+                    aria-label={isOutOfStock ? 'Produto esgotado' : 'Adicionar ao carrinho'}
                   >
-                    <span className="material-symbols-outlined">add_shopping_cart</span>
+                    <span className="material-symbols-outlined">{isOutOfStock ? 'block' : 'add_shopping_cart'}</span>
                   </button>
                 </div>
               </Link>
             </div>
-          ))}
+          )})}
         </div>
       )}
 

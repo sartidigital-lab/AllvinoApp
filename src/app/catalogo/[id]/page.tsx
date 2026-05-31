@@ -9,6 +9,33 @@ function formatMoney(value: number) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+function getStockStatus(stock: number) {
+  if (stock <= 0) {
+    return {
+      label: 'Esgotado',
+      description: 'Este rotulo esta temporariamente indisponivel.',
+      className: 'border-red-100 bg-red-50 text-red-700',
+      icon: 'block',
+    };
+  }
+
+  if (stock <= 5) {
+    return {
+      label: `Ultimas ${stock} unidades`,
+      description: 'Baixo estoque disponivel para compra.',
+      className: 'border-amber-100 bg-amber-50 text-amber-700',
+      icon: 'inventory_2',
+    };
+  }
+
+  return {
+    label: `${stock} unidades disponiveis`,
+    description: 'Pronto para adicionar ao pedido.',
+    className: 'border-emerald-100 bg-emerald-50 text-emerald-700',
+    icon: 'inventory_2',
+  };
+}
+
 function productAttribute(label: string, value: string | null | undefined, icon: string) {
   if (!value) return null;
 
@@ -40,8 +67,8 @@ export default function WineDetailPage({ params }: { params: Promise<{ id: strin
   }, [wine, wines]);
 
   const handleAddToCart = () => {
-    if (!wine) return;
-    addManyToCart([{ ...wine, quantity }]);
+    if (!wine || wine.stock <= 0) return;
+    addManyToCart([{ ...wine, quantity: Math.min(quantity, wine.stock) }]);
   };
 
   if (isLoading) {
@@ -68,6 +95,9 @@ export default function WineDetailPage({ params }: { params: Promise<{ id: strin
       </main>
     );
   }
+
+  const stockStatus = getStockStatus(wine.stock);
+  const isOutOfStock = wine.stock <= 0;
 
   return (
     <main className="mx-auto max-w-5xl px-5 pb-24 pt-6">
@@ -121,16 +151,18 @@ export default function WineDetailPage({ params }: { params: Promise<{ id: strin
                 <button
                   type="button"
                   onClick={() => setQuantity((current) => Math.max(1, current - 1))}
-                  className="flex h-12 w-12 items-center justify-center text-black transition hover:bg-stone-100"
+                  disabled={isOutOfStock}
+                  className="flex h-12 w-12 items-center justify-center text-black transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:text-stone-300"
                   aria-label="Diminuir quantidade"
                 >
                   <span className="material-symbols-outlined text-[20px]">remove</span>
                 </button>
-                <span className="w-10 text-center text-sm font-bold text-black">{quantity}</span>
+                <span className="w-10 text-center text-sm font-bold text-black">{isOutOfStock ? 0 : quantity}</span>
                 <button
                   type="button"
-                  onClick={() => setQuantity((current) => current + 1)}
-                  className="flex h-12 w-12 items-center justify-center text-black transition hover:bg-stone-100"
+                  onClick={() => setQuantity((current) => Math.min(wine.stock, current + 1))}
+                  disabled={isOutOfStock || quantity >= wine.stock}
+                  className="flex h-12 w-12 items-center justify-center text-black transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:text-stone-300"
                   aria-label="Aumentar quantidade"
                 >
                   <span className="material-symbols-outlined text-[20px]">add</span>
@@ -138,13 +170,22 @@ export default function WineDetailPage({ params }: { params: Promise<{ id: strin
               </div>
             </div>
 
+            <div className={`mt-5 flex items-center gap-3 rounded-2xl border px-4 py-3 ${stockStatus.className}`}>
+              <span className="material-symbols-outlined text-[20px]">{stockStatus.icon}</span>
+              <div>
+                <p className="text-sm font-bold">{stockStatus.label}</p>
+                <p className="text-xs font-bold opacity-70">{stockStatus.description}</p>
+              </div>
+            </div>
+
             <button
               type="button"
               onClick={handleAddToCart}
-              className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#B91C1C] px-6 py-4 text-sm font-bold uppercase tracking-wide text-white shadow-lg shadow-red-900/20 transition hover:bg-red-800 active:scale-[0.98]"
+              disabled={isOutOfStock}
+              className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#B91C1C] px-6 py-4 text-sm font-bold uppercase tracking-wide text-white shadow-lg shadow-red-900/20 transition hover:bg-red-800 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-stone-200 disabled:text-stone-400 disabled:shadow-none"
             >
-              <span className="material-symbols-outlined text-[20px]">add_shopping_cart</span>
-              Adicionar ao carrinho
+              <span className="material-symbols-outlined text-[20px]">{isOutOfStock ? 'block' : 'add_shopping_cart'}</span>
+              {isOutOfStock ? 'Produto esgotado' : 'Adicionar ao carrinho'}
             </button>
 
             <Link
