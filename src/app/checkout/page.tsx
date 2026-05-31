@@ -22,6 +22,7 @@ export default function CheckoutPage() {
   const [cep, setCep] = useState('');
   const [deliveryZone, setDeliveryZone] = useState<DeliveryZone | null>(null);
   const [deliveryMessage, setDeliveryMessage] = useState<string | null>(null);
+  const [unsupportedZip, setUnsupportedZip] = useState<string | null>(null);
   const [isCheckingDelivery, setIsCheckingDelivery] = useState(false);
   const [pagamento, setPagamento] = useState('Pix');
   const [promotionCode, setPromotionCode] = useState('');
@@ -64,6 +65,13 @@ export default function CheckoutPage() {
   const discount = Math.min(cartTotal, pickupDiscount + promotionDiscount);
   const shippingFee = entrega === 'entrega' && deliveryZone ? calculateShippingFee(deliveryZone, cartTotal) : 0;
   const finalTotal = cartTotal - discount + shippingFee;
+  const salesPhone = '552723453060';
+  const cartItemsMessage = cart.map((item) => `${item.quantity}x ${item.name}`).join('\n');
+  const unsupportedZipWhatsAppUrl = unsupportedZip
+    ? `https://wa.me/${salesPhone}?text=${encodeURIComponent(
+        `Ola, Allvino! Quero consultar entrega para o CEP ${formatZipCode(unsupportedZip)}.\n\nItens no carrinho:\n${cartItemsMessage || 'Carrinho ainda sem itens'}\n\nSubtotal: R$ ${cartTotal.toFixed(2).replace('.', ',')}`
+      )}`
+    : null;
 
   const handleApplyPromotion = async () => {
     const normalizedCode = normalizePromotionCode(promotionCode);
@@ -118,6 +126,7 @@ export default function CheckoutPage() {
     if (normalizedZip.length !== 8) {
       setDeliveryMessage('Informe um CEP com 8 digitos.');
       setDeliveryZone(null);
+      setUnsupportedZip(null);
       return;
     }
 
@@ -129,6 +138,7 @@ export default function CheckoutPage() {
     if (error) {
       setDeliveryMessage('Nao foi possivel calcular o frete agora.');
       setDeliveryZone(null);
+      setUnsupportedZip(null);
       setIsCheckingDelivery(false);
       return;
     }
@@ -136,12 +146,14 @@ export default function CheckoutPage() {
     if (!zone) {
       setDeliveryMessage('Ainda nao entregamos neste CEP.');
       setDeliveryZone(null);
+      setUnsupportedZip(normalizedZip);
       setIsCheckingDelivery(false);
       return;
     }
 
     setCep(formatZipCode(normalizedZip));
     setDeliveryZone(zone);
+    setUnsupportedZip(null);
     setDeliveryMessage(
       `${zone.name}: ${nextShippingFee === 0 ? 'frete gratis' : `frete R$ ${nextShippingFee.toFixed(2).replace('.', ',')}`} em ate ${zone.estimate_days} dia(s).`
     );
@@ -200,8 +212,7 @@ export default function CheckoutPage() {
 
     msg += `\n*VALOR TOTAL: R$ ${order.total_amount.toFixed(2).replace('.', ',')}*`;
 
-    const foneVendas = '552723453060';
-    const link = `https://wa.me/${foneVendas}?text=${encodeURIComponent(msg)}`;
+    const link = `https://wa.me/${salesPhone}?text=${encodeURIComponent(msg)}`;
 
     window.open(link, '_blank');
     clearCart();
@@ -430,6 +441,7 @@ export default function CheckoutPage() {
                   onChange={(event) => {
                     setCep(formatZipCode(event.target.value));
                     setDeliveryZone(null);
+                    setUnsupportedZip(null);
                   }}
                   placeholder="CEP"
                   className="min-w-0 flex-1 border-stone-200 rounded-2xl p-4 text-sm font-bold outline-none focus:border-black transition-colors"
@@ -447,6 +459,17 @@ export default function CheckoutPage() {
                 <p className={`text-xs font-bold ${deliveryZone ? 'text-emerald-700' : 'text-stone-500'}`}>
                   {deliveryMessage}
                 </p>
+              )}
+              {unsupportedZipWhatsAppUrl && (
+                <a
+                  href={unsupportedZipWhatsAppUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center justify-center gap-2 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700"
+                >
+                  <span className="material-symbols-outlined text-[18px]">chat</span>
+                  Consultar atendimento pelo WhatsApp
+                </a>
               )}
               <textarea
                 value={endereco}

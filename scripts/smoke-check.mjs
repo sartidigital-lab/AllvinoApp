@@ -26,7 +26,7 @@ const checks = [
   },
   {
     file: 'src/app/checkout/page.tsx',
-    includes: ['552723453060', 'O pedido sera recebido em nosso WhatsApp', 'Pedido realizado', 'createOrder', 'fetchActivePromotionByCode', 'fetchDeliveryQuote', 'Cupom', 'CEP'],
+    includes: ['552723453060', 'O pedido sera recebido em nosso WhatsApp', 'Pedido realizado', 'createOrder', 'fetchActivePromotionByCode', 'fetchDeliveryQuote', 'Consultar atendimento pelo WhatsApp', 'Cupom', 'CEP'],
   },
   {
     file: 'src/app/conta/page.tsx',
@@ -59,6 +59,10 @@ const checks = [
   {
     file: 'supabase/migrations/20260531002906_add_delivery_zones.sql',
     includes: ['create table if not exists public.delivery_zones', 'shipping_fee', 'Public can read active delivery zones', 'Admins can manage delivery zones'],
+  },
+  {
+    file: 'supabase/migrations/20260531120430_seed_initial_delivery_zones.sql',
+    includes: ['Vitoria', 'Vila Velha', 'Cariacica', 'Serra', 'Guarapari', 'where not exists'],
   },
   {
     file: '.github/workflows/ci.yml',
