@@ -26,6 +26,10 @@ export type Order = {
   customer_name: string | null;
   customer_phone: string | null;
   promotion_code: string | null;
+  delivery_zip_code: string | null;
+  delivery_zone_name: string | null;
+  delivery_estimate_days: number | null;
+  shipping_fee: number;
 };
 
 export type OrderItem = {
@@ -55,5 +59,18 @@ export type Promotion = {
   max_discount: number | null;
   starts_at: string | null;
   ends_at: string | null;
+  is_active: boolean;
+};
+
+export type DeliveryZone = {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  name: string;
+  zip_start: string;
+  zip_end: string;
+  fee: number;
+  free_shipping_min_subtotal: number | null;
+  estimate_days: number;
   is_active: boolean;
 };

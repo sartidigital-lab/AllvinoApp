@@ -10,13 +10,19 @@ import {
   fetchActivePromotionByCode,
   normalizePromotionCode,
 } from '@/lib/database/promotions';
-import { Promotion } from '@/types/database';
+import { fetchDeliveryQuote } from '@/lib/database/delivery';
+import { calculateShippingFee, formatZipCode, normalizeZipCode } from '@/lib/delivery/rules';
+import { DeliveryZone, Promotion } from '@/types/database';
 
 export default function CheckoutPage() {
   const { cart, cartTotal, clearCart } = useCart();
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [entrega, setEntrega] = useState('entrega');
   const [endereco, setEndereco] = useState('');
+  const [cep, setCep] = useState('');
+  const [deliveryZone, setDeliveryZone] = useState<DeliveryZone | null>(null);
+  const [deliveryMessage, setDeliveryMessage] = useState<string | null>(null);
+  const [isCheckingDelivery, setIsCheckingDelivery] = useState(false);
   const [pagamento, setPagamento] = useState('Pix');
   const [promotionCode, setPromotionCode] = useState('');
   const [appliedPromotion, setAppliedPromotion] = useState<Promotion | null>(null);
@@ -29,6 +35,10 @@ export default function CheckoutPage() {
     subtotal: number;
     discount: number;
     promotionCode: string | null;
+    shippingFee: number;
+    zipCode: string | null;
+    zoneName: string | null;
+    estimateDays: number | null;
     payment: string;
     delivery: string;
     address: string | null;
@@ -52,7 +62,8 @@ export default function CheckoutPage() {
   const pickupDiscount = entrega === 'retirada' ? cartTotal * 0.1 : 0;
   const promotionDiscount = appliedPromotion ? calculatePromotionDiscount(appliedPromotion, cartTotal) : 0;
   const discount = Math.min(cartTotal, pickupDiscount + promotionDiscount);
-  const finalTotal = cartTotal - discount;
+  const shippingFee = entrega === 'entrega' && deliveryZone ? calculateShippingFee(deliveryZone, cartTotal) : 0;
+  const finalTotal = cartTotal - discount + shippingFee;
 
   const handleApplyPromotion = async () => {
     const normalizedCode = normalizePromotionCode(promotionCode);
@@ -101,6 +112,42 @@ export default function CheckoutPage() {
     setPromotionMessage(null);
   };
 
+  const handleCalculateDelivery = async () => {
+    const normalizedZip = normalizeZipCode(cep);
+
+    if (normalizedZip.length !== 8) {
+      setDeliveryMessage('Informe um CEP com 8 digitos.');
+      setDeliveryZone(null);
+      return;
+    }
+
+    setIsCheckingDelivery(true);
+    setDeliveryMessage(null);
+
+    const { zone, shippingFee: nextShippingFee, error } = await fetchDeliveryQuote(normalizedZip, cartTotal);
+
+    if (error) {
+      setDeliveryMessage('Nao foi possivel calcular o frete agora.');
+      setDeliveryZone(null);
+      setIsCheckingDelivery(false);
+      return;
+    }
+
+    if (!zone) {
+      setDeliveryMessage('Ainda nao entregamos neste CEP.');
+      setDeliveryZone(null);
+      setIsCheckingDelivery(false);
+      return;
+    }
+
+    setCep(formatZipCode(normalizedZip));
+    setDeliveryZone(zone);
+    setDeliveryMessage(
+      `${zone.name}: ${nextShippingFee === 0 ? 'frete gratis' : `frete R$ ${nextShippingFee.toFixed(2).replace('.', ',')}`} em ate ${zone.estimate_days} dia(s).`
+    );
+    setIsCheckingDelivery(false);
+  };
+
   const handleFinalizar = async () => {
     if (cart.length === 0) {
       alert('Carrinho vazio!');
@@ -109,6 +156,11 @@ export default function CheckoutPage() {
 
     if (entrega === 'entrega' && !endereco.trim()) {
       alert('Informe o seu endereco para entrega.');
+      return;
+    }
+
+    if (entrega === 'entrega' && !deliveryZone) {
+      alert('Calcule o frete para o CEP de entrega.');
       return;
     }
 
@@ -123,7 +175,8 @@ export default function CheckoutPage() {
       entrega === 'retirada' ? 'Retirada na Loja' : 'Entrega no Endereco',
       pagamento,
       entrega === 'entrega' ? endereco : undefined,
-      appliedPromotion?.code
+      appliedPromotion?.code,
+      entrega === 'entrega' ? normalizeZipCode(cep) : undefined
     );
 
     if (error || !order) {
@@ -141,6 +194,8 @@ export default function CheckoutPage() {
 
     if (entrega === 'entrega') {
       msg += `*Endereco:* ${endereco}\n`;
+      if (order.delivery_zip_code) msg += `*CEP:* ${formatZipCode(order.delivery_zip_code)}\n`;
+      if (order.shipping_fee > 0) msg += `*Frete:* R$ ${order.shipping_fee.toFixed(2).replace('.', ',')}\n`;
     }
 
     msg += `\n*VALOR TOTAL: R$ ${order.total_amount.toFixed(2).replace('.', ',')}*`;
@@ -156,6 +211,10 @@ export default function CheckoutPage() {
       subtotal: order.subtotal_amount || cartTotal,
       discount: order.discount_amount || 0,
       promotionCode: order.promotion_code,
+      shippingFee: order.shipping_fee || 0,
+      zipCode: order.delivery_zip_code,
+      zoneName: order.delivery_zone_name,
+      estimateDays: order.delivery_estimate_days,
       payment: order.payment_method || pagamento,
       delivery: order.delivery_type,
       address: order.delivery_address,
@@ -196,6 +255,27 @@ export default function CheckoutPage() {
               <div className="flex justify-between gap-4">
                 <span className="font-bold text-stone-500">Endereco</span>
                 <span className="text-right font-bold text-black">{successSummary.address}</span>
+              </div>
+            )}
+            {successSummary.zipCode && (
+              <div className="flex justify-between gap-4">
+                <span className="font-bold text-stone-500">CEP</span>
+                <span className="font-bold text-black">{formatZipCode(successSummary.zipCode)}</span>
+              </div>
+            )}
+            {successSummary.zoneName && (
+              <div className="flex justify-between gap-4">
+                <span className="font-bold text-stone-500">Prazo</span>
+                <span className="text-right font-bold text-black">
+                  {successSummary.zoneName}
+                  {successSummary.estimateDays ? `, ate ${successSummary.estimateDays} dia(s)` : ''}
+                </span>
+              </div>
+            )}
+            {successSummary.shippingFee > 0 && (
+              <div className="flex justify-between gap-4">
+                <span className="font-bold text-stone-500">Frete</span>
+                <span className="font-bold text-black">R$ {successSummary.shippingFee.toFixed(2).replace('.', ',')}</span>
               </div>
             )}
             {successSummary.discount > 0 && (
@@ -257,6 +337,12 @@ export default function CheckoutPage() {
             <div className="flex justify-between text-sm text-green-600">
               <span>Descontos</span>
               <span>- R$ {discount.toFixed(2).replace('.', ',')}</span>
+            </div>
+          )}
+          {shippingFee > 0 && (
+            <div className="flex justify-between text-sm text-stone-500">
+              <span>Frete</span>
+              <span>R$ {shippingFee.toFixed(2).replace('.', ',')}</span>
             </div>
           )}
           <div className="flex justify-between text-xl font-bold pt-2">
@@ -337,13 +423,39 @@ export default function CheckoutPage() {
             </label>
           </div>
           {entrega === 'entrega' && (
-            <textarea
-              value={endereco}
-              onChange={(event) => setEndereco(event.target.value)}
-              placeholder="Rua, numero, bairro e cidade para entrega..."
-              className="w-full border-stone-200 rounded-2xl p-4 text-sm outline-none focus:border-black transition-colors"
-              rows={3}
-            />
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <input
+                  value={cep}
+                  onChange={(event) => {
+                    setCep(formatZipCode(event.target.value));
+                    setDeliveryZone(null);
+                  }}
+                  placeholder="CEP"
+                  className="min-w-0 flex-1 border-stone-200 rounded-2xl p-4 text-sm font-bold outline-none focus:border-black transition-colors"
+                />
+                <button
+                  type="button"
+                  onClick={handleCalculateDelivery}
+                  disabled={isCheckingDelivery || cart.length === 0}
+                  className="rounded-2xl bg-black px-4 text-sm font-bold text-white disabled:opacity-50"
+                >
+                  {isCheckingDelivery ? 'Calculando...' : 'Calcular'}
+                </button>
+              </div>
+              {deliveryMessage && (
+                <p className={`text-xs font-bold ${deliveryZone ? 'text-emerald-700' : 'text-stone-500'}`}>
+                  {deliveryMessage}
+                </p>
+              )}
+              <textarea
+                value={endereco}
+                onChange={(event) => setEndereco(event.target.value)}
+                placeholder="Rua, numero, bairro e cidade para entrega..."
+                className="w-full border-stone-200 rounded-2xl p-4 text-sm outline-none focus:border-black transition-colors"
+                rows={3}
+              />
+            </div>
           )}
         </div>
 

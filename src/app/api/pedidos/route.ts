@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
-import { Promotion } from '@/types/database';
+import { DeliveryZone, Promotion } from '@/types/database';
 import {
   calculatePromotionDiscount,
   isPromotionCurrentlyActive,
   normalizePromotionCode,
 } from '@/lib/promotions/rules';
+import { calculateShippingFee, normalizeZipCode } from '@/lib/delivery/rules';
 
 type OrderItemInput = {
   id: string;
@@ -31,6 +32,7 @@ export async function POST(request: Request) {
     paymentMethod?: string;
     deliveryAddress?: string;
     promotionCode?: string;
+    deliveryZipCode?: string;
   };
 
   const cartItems = body.cartItems || [];
@@ -38,6 +40,7 @@ export async function POST(request: Request) {
   const paymentMethod = body.paymentMethod || null;
   const deliveryAddress = body.deliveryAddress?.trim() || null;
   const promotionCode = normalizePromotionCode(body.promotionCode || '');
+  const deliveryZipCode = normalizeZipCode(body.deliveryZipCode || '');
 
   if (cartItems.length === 0) {
     return NextResponse.json({ error: 'Pedido invalido.' }, { status: 400 });
@@ -94,7 +97,39 @@ export async function POST(request: Request) {
   }
 
   const discount = Math.min(subtotal, pickupDiscount + promotionDiscount);
-  const total = subtotal - discount;
+  let shippingFee = 0;
+  let deliveryZoneName: string | null = null;
+  let deliveryEstimateDays: number | null = null;
+
+  if (deliveryMethod === 'Entrega no Endereco') {
+    if (deliveryZipCode.length !== 8) {
+      return NextResponse.json({ error: 'Informe um CEP valido para entrega.' }, { status: 400 });
+    }
+
+    const { data: deliveryZone, error: deliveryZoneError } = await supabase
+      .from('delivery_zones')
+      .select('id,created_at,updated_at,name,zip_start,zip_end,fee,free_shipping_min_subtotal,estimate_days,is_active')
+      .eq('is_active', true)
+      .lte('zip_start', deliveryZipCode)
+      .gte('zip_end', deliveryZipCode)
+      .order('fee', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (deliveryZoneError) {
+      return NextResponse.json({ error: 'Nao foi possivel calcular o frete.' }, { status: 400 });
+    }
+
+    if (!deliveryZone) {
+      return NextResponse.json({ error: 'Ainda nao entregamos neste CEP.' }, { status: 400 });
+    }
+
+    shippingFee = calculateShippingFee(deliveryZone as DeliveryZone, subtotal);
+    deliveryZoneName = (deliveryZone as DeliveryZone).name;
+    deliveryEstimateDays = (deliveryZone as DeliveryZone).estimate_days;
+  }
+
+  const total = subtotal - discount + shippingFee;
 
   const { data: order, error: orderError } = await supabase
     .from('orders')
@@ -108,10 +143,14 @@ export async function POST(request: Request) {
       discount_amount: discount,
       subtotal_amount: subtotal,
       promotion_code: appliedPromotionCode,
+      delivery_zip_code: deliveryZipCode || null,
+      delivery_zone_name: deliveryZoneName,
+      delivery_estimate_days: deliveryEstimateDays,
+      shipping_fee: shippingFee,
       customer_name: user.user_metadata?.nome_completo || user.email?.split('@')[0] || null,
       customer_phone: user.user_metadata?.telefone || null,
     })
-    .select('id,user_id,status,total_amount,created_at,delivery_type,payment_method,delivery_address,discount_amount,subtotal_amount,customer_name,customer_phone,promotion_code')
+    .select('id,user_id,status,total_amount,created_at,delivery_type,payment_method,delivery_address,discount_amount,subtotal_amount,customer_name,customer_phone,promotion_code,delivery_zip_code,delivery_zone_name,delivery_estimate_days,shipping_fee')
     .single();
 
   if (orderError || !order) {

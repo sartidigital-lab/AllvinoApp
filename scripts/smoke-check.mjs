@@ -26,7 +26,7 @@ const checks = [
   },
   {
     file: 'src/app/checkout/page.tsx',
-    includes: ['552723453060', 'O pedido sera recebido em nosso WhatsApp', 'Pedido realizado', 'createOrder', 'fetchActivePromotionByCode', 'Cupom'],
+    includes: ['552723453060', 'O pedido sera recebido em nosso WhatsApp', 'Pedido realizado', 'createOrder', 'fetchActivePromotionByCode', 'fetchDeliveryQuote', 'Cupom', 'CEP'],
   },
   {
     file: 'src/app/conta/page.tsx',
@@ -34,7 +34,11 @@ const checks = [
   },
   {
     file: 'src/app/admin/pedidos/page.tsx',
-    includes: ['Buscar por cliente', 'Chamar no WhatsApp', 'Alterar status', 'statusCounts', 'promotion_code'],
+    includes: ['Buscar por cliente', 'Chamar no WhatsApp', 'Alterar status', 'statusCounts', 'promotion_code', 'shipping_fee'],
+  },
+  {
+    file: 'src/app/admin/logistica/page.tsx',
+    includes: ['Logistica & Frete', 'Nova Regiao', 'saveDeliveryZone', 'deleteDeliveryZone'],
   },
   {
     file: 'src/app/admin/promocoes/page.tsx',
@@ -46,11 +50,15 @@ const checks = [
   },
   {
     file: 'src/app/api/pedidos/route.ts',
-    includes: ['productsById', 'subtotal', 'promotionCode', 'calculatePromotionDiscount', 'total'],
+    includes: ['productsById', 'subtotal', 'promotionCode', 'deliveryZipCode', 'calculateShippingFee', 'total'],
   },
   {
     file: 'supabase/migrations/20260531000033_add_promotions.sql',
     includes: ['create table if not exists public.promotions', 'enable row level security', 'Public can read active promotions', 'Admins can manage promotions'],
+  },
+  {
+    file: 'supabase/migrations/20260531002906_add_delivery_zones.sql',
+    includes: ['create table if not exists public.delivery_zones', 'shipping_fee', 'Public can read active delivery zones', 'Admins can manage delivery zones'],
   },
   {
     file: '.github/workflows/ci.yml',

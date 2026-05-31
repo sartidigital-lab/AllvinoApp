@@ -24,6 +24,10 @@ type AdminOrder = {
   discount_amount: number;
   subtotal_amount: number | null;
   promotion_code: string | null;
+  delivery_zip_code: string | null;
+  delivery_zone_name: string | null;
+  delivery_estimate_days: number | null;
+  shipping_fee: number;
   created_at: string;
   customer_name: string | null;
   customer_phone: string | null;
@@ -122,7 +126,7 @@ export default function AdminPedidosPage() {
     const supabase = createClient();
     const { data, error } = await supabase
       .from('orders')
-      .select('id,status,total_amount,delivery_type,payment_method,delivery_address,discount_amount,subtotal_amount,promotion_code,created_at,customer_name,customer_phone,order_items(quantity,unit_price,product_name,wines(name))')
+      .select('id,status,total_amount,delivery_type,payment_method,delivery_address,discount_amount,subtotal_amount,promotion_code,delivery_zip_code,delivery_zone_name,delivery_estimate_days,shipping_fee,created_at,customer_name,customer_phone,order_items(quantity,unit_price,product_name,wines(name))')
       .order('created_at', { ascending: false })
       .limit(100);
 
@@ -417,6 +421,15 @@ export default function AdminPedidosPage() {
                 {selectedOrder.delivery_address && (
                   <p className="text-xs font-bold text-stone-400">Endereco: {selectedOrder.delivery_address}</p>
                 )}
+                {selectedOrder.delivery_zip_code && (
+                  <p className="text-xs font-bold text-stone-400">CEP: {selectedOrder.delivery_zip_code}</p>
+                )}
+                {selectedOrder.delivery_zone_name && (
+                  <p className="text-xs font-bold text-stone-400">
+                    Frete: {formatMoney(selectedOrder.shipping_fee)} | {selectedOrder.delivery_zone_name}
+                    {selectedOrder.delivery_estimate_days ? ` em ate ${selectedOrder.delivery_estimate_days} dia(s)` : ''}
+                  </p>
+                )}
                 {getWhatsAppUrl(selectedOrder.customer_phone) && (
                   <a
                     href={getWhatsAppUrl(selectedOrder.customer_phone)!}
@@ -450,6 +463,12 @@ export default function AdminPedidosPage() {
                   <div className="mb-2 flex items-center justify-between text-sm font-bold text-emerald-700">
                     <span>Desconto{selectedOrder.promotion_code ? ` (${selectedOrder.promotion_code})` : ''}</span>
                     <span>- {formatMoney(selectedOrder.discount_amount)}</span>
+                  </div>
+                )}
+                {selectedOrder.shipping_fee > 0 && (
+                  <div className="mb-2 flex items-center justify-between text-sm font-bold text-stone-600">
+                    <span>Frete</span>
+                    <span>{formatMoney(selectedOrder.shipping_fee)}</span>
                   </div>
                 )}
                 <div className="flex items-center justify-between text-lg font-bold text-black">
