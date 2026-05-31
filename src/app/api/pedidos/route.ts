@@ -1,5 +1,11 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import { Promotion } from '@/types/database';
+import {
+  calculatePromotionDiscount,
+  isPromotionCurrentlyActive,
+  normalizePromotionCode,
+} from '@/lib/promotions/rules';
 
 type OrderItemInput = {
   id: string;
@@ -24,12 +30,14 @@ export async function POST(request: Request) {
     deliveryMethod?: string;
     paymentMethod?: string;
     deliveryAddress?: string;
+    promotionCode?: string;
   };
 
   const cartItems = body.cartItems || [];
   const deliveryMethod = body.deliveryMethod || 'delivery';
   const paymentMethod = body.paymentMethod || null;
   const deliveryAddress = body.deliveryAddress?.trim() || null;
+  const promotionCode = normalizePromotionCode(body.promotionCode || '');
 
   if (cartItems.length === 0) {
     return NextResponse.json({ error: 'Pedido invalido.' }, { status: 400 });
@@ -59,7 +67,33 @@ export async function POST(request: Request) {
   });
 
   const subtotal = validatedItems.reduce((sum, item) => sum + item.quantity * item.price, 0);
-  const discount = deliveryMethod === 'Retirada na Loja' ? subtotal * 0.1 : 0;
+  const pickupDiscount = deliveryMethod === 'Retirada na Loja' ? subtotal * 0.1 : 0;
+  let promotionDiscount = 0;
+  let appliedPromotionCode: string | null = null;
+
+  if (promotionCode) {
+    const { data: promotion, error: promotionError } = await supabase
+      .from('promotions')
+      .select('id,created_at,updated_at,code,title,description,discount_type,discount_value,min_subtotal,max_discount,starts_at,ends_at,is_active')
+      .eq('code', promotionCode)
+      .maybeSingle();
+
+    if (promotionError) {
+      return NextResponse.json({ error: 'Nao foi possivel validar o cupom.' }, { status: 400 });
+    }
+
+    if (!promotion || !isPromotionCurrentlyActive(promotion as Promotion)) {
+      return NextResponse.json({ error: 'Cupom invalido ou expirado.' }, { status: 400 });
+    }
+
+    promotionDiscount = calculatePromotionDiscount(promotion as Promotion, subtotal);
+    if (promotionDiscount <= 0) {
+      return NextResponse.json({ error: 'Cupom nao atende ao valor minimo do pedido.' }, { status: 400 });
+    }
+    appliedPromotionCode = (promotion as Promotion).code;
+  }
+
+  const discount = Math.min(subtotal, pickupDiscount + promotionDiscount);
   const total = subtotal - discount;
 
   const { data: order, error: orderError } = await supabase
@@ -73,10 +107,11 @@ export async function POST(request: Request) {
       delivery_address: deliveryAddress,
       discount_amount: discount,
       subtotal_amount: subtotal,
+      promotion_code: appliedPromotionCode,
       customer_name: user.user_metadata?.nome_completo || user.email?.split('@')[0] || null,
       customer_phone: user.user_metadata?.telefone || null,
     })
-    .select('id,user_id,status,total_amount,created_at,delivery_type,payment_method,delivery_address,discount_amount,subtotal_amount,customer_name,customer_phone')
+    .select('id,user_id,status,total_amount,created_at,delivery_type,payment_method,delivery_address,discount_amount,subtotal_amount,customer_name,customer_phone,promotion_code')
     .single();
 
   if (orderError || !order) {

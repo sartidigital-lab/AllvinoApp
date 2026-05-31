@@ -8,14 +8,15 @@ export async function createOrder(
   total: number,
   deliveryMethod: string,
   paymentMethod?: string,
-  deliveryAddress?: string
+  deliveryAddress?: string,
+  promotionCode?: string
 ): Promise<{ order: Order | null; error: Error | null }> {
   if (typeof window !== 'undefined') {
     try {
       const response = await fetch('/api/pedidos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, cartItems, deliveryMethod, paymentMethod, deliveryAddress }),
+        body: JSON.stringify({ userId, cartItems, deliveryMethod, paymentMethod, deliveryAddress, promotionCode }),
       });
 
       const payload = await response.json();
@@ -46,8 +47,9 @@ export async function createOrder(
         delivery_address: deliveryAddress || null,
         discount_amount: 0,
         subtotal_amount: total,
+        promotion_code: promotionCode || null,
       })
-      .select('id,user_id,status,total_amount,created_at,delivery_type,payment_method,delivery_address,discount_amount,subtotal_amount,customer_name,customer_phone')
+      .select('id,user_id,status,total_amount,created_at,delivery_type,payment_method,delivery_address,discount_amount,subtotal_amount,customer_name,customer_phone,promotion_code')
       .single();
 
     if (orderError) throw orderError;
@@ -82,7 +84,7 @@ export async function getUserOrders(userId: string, limit = 10): Promise<{ order
   try {
     const { data, error } = await supabase
       .from('orders')
-      .select('id,user_id,status,total_amount,created_at,delivery_type,payment_method,delivery_address,discount_amount,subtotal_amount,customer_name,customer_phone,order_items(id,order_id,wine_id,product_id,product_name,quantity,unit_price)')
+      .select('id,user_id,status,total_amount,created_at,delivery_type,payment_method,delivery_address,discount_amount,subtotal_amount,customer_name,customer_phone,promotion_code,order_items(id,order_id,wine_id,product_id,product_name,quantity,unit_price)')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(limit);

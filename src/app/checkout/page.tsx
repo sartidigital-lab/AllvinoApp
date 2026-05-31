@@ -5,6 +5,12 @@ import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { CurrentUser, getCurrentUserFast } from '@/lib/auth/currentUser';
 import { createOrder } from '@/lib/database/orders';
+import {
+  calculatePromotionDiscount,
+  fetchActivePromotionByCode,
+  normalizePromotionCode,
+} from '@/lib/database/promotions';
+import { Promotion } from '@/types/database';
 
 export default function CheckoutPage() {
   const { cart, cartTotal, clearCart } = useCart();
@@ -12,12 +18,17 @@ export default function CheckoutPage() {
   const [entrega, setEntrega] = useState('entrega');
   const [endereco, setEndereco] = useState('');
   const [pagamento, setPagamento] = useState('Pix');
+  const [promotionCode, setPromotionCode] = useState('');
+  const [appliedPromotion, setAppliedPromotion] = useState<Promotion | null>(null);
+  const [promotionMessage, setPromotionMessage] = useState<string | null>(null);
+  const [isCheckingPromotion, setIsCheckingPromotion] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [successOrderId, setSuccessOrderId] = useState<string | null>(null);
   const [successSummary, setSuccessSummary] = useState<{
     total: number;
     subtotal: number;
     discount: number;
+    promotionCode: string | null;
     payment: string;
     delivery: string;
     address: string | null;
@@ -38,8 +49,57 @@ export default function CheckoutPage() {
     fetchUser();
   }, []);
 
-  const discount = entrega === 'retirada' ? cartTotal * 0.1 : 0;
+  const pickupDiscount = entrega === 'retirada' ? cartTotal * 0.1 : 0;
+  const promotionDiscount = appliedPromotion ? calculatePromotionDiscount(appliedPromotion, cartTotal) : 0;
+  const discount = Math.min(cartTotal, pickupDiscount + promotionDiscount);
   const finalTotal = cartTotal - discount;
+
+  const handleApplyPromotion = async () => {
+    const normalizedCode = normalizePromotionCode(promotionCode);
+
+    if (!normalizedCode) {
+      setPromotionMessage('Informe um cupom.');
+      return;
+    }
+
+    setIsCheckingPromotion(true);
+    setPromotionMessage(null);
+
+    const { promotion, error } = await fetchActivePromotionByCode(normalizedCode);
+
+    if (error) {
+      setPromotionMessage('Nao foi possivel validar o cupom agora.');
+      setAppliedPromotion(null);
+      setIsCheckingPromotion(false);
+      return;
+    }
+
+    if (!promotion) {
+      setPromotionMessage('Cupom invalido ou expirado.');
+      setAppliedPromotion(null);
+      setIsCheckingPromotion(false);
+      return;
+    }
+
+    const nextDiscount = calculatePromotionDiscount(promotion, cartTotal);
+    if (nextDiscount <= 0) {
+      setPromotionMessage(`Cupom valido para pedidos a partir de R$ ${promotion.min_subtotal.toFixed(2).replace('.', ',')}.`);
+      setAppliedPromotion(null);
+      setIsCheckingPromotion(false);
+      return;
+    }
+
+    setPromotionCode(promotion.code);
+    setAppliedPromotion(promotion);
+    setPromotionMessage(`${promotion.title} aplicado.`);
+    setIsCheckingPromotion(false);
+  };
+
+  const clearPromotion = () => {
+    setAppliedPromotion(null);
+    setPromotionCode('');
+    setPromotionMessage(null);
+  };
 
   const handleFinalizar = async () => {
     if (cart.length === 0) {
@@ -62,7 +122,8 @@ export default function CheckoutPage() {
       finalTotal,
       entrega === 'retirada' ? 'Retirada na Loja' : 'Entrega no Endereco',
       pagamento,
-      entrega === 'entrega' ? endereco : undefined
+      entrega === 'entrega' ? endereco : undefined,
+      appliedPromotion?.code
     );
 
     if (error || !order) {
@@ -73,6 +134,10 @@ export default function CheckoutPage() {
 
     const itensMsg = cart.map((item) => `*${item.quantity}x ${item.name}*`).join('\n');
     let msg = `*NOVO PEDIDO - ALLVINO*\n\n*Cliente:* ${user.name}\n*WhatsApp:* ${user.phone || 'Nao informado'}\n\n*ITENS DO PEDIDO:*\n${itensMsg}\n\n*Pagamento:* ${pagamento}\n*Modalidade:* ${entrega === 'retirada' ? 'Retirada na Loja (-10% OFF)' : 'Entrega no Endereco'}\n`;
+
+    if (order.promotion_code) {
+      msg += `*Cupom:* ${order.promotion_code}\n`;
+    }
 
     if (entrega === 'entrega') {
       msg += `*Endereco:* ${endereco}\n`;
@@ -90,6 +155,7 @@ export default function CheckoutPage() {
       total: order.total_amount,
       subtotal: order.subtotal_amount || cartTotal,
       discount: order.discount_amount || 0,
+      promotionCode: order.promotion_code,
       payment: order.payment_method || pagamento,
       delivery: order.delivery_type,
       address: order.delivery_address,
@@ -134,7 +200,9 @@ export default function CheckoutPage() {
             )}
             {successSummary.discount > 0 && (
               <div className="flex justify-between gap-4 text-emerald-700">
-                <span className="font-bold">Desconto</span>
+                <span className="font-bold">
+                  Desconto{successSummary.promotionCode ? ` (${successSummary.promotionCode})` : ''}
+                </span>
                 <span className="font-bold">- R$ {successSummary.discount.toFixed(2).replace('.', ',')}</span>
               </div>
             )}
@@ -187,7 +255,7 @@ export default function CheckoutPage() {
           </div>
           {discount > 0 && (
             <div className="flex justify-between text-sm text-green-600">
-              <span>Desconto Retirada (10%)</span>
+              <span>Descontos</span>
               <span>- R$ {discount.toFixed(2).replace('.', ',')}</span>
             </div>
           )}
@@ -213,6 +281,49 @@ export default function CheckoutPage() {
       </div>
 
       <div className="space-y-4">
+        <div className="bg-white rounded-3xl p-6 border border-stone-100 shadow-sm space-y-4">
+          <h2 className="text-xs font-bold text-stone-400 uppercase tracking-widest border-b pb-2">Cupom</h2>
+          <div className="flex gap-2">
+            <input
+              value={promotionCode}
+              onChange={(event) => {
+                setPromotionCode(event.target.value.toUpperCase());
+                if (appliedPromotion) setAppliedPromotion(null);
+              }}
+              placeholder="Digite seu cupom"
+              className="min-w-0 flex-1 border-stone-200 rounded-2xl p-4 text-sm font-bold uppercase outline-none focus:border-black transition-colors"
+            />
+            {appliedPromotion ? (
+              <button
+                type="button"
+                onClick={clearPromotion}
+                className="rounded-2xl border border-stone-200 px-4 text-sm font-bold text-stone-600"
+              >
+                Remover
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleApplyPromotion}
+                disabled={isCheckingPromotion || cart.length === 0}
+                className="rounded-2xl bg-black px-4 text-sm font-bold text-white disabled:opacity-50"
+              >
+                {isCheckingPromotion ? 'Validando...' : 'Aplicar'}
+              </button>
+            )}
+          </div>
+          {promotionMessage && (
+            <p className={`text-xs font-bold ${appliedPromotion ? 'text-emerald-700' : 'text-stone-500'}`}>
+              {promotionMessage}
+            </p>
+          )}
+          {appliedPromotion && (
+            <div className="rounded-2xl bg-emerald-50 p-3 text-xs font-bold text-emerald-800">
+              Desconto do cupom: - R$ {promotionDiscount.toFixed(2).replace('.', ',')}
+            </div>
+          )}
+        </div>
+
         <div className="bg-white rounded-3xl p-6 border border-stone-100 shadow-sm space-y-5">
           <h2 className="text-xs font-bold text-stone-400 uppercase tracking-widest border-b pb-2">Entrega</h2>
           <div className="space-y-3">

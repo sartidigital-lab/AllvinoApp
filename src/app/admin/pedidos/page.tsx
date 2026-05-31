@@ -23,6 +23,7 @@ type AdminOrder = {
   delivery_address: string | null;
   discount_amount: number;
   subtotal_amount: number | null;
+  promotion_code: string | null;
   created_at: string;
   customer_name: string | null;
   customer_phone: string | null;
@@ -121,7 +122,7 @@ export default function AdminPedidosPage() {
     const supabase = createClient();
     const { data, error } = await supabase
       .from('orders')
-      .select('id,status,total_amount,delivery_type,payment_method,delivery_address,discount_amount,subtotal_amount,created_at,customer_name,customer_phone,order_items(quantity,unit_price,product_name,wines(name))')
+      .select('id,status,total_amount,delivery_type,payment_method,delivery_address,discount_amount,subtotal_amount,promotion_code,created_at,customer_name,customer_phone,order_items(quantity,unit_price,product_name,wines(name))')
       .order('created_at', { ascending: false })
       .limit(100);
 
@@ -447,7 +448,7 @@ export default function AdminPedidosPage() {
               <div className="border-t border-stone-100 pt-4">
                 {selectedOrder.discount_amount > 0 && (
                   <div className="mb-2 flex items-center justify-between text-sm font-bold text-emerald-700">
-                    <span>Desconto</span>
+                    <span>Desconto{selectedOrder.promotion_code ? ` (${selectedOrder.promotion_code})` : ''}</span>
                     <span>- {formatMoney(selectedOrder.discount_amount)}</span>
                   </div>
                 )}

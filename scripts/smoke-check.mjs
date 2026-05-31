@@ -26,7 +26,7 @@ const checks = [
   },
   {
     file: 'src/app/checkout/page.tsx',
-    includes: ['552723453060', 'O pedido sera recebido em nosso WhatsApp', 'Pedido realizado', 'createOrder'],
+    includes: ['552723453060', 'O pedido sera recebido em nosso WhatsApp', 'Pedido realizado', 'createOrder', 'fetchActivePromotionByCode', 'Cupom'],
   },
   {
     file: 'src/app/conta/page.tsx',
@@ -34,7 +34,11 @@ const checks = [
   },
   {
     file: 'src/app/admin/pedidos/page.tsx',
-    includes: ['Buscar por cliente', 'Chamar no WhatsApp', 'Alterar status', 'statusCounts'],
+    includes: ['Buscar por cliente', 'Chamar no WhatsApp', 'Alterar status', 'statusCounts', 'promotion_code'],
+  },
+  {
+    file: 'src/app/admin/promocoes/page.tsx',
+    includes: ['Promocoes & Cupons', 'Novo Cupom', 'savePromotion', 'deletePromotion'],
   },
   {
     file: 'src/app/admin/catalogo/page.tsx',
@@ -42,7 +46,11 @@ const checks = [
   },
   {
     file: 'src/app/api/pedidos/route.ts',
-    includes: ['productsById', 'subtotal', 'discount', 'total'],
+    includes: ['productsById', 'subtotal', 'promotionCode', 'calculatePromotionDiscount', 'total'],
+  },
+  {
+    file: 'supabase/migrations/20260531000033_add_promotions.sql',
+    includes: ['create table if not exists public.promotions', 'enable row level security', 'Public can read active promotions', 'Admins can manage promotions'],
   },
   {
     file: '.github/workflows/ci.yml',
@@ -57,7 +65,7 @@ const mojibakePatterns = [
   String.fromCharCode(0xfffd),
 ];
 const sourceExtensions = /\.(ts|tsx|mjs|json|md|yml)$/;
-const sourceRoots = ['src', 'scripts', '.github', 'package.json', 'DEPLOYMENT.md'];
+const sourceRoots = ['src', 'scripts', '.github', 'supabase/migrations', 'package.json', 'DEPLOYMENT.md'];
 const failures = [];
 
 function readProjectFile(relativePath) {

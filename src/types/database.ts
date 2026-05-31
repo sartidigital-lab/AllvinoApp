@@ -25,6 +25,7 @@ export type Order = {
   subtotal_amount: number | null;
   customer_name: string | null;
   customer_phone: string | null;
+  promotion_code: string | null;
 };
 
 export type OrderItem = {
@@ -39,4 +40,20 @@ export type OrderItem = {
 
 export type OrderWithItems = Order & {
   order_items: OrderItem[];
+};
+
+export type Promotion = {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  code: string;
+  title: string;
+  description: string | null;
+  discount_type: 'percent' | 'fixed';
+  discount_value: number;
+  min_subtotal: number;
+  max_discount: number | null;
+  starts_at: string | null;
+  ends_at: string | null;
+  is_active: boolean;
 };
