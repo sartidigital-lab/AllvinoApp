@@ -18,7 +18,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from('produtos')
-    .select('id,nome,descricao,preco,sku_sankhya,imagem_url,pais,tipo,uva,estoque,criado_em')
+    .select('id,nome,descricao,preco,sku_sankhya,imagem_url,pais,regiao,tipo,uva,estoque,criado_em')
     .order('criado_em', { ascending: false });
 
   if (error) {

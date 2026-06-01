@@ -295,7 +295,7 @@ export default function AdminCatalogPage() {
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Buscar por nome, uva, regiao..."
+            placeholder="Buscar por nome, uva, pais, regiao..."
             className="w-full border border-stone-200 bg-white rounded-lg py-2.5 pl-10 pr-3 text-sm font-bold outline-none focus:border-black"
           />
         </label>
@@ -352,7 +352,7 @@ export default function AdminCatalogPage() {
               <input value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })} className="w-full border border-stone-200 rounded-lg p-3 text-sm font-bold outline-none focus:border-black" />
             </label>
             <label className="space-y-1">
-              <span className="text-xs font-bold uppercase text-stone-400">Categoria</span>
+              <span className="text-xs font-bold uppercase text-stone-400">Pais</span>
               <input value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })} className="w-full border border-stone-200 rounded-lg p-3 text-sm font-bold outline-none focus:border-black" />
             </label>
             <label className="space-y-1">
@@ -420,7 +420,7 @@ export default function AdminCatalogPage() {
             <thead>
               <tr className="bg-[#FDFBF7] text-stone-500 text-xs uppercase tracking-wider border-b border-stone-100">
                 <th className="p-4 font-bold">Produto</th>
-                <th className="p-4 font-bold">Tipo / Categoria</th>
+                <th className="p-4 font-bold">Tipo / Pais</th>
                 <th className="p-4 font-bold">Preco</th>
                 <th className="p-4 font-bold">Estoque</th>
                 <th className="p-4 font-bold">Status</th>
@@ -443,12 +443,12 @@ export default function AdminCatalogPage() {
                       <img src={wine.image_url || 'https://via.placeholder.com/50x150'} alt={wine.name} className="h-16 w-12 object-contain bg-stone-50 rounded" />
                       <div>
                         <p className="font-bold text-black">{wine.name}</p>
-                        <p className="text-xs text-stone-400 font-bold">{wine.product_code || 'Sem codigo'} | {wine.grape || 'Uva'} | {wine.region || 'Regiao'}</p>
+                        <p className="text-xs text-stone-400 font-bold">{wine.product_code || 'Sem codigo'} | {wine.grape || 'Uva'} | {wine.category || 'Pais'} | {wine.region || 'Regiao'}</p>
                       </div>
                     </div>
                   </td>
                   <td className="p-4">
-                    <span className="bg-stone-100 text-stone-600 px-3 py-1 rounded-full text-xs font-bold uppercase">{wine.type || wine.category || 'Vinho'}</span>
+                    <span className="bg-stone-100 text-stone-600 px-3 py-1 rounded-full text-xs font-bold uppercase">{[wine.type, wine.category].filter(Boolean).join(' / ') || 'Vinho'}</span>
                   </td>
                   <td className="p-4 font-bold text-black">R$ {wine.price.toFixed(2).replace('.', ',')}</td>
                   <td className="p-4">

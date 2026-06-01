@@ -61,7 +61,7 @@ export default function CatalogoPage() {
 
   const types = useMemo(() => uniqueSorted(wines.map((wine) => wine.type)), [wines]);
   const grapes = useMemo(() => uniqueSorted(wines.map((wine) => wine.grape)), [wines]);
-  const countries = useMemo(() => uniqueSorted(wines.map((wine) => wine.region)), [wines]);
+  const countries = useMemo(() => uniqueSorted(wines.map((wine) => wine.category)), [wines]);
 
   const filteredWines = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -70,7 +70,7 @@ export default function CatalogoPage() {
       const matchesPrice = !selectedPrice || (wine.price >= selectedPrice.min && wine.price <= selectedPrice.max);
       const matchesType = !selectedType || wine.type === selectedType;
       const matchesGrape = !selectedGrape || wine.grape === selectedGrape;
-      const matchesCountry = !selectedCountry || wine.region === selectedCountry;
+      const matchesCountry = !selectedCountry || wine.category === selectedCountry;
       const searchableText = [wine.name, wine.type, wine.grape, wine.region, wine.category]
         .filter(Boolean)
         .join(' ')
@@ -215,7 +215,7 @@ export default function CatalogoPage() {
                 </div>
                 <h3 className="font-bold text-xl line-clamp-2">{wine.name}</h3>
                 <p className="text-xs text-stone-400 font-bold uppercase tracking-widest mt-1">
-                  {wine.category || 'Vinho'}
+                  {[wine.category, wine.region].filter(Boolean).join(' - ') || 'Vinho'}
                 </p>
                 <div className="flex justify-between items-end mt-auto pt-5">
                   <span className="text-2xl font-bold">R$ {wine.price.toFixed(2).replace('.', ',')}</span>

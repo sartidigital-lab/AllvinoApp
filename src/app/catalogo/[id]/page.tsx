@@ -62,7 +62,7 @@ export default function WineDetailPage({ params }: { params: Promise<{ id: strin
 
     return wines
       .filter((item) => item.id !== wine.id)
-      .filter((item) => item.type === wine.type || item.region === wine.region || item.grape === wine.grape)
+      .filter((item) => item.type === wine.type || item.region === wine.region || item.category === wine.category || item.grape === wine.grape)
       .slice(0, 3);
   }, [wine, wines]);
 
@@ -125,7 +125,7 @@ export default function WineDetailPage({ params }: { params: Promise<{ id: strin
         <div className="space-y-6">
           <div>
             <p className="mb-3 text-xs font-bold uppercase tracking-widest text-[#B91C1C]">
-              {wine.category || 'Vinho premium'}
+              {[wine.category, wine.region].filter(Boolean).join(' - ') || 'Vinho premium'}
             </p>
             <h1 className="font-serif text-4xl font-bold leading-tight text-black md:text-5xl">{wine.name}</h1>
             <p className="mt-5 text-base font-medium leading-7 text-stone-600">
@@ -136,8 +136,8 @@ export default function WineDetailPage({ params }: { params: Promise<{ id: strin
           <div className="grid grid-cols-2 gap-3">
             {productAttribute('Tipo', wine.type, 'wine_bar')}
             {productAttribute('Uva', wine.grape, 'yard')}
-            {productAttribute('Pais', wine.region, 'public')}
-            {productAttribute('Selecao', wine.category, 'verified')}
+            {productAttribute('Pais', wine.category, 'public')}
+            {productAttribute('Regiao', wine.region, 'travel_explore')}
           </div>
 
           <div className="rounded-3xl border border-stone-100 bg-white p-5 shadow-sm">

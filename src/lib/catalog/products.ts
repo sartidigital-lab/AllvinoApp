@@ -8,6 +8,7 @@ export type LegacyProduct = {
   sku_sankhya: string | null;
   imagem_url: string | null;
   pais: string | null;
+  regiao: string | null;
   tipo: string | null;
   uva: string | null;
   estoque: number | null;
@@ -22,9 +23,9 @@ export function mapProductToWine(product: LegacyProduct): Wine {
     price: Number(product.preco),
     image_url: product.imagem_url,
     type: product.tipo,
-    region: product.pais,
+    region: product.regiao,
     grape: product.uva,
-    category: [product.pais, product.tipo].filter(Boolean).join(' - ') || 'Vinho',
+    category: product.pais,
     stock: Number(product.estoque ?? 0),
     product_code: product.sku_sankhya,
     created_at: product.criado_em,
@@ -38,8 +39,9 @@ export function mapWineToProduct(wineData: Partial<Wine>) {
     sku_sankhya: wineData.product_code,
     preco: wineData.price,
     imagem_url: wineData.image_url,
-    pais: wineData.region,
-    tipo: wineData.type || wineData.category,
+    pais: wineData.category,
+    regiao: wineData.region,
+    tipo: wineData.type,
     uva: wineData.grape,
     estoque: wineData.stock,
   };
