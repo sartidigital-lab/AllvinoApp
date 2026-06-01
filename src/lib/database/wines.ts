@@ -15,6 +15,7 @@ async function fetchCachedPublicCatalog(): Promise<Wine[] | null> {
   if (typeof window === 'undefined') return null;
 
   const response = await fetch('/api/catalogo', {
+    cache: 'no-store',
     headers: { Accept: 'application/json' },
   });
 
