@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { createWine, deleteWine, fetchWinesFromSupabase, updateWine } from '@/lib/database/wines';
+import { fetchStockLevelByCode, normalizeProductCode } from '@/lib/database/stock';
 import { createClient } from '@/utils/supabase/client';
 import { Wine } from '@/types/database';
 
@@ -72,6 +73,7 @@ export default function AdminCatalogPage() {
   const [form, setForm] = useState<WineForm>(emptyForm);
   const [editingWine, setEditingWine] = useState<Wine | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isSyncingStock, setIsSyncingStock] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -121,6 +123,45 @@ export default function AdminCatalogPage() {
     setIsFormOpen(false);
     setEditingWine(null);
     setForm(emptyForm);
+  };
+
+  const syncStockFromProductCode = async (productCode: string, options: { showMessage?: boolean } = {}) => {
+    const normalizedCode = normalizeProductCode(productCode);
+    if (!normalizedCode) return null;
+
+    setIsSyncingStock(true);
+
+    try {
+      const { quantity, error } = await fetchStockLevelByCode(normalizedCode);
+
+      if (error) {
+        if (options.showMessage) {
+          setMessage('Nao foi possivel consultar o estoque importado para este codigo.');
+        }
+        return null;
+      }
+
+      if (quantity === null) {
+        if (options.showMessage) {
+          setMessage(`Codigo ${normalizedCode} ainda nao existe na base de estoque importada.`);
+        }
+        return null;
+      }
+
+      setForm((current) => ({
+        ...current,
+        product_code: normalizedCode,
+        stock: String(quantity),
+      }));
+
+      if (options.showMessage) {
+        setMessage(`Estoque sincronizado: ${quantity} un. para o codigo ${normalizedCode}.`);
+      }
+
+      return quantity;
+    } finally {
+      setIsSyncingStock(false);
+    }
   };
 
   const handleImageUpload = async (file: File | undefined) => {
@@ -180,7 +221,15 @@ export default function AdminCatalogPage() {
     setMessage(null);
 
     try {
-      const payload = toPayload(form);
+      const normalizedProductCode = normalizeProductCode(form.product_code);
+      const syncedQuantity = normalizedProductCode
+        ? await syncStockFromProductCode(normalizedProductCode)
+        : null;
+      const payload = toPayload({
+        ...form,
+        product_code: normalizedProductCode,
+        stock: syncedQuantity === null ? form.stock : String(syncedQuantity),
+      });
       const savedWine = editingWine
         ? await updateWine(editingWine.id, payload)
         : await createWine(payload);
@@ -275,11 +324,17 @@ export default function AdminCatalogPage() {
             </label>
             <label className="space-y-1">
               <span className="text-xs font-bold uppercase text-stone-400">Codigo estoque</span>
-              <input value={form.product_code} onChange={(event) => setForm({ ...form, product_code: event.target.value.trim().toUpperCase() })} className="w-full border border-stone-200 rounded-lg p-3 text-sm font-bold uppercase outline-none focus:border-black" />
+              <input
+                value={form.product_code}
+                onBlur={(event) => syncStockFromProductCode(event.target.value, { showMessage: true })}
+                onChange={(event) => setForm({ ...form, product_code: normalizeProductCode(event.target.value) })}
+                className="w-full border border-stone-200 rounded-lg p-3 text-sm font-bold uppercase outline-none focus:border-black"
+              />
             </label>
             <label className="space-y-1">
               <span className="text-xs font-bold uppercase text-stone-400">Estoque</span>
               <input type="number" min="0" value={form.stock} onChange={(event) => setForm({ ...form, stock: event.target.value })} className="w-full border border-stone-200 rounded-lg p-3 text-sm font-bold outline-none focus:border-black" />
+              {isSyncingStock && <p className="text-xs font-bold text-stone-400">Sincronizando estoque...</p>}
             </label>
             <label className="space-y-1">
               <span className="text-xs font-bold uppercase text-stone-400">Tipo</span>
