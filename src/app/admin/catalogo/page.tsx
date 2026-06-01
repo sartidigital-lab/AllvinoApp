@@ -34,6 +34,14 @@ const emptyForm: WineForm = {
 
 const allowedImageTypes = ['image/png', 'image/jpeg', 'image/webp'];
 
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === 'object' && error && 'message' in error) {
+    return String((error as { message?: unknown }).message || '');
+  }
+  return '';
+}
+
 function toForm(wine: Wine): WineForm {
   return {
     name: wine.name,
@@ -242,6 +250,9 @@ export default function AdminCatalogPage() {
       await loadWines();
       closeForm();
       setMessage(editingWine ? 'Vinho atualizado.' : 'Vinho cadastrado.');
+    } catch (error) {
+      const detail = getErrorMessage(error);
+      setMessage(`Nao foi possivel salvar.${detail ? ` Detalhe: ${detail}` : ' Verifique sua permissao de admin.'}`);
     } finally {
       setIsSaving(false);
     }

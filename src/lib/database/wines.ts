@@ -2,6 +2,15 @@ import { createClient } from '@/utils/supabase/client';
 import { LegacyProduct, mapProductToWine, mapWineToProduct } from '@/lib/catalog/products';
 import { Wine } from '@/types/database';
 
+function getDatabaseErrorMessage(error: unknown) {
+  if (!error) return '';
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === 'object' && error && 'message' in error) {
+    return String((error as { message?: unknown }).message || '');
+  }
+  return String(error);
+}
+
 async function fetchCachedPublicCatalog(): Promise<Wine[] | null> {
   if (typeof window === 'undefined') return null;
 
@@ -82,21 +91,18 @@ export async function createWine(wineData: Partial<Wine>): Promise<Wine | null> 
       .select()
       .single();
 
-    if (!productError && product) {
-      return mapProductToWine(product as LegacyProduct);
+    if (productError) {
+      throw new Error(getDatabaseErrorMessage(productError) || 'Nao foi possivel cadastrar o produto.');
     }
 
-    const { data, error } = await supabase
-      .from('wines')
-      .insert(wineData)
-      .select()
-      .single();
+    if (!product) {
+      throw new Error('Produto cadastrado sem retorno do banco.');
+    }
 
-    if (error) throw error;
-    return data;
+    return mapProductToWine(product as LegacyProduct);
   } catch (error) {
     console.error('Error creating wine:', error);
-    return null;
+    throw error;
   }
 }
 
@@ -110,22 +116,18 @@ export async function updateWine(id: string, wineData: Partial<Wine>): Promise<W
       .select()
       .single();
 
-    if (!productError && product) {
-      return mapProductToWine(product as LegacyProduct);
+    if (productError) {
+      throw new Error(getDatabaseErrorMessage(productError) || 'Nao foi possivel atualizar o produto.');
     }
 
-    const { data, error } = await supabase
-      .from('wines')
-      .update(wineData)
-      .eq('id', id)
-      .select()
-      .single();
+    if (!product) {
+      throw new Error('Produto atualizado sem retorno do banco.');
+    }
 
-    if (error) throw error;
-    return data;
+    return mapProductToWine(product as LegacyProduct);
   } catch (error) {
     console.error('Error updating wine:', error);
-    return null;
+    throw error;
   }
 }
 
