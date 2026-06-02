@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { createWine, deleteWine, fetchWinesFromSupabase, updateWine } from '@/lib/database/wines';
-import { fetchStockLevelByCode, normalizeProductCode } from '@/lib/database/stock';
+import { fetchStockLevelByCode, fetchStockLevelsByCodes, normalizeProductCode } from '@/lib/database/stock';
 import { createClient } from '@/utils/supabase/client';
 import { Wine } from '@/types/database';
 
@@ -34,12 +34,59 @@ const emptyForm: WineForm = {
 
 const allowedImageTypes = ['image/png', 'image/jpeg', 'image/webp'];
 
+type StockLinkStatus = {
+  label: string;
+  detail: string;
+  icon: string;
+  className: string;
+};
+
 function getErrorMessage(error: unknown) {
   if (error instanceof Error && error.message) return error.message;
   if (typeof error === 'object' && error && 'message' in error) {
     return String((error as { message?: unknown }).message || '');
   }
   return '';
+}
+
+function getStockLinkStatus(wine: Wine, stockByCode: Map<string, number>): StockLinkStatus {
+  const productCode = normalizeProductCode(wine.product_code || '');
+
+  if (!productCode) {
+    return {
+      label: 'Sem codigo',
+      detail: 'Produto nao vinculado ao estoque',
+      icon: 'link_off',
+      className: 'bg-stone-100 text-stone-600',
+    };
+  }
+
+  if (!stockByCode.has(productCode)) {
+    return {
+      label: 'Codigo sem saldo',
+      detail: 'Nao existe na base importada',
+      icon: 'warning',
+      className: 'bg-amber-50 text-amber-700',
+    };
+  }
+
+  const importedQuantity = stockByCode.get(productCode) || 0;
+
+  if (importedQuantity !== wine.stock) {
+    return {
+      label: 'Divergente',
+      detail: `Base: ${importedQuantity} un. | Produto: ${wine.stock} un.`,
+      icon: 'sync_problem',
+      className: 'bg-red-50 text-red-700',
+    };
+  }
+
+  return {
+    label: 'Vinculado',
+    detail: `${importedQuantity} un. sincronizadas`,
+    icon: 'check_circle',
+    className: 'bg-emerald-50 text-emerald-700',
+  };
 }
 
 function toForm(wine: Wine): WineForm {
@@ -79,6 +126,7 @@ export default function AdminCatalogPage() {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [search, setSearch] = useState('');
   const [form, setForm] = useState<WineForm>(emptyForm);
+  const [stockByCode, setStockByCode] = useState<Map<string, number>>(new Map());
   const [editingWine, setEditingWine] = useState<Wine | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSyncingStock, setIsSyncingStock] = useState(false);
@@ -104,6 +152,16 @@ export default function AdminCatalogPage() {
     setMessage(null);
     try {
       const data = await fetchWinesFromSupabase({ usePublicCache: false });
+      const productCodes = data
+        .map((wine) => wine.product_code || '')
+        .filter(Boolean);
+      const { stockByCode: nextStockByCode, error: stockError } = await fetchStockLevelsByCodes(productCodes);
+
+      if (stockError) {
+        setMessage('Catalogo carregado, mas nao foi possivel validar vinculos de estoque.');
+      }
+
+      setStockByCode(nextStockByCode);
       setWines(data);
     } catch (error) {
       console.error(error);
@@ -225,6 +283,16 @@ export default function AdminCatalogPage() {
       return;
     }
 
+    if (!form.product_code.trim()) {
+      setMessage('Informe o codigo de estoque do produto.');
+      return;
+    }
+
+    if (!form.category.trim()) {
+      setMessage('Informe o pais do produto.');
+      return;
+    }
+
     setIsSaving(true);
     setMessage(null);
 
@@ -233,6 +301,12 @@ export default function AdminCatalogPage() {
       const syncedQuantity = normalizedProductCode
         ? await syncStockFromProductCode(normalizedProductCode)
         : null;
+
+      if (syncedQuantity === null) {
+        setMessage(`Codigo ${normalizedProductCode} nao encontrado na base de estoque. Importe a planilha ou cadastre este codigo em Estoque antes de salvar o produto.`);
+        return;
+      }
+
       const payload = toPayload({
         ...form,
         product_code: normalizedProductCode,
@@ -423,6 +497,7 @@ export default function AdminCatalogPage() {
                 <th className="p-4 font-bold">Tipo / Pais</th>
                 <th className="p-4 font-bold">Preco</th>
                 <th className="p-4 font-bold">Estoque</th>
+                <th className="p-4 font-bold">Vinculo estoque</th>
                 <th className="p-4 font-bold">Status</th>
                 <th className="p-4 font-bold text-center">Acoes</th>
               </tr>
@@ -430,13 +505,16 @@ export default function AdminCatalogPage() {
             <tbody className="divide-y divide-stone-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-stone-500 font-bold">Carregando catalogo...</td>
+                  <td colSpan={7} className="p-8 text-center text-stone-500 font-bold">Carregando catalogo...</td>
                 </tr>
               ) : filteredWines.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-stone-500 font-bold">Nenhum vinho encontrado.</td>
+                  <td colSpan={7} className="p-8 text-center text-stone-500 font-bold">Nenhum vinho encontrado.</td>
                 </tr>
-              ) : filteredWines.map((wine) => (
+              ) : filteredWines.map((wine) => {
+                const stockStatus = getStockLinkStatus(wine, stockByCode);
+
+                return (
                 <tr key={wine.id} className="hover:bg-stone-50 transition-colors">
                   <td className="p-4">
                     <div className="flex items-center gap-4 min-w-72">
@@ -457,6 +535,15 @@ export default function AdminCatalogPage() {
                     </span>
                   </td>
                   <td className="p-4">
+                    <div className={`inline-flex min-w-36 items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold ${stockStatus.className}`}>
+                      <span className="material-symbols-outlined text-[16px]">{stockStatus.icon}</span>
+                      <div>
+                        <p>{stockStatus.label}</p>
+                        <p className="font-bold opacity-70">{stockStatus.detail}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="p-4">
                     <span className="text-green-600 font-bold flex items-center gap-1 text-sm">
                       <span className="material-symbols-outlined text-[16px]">check_circle</span>
                       Ativo
@@ -473,7 +560,7 @@ export default function AdminCatalogPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
+              )})}
             </tbody>
           </table>
         </div>

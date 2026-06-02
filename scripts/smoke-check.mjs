@@ -54,7 +54,7 @@ const checks = [
   },
   {
     file: 'src/app/admin/catalogo/page.tsx',
-    includes: ['allowedImageTypes', 'handleImageUpload', 'storage.from', 'image_url'],
+    includes: ['allowedImageTypes', 'handleImageUpload', 'storage.from', 'image_url', 'Vinculo estoque', 'getStockLinkStatus', 'Codigo sem saldo'],
   },
   {
     file: 'src/app/api/pedidos/route.ts',
@@ -66,7 +66,7 @@ const checks = [
   },
   {
     file: 'src/lib/database/stock.ts',
-    includes: ['stock_levels', 'stock_imports', 'upsertStockRows', 'sku_sankhya'],
+    includes: ['stock_levels', 'stock_imports', 'upsertStockRows', 'sku_sankhya', 'fetchStockLevelsByCodes'],
   },
   {
     file: 'supabase/migrations/20260531000033_add_promotions.sql',

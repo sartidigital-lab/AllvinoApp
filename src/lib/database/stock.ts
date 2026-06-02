@@ -112,6 +112,36 @@ export async function fetchStockLevelByCode(productCode: string): Promise<{
   }
 }
 
+export async function fetchStockLevelsByCodes(productCodes: string[]): Promise<{
+  stockByCode: Map<string, number>;
+  error: Error | null;
+}> {
+  const supabase = createClient();
+  const normalizedCodes = Array.from(
+    new Set(productCodes.map(normalizeProductCode).filter(Boolean))
+  );
+
+  if (normalizedCodes.length === 0) {
+    return { stockByCode: new Map(), error: null };
+  }
+
+  try {
+    const { data, error } = await supabase.rpc('get_stock_levels_for_codes', {
+      p_codes: normalizedCodes,
+    });
+
+    if (error) throw error;
+
+    return {
+      stockByCode: new Map((data || []).map((stock) => [stock.product_code, stock.quantity])),
+      error: null,
+    };
+  } catch (error) {
+    console.error('Error fetching stock levels by codes:', error);
+    return { stockByCode: new Map(), error: error as Error };
+  }
+}
+
 export async function saveManualStockLevel(input: StockLevelInput): Promise<{
   stockLevel: StockLevel | null;
   error: Error | null;
