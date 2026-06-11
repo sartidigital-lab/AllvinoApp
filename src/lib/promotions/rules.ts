@@ -1,4 +1,4 @@
-import { Promotion } from '@/types/database';
+import type { Promotion } from '@/types/database';
 
 export function normalizePromotionCode(code: string) {
   return code.trim().toUpperCase().replace(/\s+/g, '');

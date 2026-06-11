@@ -1,12 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
-import { DeliveryZone, Promotion } from '@/types/database';
-import {
-  calculatePromotionDiscount,
-  isPromotionCurrentlyActive,
-  normalizePromotionCode,
-} from '@/lib/promotions/rules';
-import { calculateShippingFee, normalizeZipCode } from '@/lib/delivery/rules';
+import { normalizePromotionCode } from '@/lib/promotions/rules';
+import { normalizeZipCode } from '@/lib/delivery/rules';
 
 type OrderItemInput = {
   id: string;
@@ -27,7 +22,6 @@ export async function POST(request: Request) {
 
   const body = (await request.json()) as {
     cartItems?: OrderItemInput[];
-    total?: number;
     deliveryMethod?: string;
     paymentMethod?: string;
     deliveryAddress?: string;
@@ -46,175 +40,34 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Pedido invalido.' }, { status: 400 });
   }
 
-  const productIds = Array.from(new Set(cartItems.map((item) => item.id)));
-  const { data: products, error: productsError } = await supabase
-    .from('produtos')
-    .select('id,nome,preco,sku_sankhya')
-    .in('id', productIds);
-
-  if (productsError || !products || products.length !== productIds.length) {
-    return NextResponse.json({ error: 'Nao foi possivel validar os produtos.' }, { status: 400 });
-  }
-
-  const productsById = new Map(products.map((product) => [product.id, product]));
-  const productCodes = Array.from(
-    new Set(
-      products
-        .map((product) => product.sku_sankhya?.trim())
-        .filter((code): code is string => Boolean(code))
-    )
+  const { data: orderId, error: checkoutError } = await supabase.rpc(
+    'create_order_with_stock_reservation',
+    {
+      p_cart_items: cartItems,
+      p_delivery_method: deliveryMethod,
+      p_payment_method: paymentMethod,
+      p_delivery_address: deliveryAddress,
+      p_promotion_code: promotionCode || null,
+      p_delivery_zip_code: deliveryZipCode || null,
+      p_customer_name: user.user_metadata?.nome_completo || user.email?.split('@')[0] || null,
+      p_customer_phone: user.user_metadata?.telefone || null,
+    }
   );
-  const { data: stockLevels, error: stockError } = await supabase.rpc('get_stock_levels_for_codes', {
-    p_codes: productCodes,
-  });
 
-  if (stockError) {
-    return NextResponse.json({ error: 'Nao foi possivel validar o estoque.' }, { status: 400 });
+  if (checkoutError || !orderId) {
+    const message = checkoutError?.message || 'Nao foi possivel criar o pedido.';
+    const status = /estoque/i.test(message) ? 409 : 400;
+    return NextResponse.json({ error: message }, { status });
   }
-
-  const stockByCode = new Map((stockLevels || []).map((stock) => [stock.product_code, stock.quantity]));
-  const validatedItems = cartItems.map((item) => {
-    const product = productsById.get(item.id);
-    const quantity = Math.max(1, Number(item.quantity || 1));
-
-    return {
-      id: item.id,
-      productCode: product?.sku_sankhya?.trim() || null,
-      name: product?.nome || item.name,
-      quantity,
-      price: Number(product?.preco || 0),
-    };
-  });
-
-  const outOfStockItem = validatedItems.find((item) => {
-    if (!item.productCode) return true;
-    return Number(stockByCode.get(item.productCode) ?? -1) < item.quantity;
-  });
-
-  if (outOfStockItem) {
-    return NextResponse.json(
-      { error: `${outOfStockItem.name} nao tem saldo atualizado suficiente no estoque.` },
-      { status: 409 }
-    );
-  }
-
-  const subtotal = validatedItems.reduce((sum, item) => sum + item.quantity * item.price, 0);
-  const pickupDiscount = deliveryMethod === 'Retirada na Loja' ? subtotal * 0.1 : 0;
-  let promotionDiscount = 0;
-  let appliedPromotionCode: string | null = null;
-
-  if (promotionCode) {
-    const { data: promotion, error: promotionError } = await supabase
-      .from('promotions')
-      .select('id,created_at,updated_at,code,title,description,discount_type,discount_value,min_subtotal,max_discount,starts_at,ends_at,is_active')
-      .eq('code', promotionCode)
-      .maybeSingle();
-
-    if (promotionError) {
-      return NextResponse.json({ error: 'Nao foi possivel validar o cupom.' }, { status: 400 });
-    }
-
-    if (!promotion || !isPromotionCurrentlyActive(promotion as Promotion)) {
-      return NextResponse.json({ error: 'Cupom invalido ou expirado.' }, { status: 400 });
-    }
-
-    promotionDiscount = calculatePromotionDiscount(promotion as Promotion, subtotal);
-    if (promotionDiscount <= 0) {
-      return NextResponse.json({ error: 'Cupom nao atende ao valor minimo do pedido.' }, { status: 400 });
-    }
-    appliedPromotionCode = (promotion as Promotion).code;
-  }
-
-  const discount = Math.min(subtotal, pickupDiscount + promotionDiscount);
-  let shippingFee = 0;
-  let deliveryZoneName: string | null = null;
-  let deliveryEstimateDays: number | null = null;
-
-  if (deliveryMethod === 'Entrega no Endereco') {
-    if (deliveryZipCode.length !== 8) {
-      return NextResponse.json({ error: 'Informe um CEP valido para entrega.' }, { status: 400 });
-    }
-
-    const { data: deliveryZone, error: deliveryZoneError } = await supabase
-      .from('delivery_zones')
-      .select('id,created_at,updated_at,name,zip_start,zip_end,fee,free_shipping_min_subtotal,estimate_days,is_active')
-      .eq('is_active', true)
-      .lte('zip_start', deliveryZipCode)
-      .gte('zip_end', deliveryZipCode)
-      .order('fee', { ascending: true })
-      .limit(1)
-      .maybeSingle();
-
-    if (deliveryZoneError) {
-      return NextResponse.json({ error: 'Nao foi possivel calcular o frete.' }, { status: 400 });
-    }
-
-    if (!deliveryZone) {
-      return NextResponse.json({ error: 'Ainda nao entregamos neste CEP.' }, { status: 400 });
-    }
-
-    shippingFee = calculateShippingFee(deliveryZone as DeliveryZone, subtotal);
-    deliveryZoneName = (deliveryZone as DeliveryZone).name;
-    deliveryEstimateDays = (deliveryZone as DeliveryZone).estimate_days;
-  }
-
-  const total = subtotal - discount + shippingFee;
 
   const { data: order, error: orderError } = await supabase
     .from('orders')
-    .insert({
-      user_id: user.id,
-      status: 'pending',
-      total_amount: total,
-      delivery_type: deliveryMethod,
-      payment_method: paymentMethod,
-      delivery_address: deliveryAddress,
-      discount_amount: discount,
-      subtotal_amount: subtotal,
-      promotion_code: appliedPromotionCode,
-      delivery_zip_code: deliveryZipCode || null,
-      delivery_zone_name: deliveryZoneName,
-      delivery_estimate_days: deliveryEstimateDays,
-      shipping_fee: shippingFee,
-      customer_name: user.user_metadata?.nome_completo || user.email?.split('@')[0] || null,
-      customer_phone: user.user_metadata?.telefone || null,
-    })
-    .select('id,user_id,status,total_amount,created_at,delivery_type,payment_method,delivery_address,discount_amount,subtotal_amount,customer_name,customer_phone,promotion_code,delivery_zip_code,delivery_zone_name,delivery_estimate_days,shipping_fee')
+    .select('id,user_id,status,total_amount,created_at,delivery_type,payment_method,payment_provider,payment_status,payment_reference,payment_url,paid_at,payment_error,delivery_address,discount_amount,subtotal_amount,customer_name,customer_phone,promotion_code,delivery_zip_code,delivery_zone_name,delivery_estimate_days,shipping_fee,stock_reserved_at')
+    .eq('id', orderId)
     .single();
 
   if (orderError || !order) {
-    return NextResponse.json({ error: 'Nao foi possivel criar o pedido.' }, { status: 500 });
-  }
-
-  const itemsToInsert = validatedItems.map((item) => ({
-    order_id: order.id,
-    wine_id: null,
-    product_id: item.id,
-    product_name: item.name,
-    quantity: item.quantity,
-    unit_price: item.price,
-  }));
-
-  const { error: itemsError } = await supabase.from('order_items').insert(itemsToInsert);
-
-  if (itemsError) {
-    return NextResponse.json({ error: 'Nao foi possivel criar os itens do pedido.' }, { status: 500 });
-  }
-
-  const { error: reserveStockError } = await supabase.rpc('reserve_product_stock_for_order', {
-    p_order_id: order.id,
-  });
-
-  if (reserveStockError) {
-    await supabase
-      .from('orders')
-      .update({ status: 'cancelled' })
-      .eq('id', order.id);
-
-    return NextResponse.json(
-      { error: 'Estoque insuficiente para concluir o pedido.' },
-      { status: 409 }
-    );
+    return NextResponse.json({ error: 'Pedido criado, mas nao foi possivel carregar o resumo.' }, { status: 500 });
   }
 
   return NextResponse.json({ order });

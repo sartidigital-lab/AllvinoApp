@@ -41,6 +41,9 @@ export default function CheckoutPage() {
     zoneName: string | null;
     estimateDays: number | null;
     payment: string;
+    paymentProvider: string;
+    paymentStatus: string;
+    paymentUrl: string | null;
     delivery: string;
     address: string | null;
   } | null>(null);
@@ -227,6 +230,9 @@ export default function CheckoutPage() {
       zoneName: order.delivery_zone_name,
       estimateDays: order.delivery_estimate_days,
       payment: order.payment_method || pagamento,
+      paymentProvider: order.payment_provider,
+      paymentStatus: order.payment_status,
+      paymentUrl: order.payment_url,
       delivery: order.delivery_type,
       address: order.delivery_address,
     });
@@ -257,6 +263,12 @@ export default function CheckoutPage() {
             <div className="flex justify-between gap-4">
               <span className="font-bold text-stone-500">Pagamento</span>
               <span className="font-bold text-black">{successSummary.payment}</span>
+            </div>
+            <div className="flex justify-between gap-4">
+              <span className="font-bold text-stone-500">Status pagamento</span>
+              <span className="text-right font-bold text-black">
+                {successSummary.paymentProvider} / {successSummary.paymentStatus}
+              </span>
             </div>
             <div className="flex justify-between gap-4">
               <span className="font-bold text-stone-500">Entrega</span>
@@ -296,6 +308,16 @@ export default function CheckoutPage() {
                 </span>
                 <span className="font-bold">- R$ {successSummary.discount.toFixed(2).replace('.', ',')}</span>
               </div>
+            )}
+            {successSummary.paymentUrl && (
+              <a
+                href={successSummary.paymentUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="block rounded-xl border border-stone-200 px-3 py-2 text-center text-xs font-bold text-stone-700"
+              >
+                Abrir link de pagamento
+              </a>
             )}
             <div className="flex justify-between gap-4 border-t border-stone-200 pt-2 text-base">
               <span className="font-bold text-black">Total</span>

@@ -49,6 +49,19 @@ function getErrorMessage(error: unknown) {
   return '';
 }
 
+function parseUploadError(status: number, responseText: string) {
+  if (!responseText) return `Erro HTTP ${status}.`;
+
+  try {
+    const payload = JSON.parse(responseText) as { error?: unknown };
+    if (payload.error) return String(payload.error);
+  } catch {
+    // The route may return an HTML error page during local/proxy failures.
+  }
+
+  return `Erro HTTP ${status}: ${responseText.slice(0, 180)}`;
+}
+
 function getStockLinkStatus(wine: Wine, stockByCode: Map<string, number>): StockLinkStatus {
   const productCode = normalizeProductCode(wine.product_code || '');
 
@@ -243,27 +256,47 @@ export default function AdminCatalogPage() {
 
     try {
       const supabase = createClient();
-      const extension = file.name.split('.').pop()?.toLowerCase() || 'png';
-      const safeName = form.name.trim()
-        ? form.name.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-        : 'produto';
-      const filePath = `${Date.now()}-${safeName}.${extension}`;
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const {
+        data: { session: refreshedSession },
+      } = await supabase.auth.refreshSession();
+      const activeSession = refreshedSession || session;
 
-      const { error } = await supabase.storage
-        .from('produtos')
-        .upload(filePath, file, {
-          cacheControl: '31536000',
-          upsert: false,
-          contentType: file.type,
-        });
-
-      if (error) {
-        setMessage('Nao foi possivel enviar a imagem. Verifique sua permissao de admin.');
+      if (!activeSession?.access_token) {
+        setMessage('Sessao expirada. Entre novamente para enviar imagens.');
         return;
       }
 
-      const { data } = supabase.storage.from('produtos').getPublicUrl(filePath);
-      setForm((current) => ({ ...current, image_url: data.publicUrl }));
+      const uploadData = new FormData();
+      uploadData.append('file', file);
+      uploadData.append('productName', form.name || editingWine?.name || 'produto');
+      uploadData.append('accessToken', activeSession.access_token);
+
+      const response = await fetch('/api/admin/produtos/imagem', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          Authorization: `Bearer ${activeSession.access_token}`,
+        },
+        body: uploadData,
+      });
+      const responseText = await response.text();
+
+      if (!response.ok) {
+        setMessage(`Nao foi possivel enviar a imagem. Detalhe: ${parseUploadError(response.status, responseText)}`);
+        return;
+      }
+
+      const payload = responseText ? JSON.parse(responseText) as { publicUrl?: string } : {};
+
+      if (!payload.publicUrl) {
+        setMessage('Imagem enviada, mas a URL publica nao foi retornada.');
+        return;
+      }
+
+      setForm((current) => ({ ...current, image_url: payload.publicUrl }));
       setMessage('Imagem enviada com sucesso.');
     } finally {
       setIsUploadingImage(false);
@@ -456,7 +489,11 @@ export default function AdminCatalogPage() {
                         type="file"
                         accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
                         disabled={isUploadingImage}
-                        onChange={(event) => handleImageUpload(event.target.files?.[0])}
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          event.currentTarget.value = '';
+                          handleImageUpload(file);
+                        }}
                         className="hidden"
                       />
                     </label>

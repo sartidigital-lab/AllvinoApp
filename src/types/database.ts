@@ -21,6 +21,12 @@ export type Order = {
   created_at: string;
   delivery_type: string;
   payment_method: string | null;
+  payment_provider: string;
+  payment_status: 'pending' | 'authorized' | 'paid' | 'failed' | 'refunded' | 'cancelled';
+  payment_reference: string | null;
+  payment_url: string | null;
+  paid_at: string | null;
+  payment_error: string | null;
   delivery_address: string | null;
   discount_amount: number;
   subtotal_amount: number | null;

@@ -9,7 +9,8 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit",
-    "smoke": "node scripts/smoke-check.mjs",
+    "smoke": "node scripts/smoke-check.mjs && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/rules-check.mts",
+    "verify:checkout-rpc": "node scripts/checkout-rpc-check.mjs",
     "db:push": "supabase db push",
     "db:status": "supabase migration list"
   },
@@ -38,6 +39,7 @@
     "@types/react": "^19.2.14",
     "autoprefixer": "^10.5.0",
     "postcss": "^8.5.14",
+    "supabase": "^2.104.0",
     "tailwindcss": "^4.3.0",
     "typescript": "^6.0.3"
   }

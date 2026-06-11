@@ -20,6 +20,12 @@ type AdminOrder = {
   total_amount: number;
   delivery_type: string;
   payment_method: string | null;
+  payment_provider: string;
+  payment_status: 'pending' | 'authorized' | 'paid' | 'failed' | 'refunded' | 'cancelled';
+  payment_reference: string | null;
+  payment_url: string | null;
+  paid_at: string | null;
+  payment_error: string | null;
   delivery_address: string | null;
   discount_amount: number;
   subtotal_amount: number | null;
@@ -52,6 +58,24 @@ const statusStyles: Record<OrderStatus, string> = {
 
 const statusFlow: OrderStatus[] = ['pending', 'confirmed', 'preparing', 'delivered'];
 const statusOptions: Array<'all' | OrderStatus> = ['all', ...statusFlow, 'cancelled'];
+
+const paymentStatusLabels: Record<AdminOrder['payment_status'], string> = {
+  pending: 'Pagamento pendente',
+  authorized: 'Autorizado',
+  paid: 'Pago',
+  failed: 'Falhou',
+  refunded: 'Estornado',
+  cancelled: 'Cancelado',
+};
+
+const paymentStatusStyles: Record<AdminOrder['payment_status'], string> = {
+  pending: 'bg-amber-100 text-amber-800',
+  authorized: 'bg-blue-100 text-blue-800',
+  paid: 'bg-emerald-100 text-emerald-800',
+  failed: 'bg-red-100 text-red-800',
+  refunded: 'bg-purple-100 text-purple-800',
+  cancelled: 'bg-stone-200 text-stone-700',
+};
 
 const dateFilterLabels: Record<DateFilter, string> = {
   all: 'Todo periodo',
@@ -126,7 +150,7 @@ export default function AdminPedidosPage() {
     const supabase = createClient();
     const { data, error } = await supabase
       .from('orders')
-      .select('id,status,total_amount,delivery_type,payment_method,delivery_address,discount_amount,subtotal_amount,promotion_code,delivery_zip_code,delivery_zone_name,delivery_estimate_days,shipping_fee,created_at,customer_name,customer_phone,order_items(quantity,unit_price,product_name,wines(name))')
+      .select('id,status,total_amount,delivery_type,payment_method,payment_provider,payment_status,payment_reference,payment_url,paid_at,payment_error,delivery_address,discount_amount,subtotal_amount,promotion_code,delivery_zip_code,delivery_zone_name,delivery_estimate_days,shipping_fee,created_at,customer_name,customer_phone,order_items(quantity,unit_price,product_name,wines(name))')
       .order('created_at', { ascending: false })
       .limit(100);
 
@@ -162,6 +186,9 @@ export default function AdminPedidosPage() {
             order.customer_phone,
             order.delivery_type,
             order.payment_method,
+            order.payment_provider,
+            paymentStatusLabels[order.payment_status],
+            order.payment_reference,
             order.delivery_address,
             itemNames,
           ].join(' ')
@@ -233,6 +260,38 @@ export default function AdminPedidosPage() {
 
     setOrders((current) =>
       current.map((item) => (item.id === order.id ? { ...item, status } : item))
+    );
+    setUpdatingId(null);
+  };
+
+  const markManualPaymentPaid = async (order: AdminOrder) => {
+    setUpdatingId(order.id);
+    setErrorMessage(null);
+
+    const supabase = createClient();
+    const { error } = await supabase.rpc('mark_manual_payment_paid', {
+      p_order_id: order.id,
+    });
+
+    if (error) {
+      setErrorMessage('Nao foi possivel confirmar o pagamento manual.');
+      setUpdatingId(null);
+      return;
+    }
+
+    const paidAt = new Date().toISOString();
+    setOrders((current) =>
+      current.map((item) =>
+        item.id === order.id
+          ? {
+              ...item,
+              status: item.status === 'pending' ? 'confirmed' : item.status,
+              payment_status: 'paid',
+              paid_at: item.paid_at || paidAt,
+              payment_error: null,
+            }
+          : item
+      )
     );
     setUpdatingId(null);
   };
@@ -417,7 +476,30 @@ export default function AdminPedidosPage() {
                 <p className="font-bold text-black">{selectedOrder.customer_name || 'Cliente sem nome'}</p>
                 <p className="text-sm font-bold text-stone-500">{selectedOrder.customer_phone || 'Telefone nao informado'}</p>
                 <p className="text-xs font-bold text-stone-400">{selectedOrder.delivery_type}</p>
-                <p className="text-xs font-bold text-stone-400">Pagamento: {selectedOrder.payment_method || 'Nao informado'}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-xs font-bold text-stone-400">
+                    Pagamento: {selectedOrder.payment_method || 'Nao informado'} ({selectedOrder.payment_provider})
+                  </p>
+                  <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-widest ${paymentStatusStyles[selectedOrder.payment_status]}`}>
+                    {paymentStatusLabels[selectedOrder.payment_status]}
+                  </span>
+                </div>
+                {selectedOrder.payment_reference && (
+                  <p className="text-xs font-bold text-stone-400">Ref pagamento: {selectedOrder.payment_reference}</p>
+                )}
+                {selectedOrder.payment_url && (
+                  <a
+                    href={selectedOrder.payment_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex text-xs font-bold text-blue-700 underline"
+                  >
+                    Link de pagamento
+                  </a>
+                )}
+                {selectedOrder.payment_error && (
+                  <p className="text-xs font-bold text-red-600">Erro pagamento: {selectedOrder.payment_error}</p>
+                )}
                 {selectedOrder.delivery_address && (
                   <p className="text-xs font-bold text-stone-400">Endereco: {selectedOrder.delivery_address}</p>
                 )}
@@ -504,6 +586,17 @@ export default function AdminPedidosPage() {
                   >
                     <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                     Avancar para {statusLabels[nextStatus(selectedOrder.status)!]}
+                  </button>
+                )}
+                {selectedOrder.payment_provider === 'manual' && selectedOrder.payment_status !== 'paid' && selectedOrder.status !== 'cancelled' && (
+                  <button
+                    type="button"
+                    disabled={updatingId === selectedOrder.id}
+                    onClick={() => markManualPaymentPaid(selectedOrder)}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 py-3 text-sm font-bold text-white transition hover:bg-emerald-800 disabled:opacity-50"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">payments</span>
+                    Marcar pagamento como pago
                   </button>
                 )}
                 {selectedOrder.status !== 'cancelled' && selectedOrder.status !== 'delivered' && (

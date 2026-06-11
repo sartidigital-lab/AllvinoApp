@@ -34,7 +34,7 @@ const checks = [
   },
   {
     file: 'src/app/admin/pedidos/page.tsx',
-    includes: ['Buscar por cliente', 'Chamar no WhatsApp', 'Alterar status', 'statusCounts', 'promotion_code', 'shipping_fee'],
+    includes: ['Buscar por cliente', 'Chamar no WhatsApp', 'Alterar status', 'statusCounts', 'promotion_code', 'shipping_fee', 'mark_manual_payment_paid', 'Marcar pagamento como pago'],
   },
   {
     file: 'src/app/admin/clientes/page.tsx',
@@ -54,11 +54,31 @@ const checks = [
   },
   {
     file: 'src/app/admin/catalogo/page.tsx',
-    includes: ['allowedImageTypes', 'handleImageUpload', 'storage.from', 'image_url', 'Vinculo estoque', 'getStockLinkStatus', 'Codigo sem saldo'],
+    includes: ['allowedImageTypes', 'handleImageUpload', '/api/admin/produtos/imagem', 'image_url', 'Vinculo estoque', 'getStockLinkStatus', 'Codigo sem saldo'],
+  },
+  {
+    file: 'src/app/api/admin/produtos/imagem/route.ts',
+    includes: ['getBearerToken', "formData.get('accessToken')", 'Apenas administradores podem enviar imagens', "storage.from('produtos')", 'getPublicUrl', 'publicUrl'],
   },
   {
     file: 'src/app/api/pedidos/route.ts',
-    includes: ['productsById', 'subtotal', 'promotionCode', 'deliveryZipCode', 'get_stock_levels_for_codes', 'reserve_product_stock_for_order', 'total'],
+    includes: ['create_order_with_stock_reservation', 'p_cart_items', 'p_delivery_method', 'p_customer_name', 'stock_reserved_at'],
+  },
+  {
+    file: 'scripts/checkout-rpc-check.mjs',
+    includes: ['create_order_with_stock_reservation', 'checkout-test-cleanup', 'SUPABASE_ACCESS_TOKEN', 'stock_reserved'],
+  },
+  {
+    file: 'supabase/migrations/20260602120000_create_atomic_checkout_rpc.sql',
+    includes: ['app_private.create_order_with_stock_reservation', 'security definer', 'auth.uid()', 'checkout_items', 'grant execute on function public.create_order_with_stock_reservation'],
+  },
+  {
+    file: 'supabase/migrations/20260602123000_fix_atomic_checkout_rpc_lint.sql',
+    includes: ['create or replace function app_private.create_order_with_stock_reservation', 'parsed_items', 'checkout_items as', 'notify pgrst'],
+  },
+  {
+    file: 'supabase/migrations/20260602130619_add_manual_payment_confirmation.sql',
+    includes: ['mark_manual_payment_paid', 'public.is_admin()', "payment_status = 'paid'", 'paid_at'],
   },
   {
     file: 'src/lib/catalog/products.ts',

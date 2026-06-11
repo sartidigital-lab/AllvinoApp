@@ -52,7 +52,7 @@ export async function createOrder(
         delivery_zip_code: deliveryZipCode || null,
         shipping_fee: 0,
       })
-      .select('id,user_id,status,total_amount,created_at,delivery_type,payment_method,delivery_address,discount_amount,subtotal_amount,customer_name,customer_phone,promotion_code,delivery_zip_code,delivery_zone_name,delivery_estimate_days,shipping_fee')
+        .select('id,user_id,status,total_amount,created_at,delivery_type,payment_method,payment_provider,payment_status,payment_reference,payment_url,paid_at,payment_error,delivery_address,discount_amount,subtotal_amount,customer_name,customer_phone,promotion_code,delivery_zip_code,delivery_zone_name,delivery_estimate_days,shipping_fee,stock_reserved_at')
       .single();
 
     if (orderError) throw orderError;
@@ -87,7 +87,7 @@ export async function getUserOrders(userId: string, limit = 10): Promise<{ order
   try {
     const { data, error } = await supabase
       .from('orders')
-      .select('id,user_id,status,total_amount,created_at,delivery_type,payment_method,delivery_address,discount_amount,subtotal_amount,customer_name,customer_phone,promotion_code,delivery_zip_code,delivery_zone_name,delivery_estimate_days,shipping_fee,order_items(id,order_id,wine_id,product_id,product_name,quantity,unit_price)')
+      .select('id,user_id,status,total_amount,created_at,delivery_type,payment_method,payment_provider,payment_status,payment_reference,payment_url,paid_at,payment_error,delivery_address,discount_amount,subtotal_amount,customer_name,customer_phone,promotion_code,delivery_zip_code,delivery_zone_name,delivery_estimate_days,shipping_fee,stock_reserved_at,order_items(id,order_id,wine_id,product_id,product_name,quantity,unit_price)')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(limit);
