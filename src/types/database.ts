@@ -117,3 +117,32 @@ export type CustomerCrmCard = {
   created_at: string;
   updated_at: string;
 };
+
+export type CustomerConversationStatus = 'open' | 'waiting' | 'closed';
+
+export type CustomerConversationChannel = 'whatsapp' | 'manual';
+
+export type CustomerConversation = {
+  id: string;
+  customer_key: string;
+  user_id: string | null;
+  customer_name: string;
+  customer_phone: string | null;
+  status: CustomerConversationStatus;
+  channel: CustomerConversationChannel;
+  last_message_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CustomerConversationMessageDirection = 'incoming' | 'outgoing' | 'note';
+
+export type CustomerConversationMessage = {
+  id: string;
+  conversation_id: string;
+  direction: CustomerConversationMessageDirection;
+  body: string;
+  sent_at: string;
+  created_by: string | null;
+  created_at: string;
+};

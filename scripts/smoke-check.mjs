@@ -45,12 +45,20 @@ const checks = [
     includes: ['CRM Kanban', 'customer_crm_cards', 'moveCustomer', 'onDrop', 'Marcar contato realizado', 'Abrir WhatsApp'],
   },
   {
+    file: 'src/app/admin/conversas/page.tsx',
+    includes: ['Conversas', 'customer_conversations', 'customer_conversation_messages', 'Abrir WhatsApp', 'Salvar no historico'],
+  },
+  {
+    file: 'supabase/migrations/20260611225128_add_customer_conversations.sql',
+    includes: ['create table if not exists public.customer_conversations', 'create table if not exists public.customer_conversation_messages', 'Admins can manage customer conversations'],
+  },
+  {
     file: 'supabase/migrations/20260611223138_add_customer_crm_kanban.sql',
     includes: ['create table if not exists public.customer_crm_cards', 'stage in', 'priority in', 'Admins can manage customer crm cards'],
   },
   {
     file: 'src/components/admin/Sidebar.tsx',
-    includes: ['href: \'/admin/crm\'', 'CRM Kanban', 'view_kanban'],
+    includes: ['href: \'/admin/crm\'', 'CRM Kanban', 'view_kanban', 'href: \'/admin/conversas\'', 'Conversas'],
   },
   {
     file: 'src/app/admin/estoque/page.tsx',
