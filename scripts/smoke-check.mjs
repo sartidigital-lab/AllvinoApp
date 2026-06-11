@@ -41,6 +41,18 @@ const checks = [
     includes: ['Clientes', 'Base de clientes', 'Produto favorito', 'Chamar no WhatsApp', 'totalSpent'],
   },
   {
+    file: 'src/app/admin/crm/page.tsx',
+    includes: ['CRM Kanban', 'customer_crm_cards', 'moveCustomer', 'onDrop', 'Marcar contato realizado', 'Abrir WhatsApp'],
+  },
+  {
+    file: 'supabase/migrations/20260611223138_add_customer_crm_kanban.sql',
+    includes: ['create table if not exists public.customer_crm_cards', 'stage in', 'priority in', 'Admins can manage customer crm cards'],
+  },
+  {
+    file: 'src/components/admin/Sidebar.tsx',
+    includes: ['href: \'/admin/crm\'', 'CRM Kanban', 'view_kanban'],
+  },
+  {
     file: 'src/app/admin/estoque/page.tsx',
     includes: ['Estoque', 'Subir Excel', 'Codigo avulso', 'parseStockRows', 'importStockLevels'],
   },

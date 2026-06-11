@@ -31,6 +31,7 @@ export default function Sidebar() {
   const navLinks = [
     { href: '/admin', label: 'BI Analytics', icon: 'analytics', color: 'text-[#B91C1C]' },
     { href: '/admin/pedidos', label: 'Pedidos', icon: 'receipt_long', color: 'text-emerald-400' },
+    { href: '/admin/crm', label: 'CRM Kanban', icon: 'view_kanban', color: 'text-violet-400' },
     { href: '/admin/clientes', label: 'Clientes', icon: 'groups', color: 'text-pink-400' },
     { href: '/admin/catalogo', label: 'Catalogo', icon: 'wine_bar', color: 'text-blue-400' },
     { href: '/admin/estoque', label: 'Estoque', icon: 'inventory_2', color: 'text-yellow-400' },

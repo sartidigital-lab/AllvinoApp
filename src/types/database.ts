@@ -98,3 +98,22 @@ export type StockImport = {
   total_rows: number;
   source: string;
 };
+
+export type CustomerCrmStage = 'novo' | 'contato' | 'negociacao' | 'pedido' | 'pos_venda';
+
+export type CustomerCrmPriority = 'baixa' | 'normal' | 'alta';
+
+export type CustomerCrmCard = {
+  id: string;
+  customer_key: string;
+  user_id: string | null;
+  customer_name: string;
+  customer_phone: string | null;
+  stage: CustomerCrmStage;
+  priority: CustomerCrmPriority;
+  notes: string | null;
+  next_action_at: string | null;
+  last_contacted_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
