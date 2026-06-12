@@ -1,5 +1,6 @@
 "use client";
 
+import { AdminPageHeader, AdminSection, AdminStatCard } from '@/components/admin/AdminPrimitives';
 import { createClient } from '@/utils/supabase/client';
 import { useEffect, useState } from 'react';
 
@@ -38,6 +39,10 @@ function getWineName(item: OrderItemWithWine) {
   return wines?.name || 'Produto removido';
 }
 
+function formatMoney(value: number) {
+  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
 export default function AdminAnalyticsPage() {
   const [faturamento, setFaturamento] = useState(0);
   const [garrafas, setGarrafas] = useState(0);
@@ -50,7 +55,7 @@ export default function AdminAnalyticsPage() {
   useEffect(() => {
     const fetchAnalytics = async () => {
       const supabase = createClient();
-      
+
       const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select('id, status, total_amount, delivery_type, created_at, order_items(quantity, unit_price, product_name, wines(name))')
@@ -97,51 +102,41 @@ export default function AdminAnalyticsPage() {
   }, []);
 
   return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center border-b border-stone-200 pb-6 flex-wrap gap-4">
-        <h1 className="text-3xl font-bold font-serif text-black">Inteligência Allvino</h1>
-        <button type="button" className="bg-[#B91C1C] text-white px-6 py-2.5 rounded-lg font-bold shadow-lg hover:bg-red-800 transition flex items-center gap-2">
-          <span className="material-symbols-outlined text-[20px]">add_shopping_cart</span> Lançar Pedido
-        </button>
-      </div>
+    <div className="space-y-6">
+      <AdminPageHeader
+        title="Inteligência Allvino"
+        description="Indicadores comerciais, ranking de produtos e pedidos recentes."
+        actions={(
+          <button type="button" className="admin-button flex items-center gap-2 bg-[#B91C1C] px-5 text-sm text-white shadow-sm hover:bg-red-800">
+            <span className="material-symbols-outlined text-[20px]">add_shopping_cart</span>
+            Lançar Pedido
+          </button>
+        )}
+      />
 
       {errorMessage && (
-        <div className="border border-red-100 bg-red-50 px-4 py-3 rounded-lg text-sm font-bold text-red-700">
+        <div className="rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
           {errorMessage}
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-black text-white p-6 rounded-lg shadow-lg relative overflow-hidden">
-          <div className="absolute -right-4 -bottom-4 opacity-10">
-            <span className="material-symbols-outlined text-[100px]">payments</span>
-          </div>
-          <p className="text-white/60 text-xs font-bold uppercase tracking-widest">Faturamento</p>
-          <h3 className="text-4xl font-bold mt-2">
-            {isLoading ? '...' : `R$ ${faturamento.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`}
-          </h3>
-        </div>
-        
-        <div className="bg-white p-6 rounded-lg border border-stone-100 shadow-sm">
-          <p className="text-stone-400 text-xs font-bold uppercase tracking-widest">Garrafas Vendidas</p>
-          <h3 className="text-4xl font-bold mt-2 text-black">{isLoading ? '...' : garrafas}</h3>
-        </div>
-        
-        <div className="bg-white p-6 rounded-lg border border-stone-100 shadow-sm">
-          <p className="text-stone-400 text-xs font-bold uppercase tracking-widest">Total de Pedidos</p>
-          <h3 className="text-4xl font-bold mt-2 text-black">{isLoading ? '...' : pedidos}</h3>
-        </div>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <AdminStatCard
+          label="Faturamento"
+          value={isLoading ? '...' : formatMoney(faturamento)}
+          icon="payments"
+          tone="dark"
+        />
+        <AdminStatCard label="Garrafas Vendidas" value={isLoading ? '...' : garrafas} icon="wine_bar" />
+        <AdminStatCard label="Total de Pedidos" value={isLoading ? '...' : pedidos} icon="receipt_long" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white rounded-lg border border-stone-100 shadow-sm p-6">
-          <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-black">
-            <span className="material-symbols-outlined text-yellow-500">emoji_events</span> Top 10 Produtos
-          </h3>
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <AdminSection title="Top 10 Produtos" icon="emoji_events">
           {isLoading ? (
-            <div className="py-4 text-center text-stone-400 text-sm font-bold">Calculando ranking...</div>
+            <div className="py-4 text-center text-sm font-bold text-stone-400">Calculando ranking...</div>
           ) : topProducts.length === 0 ? (
-            <div className="py-4 text-center text-stone-400 text-sm font-bold">Nenhum produto vendido ainda.</div>
+            <div className="py-4 text-center text-sm font-bold text-stone-400">Nenhum produto vendido ainda.</div>
           ) : (
             <div className="space-y-3">
               {topProducts.map((product, index) => (
@@ -153,23 +148,18 @@ export default function AdminAnalyticsPage() {
                     <p className="truncate text-sm font-bold text-black">{product.name}</p>
                     <p className="text-xs font-bold text-stone-400">{product.quantity} garrafas</p>
                   </div>
-                  <span className="text-sm font-bold text-black">
-                    R$ {product.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </span>
+                  <span className="text-sm font-bold text-black">{formatMoney(product.revenue)}</span>
                 </div>
               ))}
             </div>
           )}
-        </div>
-        
-        <div className="bg-white rounded-lg border border-stone-100 shadow-sm p-6">
-          <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-black">
-            <span className="material-symbols-outlined text-blue-500">receipt_long</span> Pedidos Recentes
-          </h3>
+        </AdminSection>
+
+        <AdminSection title="Pedidos Recentes" icon="receipt_long">
           {isLoading ? (
-            <div className="py-4 text-center text-stone-400 text-sm font-bold">Carregando pedidos...</div>
+            <div className="py-4 text-center text-sm font-bold text-stone-400">Carregando pedidos...</div>
           ) : recentOrders.length === 0 ? (
-            <div className="py-4 text-center text-stone-400 text-sm font-bold">Nenhum pedido registrado ainda.</div>
+            <div className="py-4 text-center text-sm font-bold text-stone-400">Nenhum pedido registrado ainda.</div>
           ) : (
             <div className="space-y-3">
               {recentOrders.map((order) => (
@@ -177,20 +167,18 @@ export default function AdminAnalyticsPage() {
                   <div className="min-w-0">
                     <p className="text-sm font-bold text-black">Pedido #{order.id.slice(0, 8)}</p>
                     <p className="text-xs font-bold text-stone-400">
-                      {new Date(order.created_at).toLocaleDateString('pt-BR')} • {order.delivery_type}
+                      {new Date(order.created_at).toLocaleDateString('pt-BR')} | {order.delivery_type}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-black">
-                      R$ {order.total_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </p>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400">{order.status}</span>
+                    <p className="text-sm font-bold text-black">{formatMoney(order.total_amount)}</p>
+                    <span className="text-[10px] font-bold uppercase text-stone-400">{order.status}</span>
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </div>
+        </AdminSection>
       </div>
     </div>
   );

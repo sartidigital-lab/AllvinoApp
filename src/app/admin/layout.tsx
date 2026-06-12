@@ -33,24 +33,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (isDenied) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FDFBF7] px-6">
-        <div className="max-w-md text-center space-y-3">
+      <div className="admin-shell flex min-h-screen items-center justify-center px-6">
+        <div className="admin-surface max-w-md space-y-3 p-6 text-center">
           <h1 className="text-2xl font-bold font-serif text-black">Acesso restrito</h1>
-          <p className="text-sm font-bold text-stone-500">O painel administrativo exige permissoes de administrador.</p>
+          <p className="text-sm font-bold text-stone-500">O painel administrativo exige permissões de administrador.</p>
         </div>
       </div>
     );
   }
 
   if (!isAuthenticated) {
-    return <div className="min-h-screen flex items-center justify-center bg-[#FDFBF7]"><p className="animate-pulse font-bold">Verificando acesso...</p></div>;
+    return <div className="admin-shell flex min-h-screen items-center justify-center"><p className="animate-pulse font-bold">Verificando acesso...</p></div>;
   }
 
   return (
-    <div className="text-black overflow-x-hidden min-h-screen bg-[#FDFBF7]">
+    <div className="admin-shell overflow-x-hidden">
       <Sidebar />
-      <div className="lg:ml-64 transition-all duration-300 ease-in-out relative">
-        <main className="p-5 lg:p-8 max-w-7xl mx-auto pb-32 animate-in fade-in duration-500">
+      <div className="relative transition-all duration-300 ease-in-out lg:ml-64">
+        <main className="mx-auto w-full max-w-[1680px] px-4 py-5 pb-10 sm:px-5 lg:px-8 lg:py-7">
           {children}
         </main>
       </div>

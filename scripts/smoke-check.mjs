@@ -9,6 +9,10 @@ const checks = [
     includes: ['href="/catalogo"', 'logo-allvino-header.png', 'shopping_bag'],
   },
   {
+    file: 'src/components/layout/AppChrome.tsx',
+    includes: ['isAdminRoute', "startsWith('/admin')", 'Header', 'Navbar', 'CartOverlay'],
+  },
+  {
     file: 'src/components/layout/Navbar.tsx',
     includes: ['href="/"', 'href="/catalogo"', 'href="/conta"', 'Início', 'Catálogo', 'Conta'],
   },
@@ -31,6 +35,18 @@ const checks = [
   {
     file: 'src/app/conta/page.tsx',
     includes: ['Meus Pedidos', 'Repetir pedido', 'Salvar Alteracoes', 'getUserOrders'],
+  },
+  {
+    file: 'src/app/admin/layout.tsx',
+    includes: ['admin-shell', 'max-w-[1680px]', 'Sidebar'],
+  },
+  {
+    file: 'src/components/admin/AdminPrimitives.tsx',
+    includes: ['AdminPageHeader', 'AdminStatCard', 'AdminSection', 'admin-surface'],
+  },
+  {
+    file: 'src/app/admin/page.tsx',
+    includes: ['AdminPageHeader', 'AdminStatCard', 'AdminSection', 'Inteligência Allvino'],
   },
   {
     file: 'src/app/admin/pedidos/page.tsx',

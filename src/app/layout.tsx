@@ -1,9 +1,5 @@
-import { Suspense } from 'react';
-import { AuthModal } from '../components/auth/AuthModal';
-import { Navbar } from '../components/layout/Navbar';
-import { Header } from '../components/layout/Header';
+import { AppChrome } from '../components/layout/AppChrome';
 import { CartProvider } from '../context/CartContext';
-import { CartOverlay } from '../components/cart/CartOverlay';
 import './globals.css';
 
 export const metadata = {
@@ -32,13 +28,8 @@ export default function RootLayout({
       </head>
       <body className="pb-24">
         <CartProvider>
-          <Header />
+          <AppChrome />
           {children}
-          <Navbar />
-          <CartOverlay />
-          <Suspense fallback={null}>
-            <AuthModal />
-          </Suspense>
         </CartProvider>
       </body>
     </html>
