@@ -1,5 +1,6 @@
 "use client";
 
+import { AdminEmptyState, AdminNotice, AdminPageHeader, AdminSection, AdminStatCard, AdminStatusBadge } from '@/components/admin/AdminPrimitives';
 import { createClient } from '@/utils/supabase/client';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -43,17 +44,17 @@ type AdminOrder = {
 const statusLabels: Record<OrderStatus, string> = {
   pending: 'Pendente',
   confirmed: 'Confirmado',
-  preparing: 'Em separacao',
+  preparing: 'Em separação',
   delivered: 'Entregue',
   cancelled: 'Cancelado',
 };
 
-const statusStyles: Record<OrderStatus, string> = {
-  pending: 'bg-amber-100 text-amber-800',
-  confirmed: 'bg-blue-100 text-blue-800',
-  preparing: 'bg-purple-100 text-purple-800',
-  delivered: 'bg-emerald-100 text-emerald-800',
-  cancelled: 'bg-red-100 text-red-800',
+const statusTones: Record<OrderStatus, 'neutral' | 'success' | 'warning' | 'danger' | 'info'> = {
+  pending: 'warning',
+  confirmed: 'info',
+  preparing: 'neutral',
+  delivered: 'success',
+  cancelled: 'danger',
 };
 
 const statusFlow: OrderStatus[] = ['pending', 'confirmed', 'preparing', 'delivered'];
@@ -68,20 +69,20 @@ const paymentStatusLabels: Record<AdminOrder['payment_status'], string> = {
   cancelled: 'Cancelado',
 };
 
-const paymentStatusStyles: Record<AdminOrder['payment_status'], string> = {
-  pending: 'bg-amber-100 text-amber-800',
-  authorized: 'bg-blue-100 text-blue-800',
-  paid: 'bg-emerald-100 text-emerald-800',
-  failed: 'bg-red-100 text-red-800',
-  refunded: 'bg-purple-100 text-purple-800',
-  cancelled: 'bg-stone-200 text-stone-700',
+const paymentStatusTones: Record<AdminOrder['payment_status'], 'neutral' | 'success' | 'warning' | 'danger' | 'info'> = {
+  pending: 'warning',
+  authorized: 'info',
+  paid: 'success',
+  failed: 'danger',
+  refunded: 'neutral',
+  cancelled: 'neutral',
 };
 
 const dateFilterLabels: Record<DateFilter, string> = {
-  all: 'Todo periodo',
+  all: 'Todo período',
   today: 'Hoje',
-  '7d': 'Ultimos 7 dias',
-  '30d': 'Ultimos 30 dias',
+  '7d': 'Últimos 7 dias',
+  '30d': 'Últimos 30 dias',
 };
 
 function getItemName(item: AdminOrderItem) {
@@ -124,12 +125,32 @@ function getDateLimit(filter: DateFilter) {
   return date.getTime();
 }
 
-function getWhatsAppUrl(phone: string | null) {
+function getWhatsAppUrl(phone: string | null, message?: string) {
   const digits = (phone || '').replace(/\D/g, '');
   if (!digits) return null;
 
   const normalizedPhone = digits.startsWith('55') ? digits : `55${digits}`;
-  return `https://wa.me/${normalizedPhone}`;
+  const encodedMessage = message ? `?text=${encodeURIComponent(message)}` : '';
+  return `https://wa.me/${normalizedPhone}${encodedMessage}`;
+}
+
+function getWhatsAppOrderMessage(order: AdminOrder) {
+  const items = order.order_items
+    ?.map((item) => `- ${item.quantity}x ${getItemName(item)}`)
+    .join('\n') || '- Itens do pedido';
+
+  return [
+    `Olá, ${order.customer_name || 'tudo bem'}! Aqui é da Allvino.`,
+    `Recebemos seu pedido #${order.id.slice(0, 8)}.`,
+    '',
+    items,
+    '',
+    `Total: ${formatMoney(order.total_amount)}`,
+    `Status: ${statusLabels[order.status]}`,
+    `Pagamento: ${paymentStatusLabels[order.payment_status]}`,
+    '',
+    'Vou seguir por aqui com a confirmação e próximos passos.',
+  ].join('\n');
 }
 
 export default function AdminPedidosPage() {
@@ -155,7 +176,7 @@ export default function AdminPedidosPage() {
       .limit(100);
 
     if (error) {
-      setErrorMessage('Nao foi possivel carregar os pedidos.');
+      setErrorMessage('Não foi possível carregar os pedidos.');
       setIsLoading(false);
       return;
     }
@@ -224,10 +245,11 @@ export default function AdminPedidosPage() {
       (acc, order) => {
         acc.total += 1;
         acc.revenue += order.total_amount;
+        if (order.payment_status !== 'paid' && order.status !== 'cancelled') acc.paymentPending += 1;
         acc[order.status] += 1;
         return acc;
       },
-      { total: 0, revenue: 0, pending: 0, confirmed: 0, preparing: 0, delivered: 0, cancelled: 0 }
+      { total: 0, revenue: 0, paymentPending: 0, pending: 0, confirmed: 0, preparing: 0, delivered: 0, cancelled: 0 }
     );
   }, [orders]);
 
@@ -253,7 +275,7 @@ export default function AdminPedidosPage() {
       .eq('id', order.id);
 
     if (error) {
-      setErrorMessage('Nao foi possivel atualizar o status do pedido.');
+      setErrorMessage('Não foi possível atualizar o status do pedido.');
       setUpdatingId(null);
       return;
     }
@@ -274,7 +296,7 @@ export default function AdminPedidosPage() {
     });
 
     if (error) {
-      setErrorMessage('Nao foi possivel confirmar o pagamento manual.');
+      setErrorMessage('Não foi possível confirmar o pagamento manual.');
       setUpdatingId(null);
       return;
     }
@@ -297,58 +319,41 @@ export default function AdminPedidosPage() {
   };
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 pb-6">
-        <div>
-          <h1 className="text-3xl font-bold font-serif text-black">Pedidos</h1>
-          <p className="mt-1 text-sm font-bold text-stone-500">Acompanhe, filtre e avance pedidos em operacao.</p>
-        </div>
-        <button
-          type="button"
-          onClick={loadOrders}
-          className="flex items-center gap-2 rounded-lg bg-black px-5 py-2.5 text-sm font-bold text-white transition hover:bg-stone-800"
-        >
-          <span className="material-symbols-outlined text-[18px]">refresh</span>
-          Atualizar
-        </button>
-      </div>
+    <div className="space-y-6">
+      <AdminPageHeader
+        title="Pedidos"
+        description="Acompanhe, filtre e avance pedidos em operação com atendimento pelo WhatsApp."
+        actions={(
+          <button
+            type="button"
+            onClick={loadOrders}
+            className="admin-button flex items-center gap-2 bg-black px-5 text-sm text-white transition hover:bg-stone-800"
+          >
+            <span className="material-symbols-outlined text-[18px]">refresh</span>
+            Atualizar
+          </button>
+        )}
+      />
 
       {errorMessage && (
-        <div className="rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
-          {errorMessage}
-        </div>
+        <AdminNotice tone="danger">{errorMessage}</AdminNotice>
       )}
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-        <div className="rounded-lg bg-black p-5 text-white shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-white/60">Total</p>
-          <p className="mt-2 text-3xl font-bold">{isLoading ? '...' : summary.total}</p>
-        </div>
-        <div className="rounded-lg border border-stone-100 bg-white p-5 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Pendente</p>
-          <p className="mt-2 text-3xl font-bold text-black">{isLoading ? '...' : summary.pending}</p>
-        </div>
-        <div className="rounded-lg border border-stone-100 bg-white p-5 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Preparando</p>
-          <p className="mt-2 text-3xl font-bold text-black">{isLoading ? '...' : summary.preparing}</p>
-        </div>
-        <div className="rounded-lg border border-stone-100 bg-white p-5 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Entregues</p>
-          <p className="mt-2 text-3xl font-bold text-black">{isLoading ? '...' : summary.delivered}</p>
-        </div>
-        <div className="rounded-lg border border-stone-100 bg-white p-5 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Faturamento</p>
-          <p className="mt-2 text-xl font-bold text-black">{isLoading ? '...' : formatMoney(summary.revenue)}</p>
-        </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <AdminStatCard label="Total" value={isLoading ? '...' : summary.total} icon="receipt_long" tone="dark" />
+        <AdminStatCard label="Pendentes" value={isLoading ? '...' : summary.pending} icon="pending_actions" tone="accent" />
+        <AdminStatCard label="Aguardando pagamento" value={isLoading ? '...' : summary.paymentPending} icon="payments" />
+        <AdminStatCard label="Entregues" value={isLoading ? '...' : summary.delivered} icon="check_circle" />
+        <AdminStatCard label="Faturamento" value={isLoading ? '...' : formatMoney(summary.revenue)} icon="monitoring" />
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="admin-scrollbar flex gap-2 overflow-x-auto pb-1">
         {statusOptions.map((status) => (
           <button
             key={status}
             type="button"
             onClick={() => setSelectedStatus(status)}
-            className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold transition ${
+            className={`admin-button min-h-10 shrink-0 rounded-full px-4 text-xs transition ${
               selectedStatus === status ? 'bg-black text-white' : 'bg-white text-stone-500 border border-stone-200'
             }`}
           >
@@ -358,12 +363,12 @@ export default function AdminPedidosPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
-        <div className="overflow-hidden rounded-lg border border-stone-100 bg-white shadow-sm">
-          <div className="space-y-4 border-b border-stone-100 px-5 py-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="font-bold text-black">Fila de pedidos</h2>
-              <span className="text-xs font-bold text-stone-400">{filteredOrders.length} pedidos encontrados</span>
-            </div>
+        <AdminSection
+          title="Fila de pedidos"
+          icon="format_list_bulleted"
+          actions={<span className="text-xs font-bold text-stone-400">{filteredOrders.length} pedidos encontrados</span>}
+        >
+          <div className="space-y-4">
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_180px_180px]">
               <label className="relative block">
                 <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-stone-400">
@@ -384,7 +389,7 @@ export default function AdminPedidosPage() {
                   value={dateFilter}
                   onChange={(event) => setDateFilter(event.target.value as DateFilter)}
                   className="h-11 w-full appearance-none rounded-lg border border-stone-200 bg-white px-3 pr-9 text-sm font-bold text-stone-800 outline-none transition focus:border-black"
-                  aria-label="Filtrar periodo"
+                  aria-label="Filtrar período"
                 >
                   {(Object.keys(dateFilterLabels) as DateFilter[]).map((filter) => (
                     <option key={filter} value={filter}>
@@ -416,11 +421,11 @@ export default function AdminPedidosPage() {
             </div>
           </div>
           {isLoading ? (
-            <div className="p-8 text-center text-sm font-bold text-stone-400">Carregando pedidos...</div>
+            <AdminEmptyState icon="hourglass_top" title="Carregando pedidos..." />
           ) : filteredOrders.length === 0 ? (
-            <div className="p-8 text-center text-sm font-bold text-stone-400">Nenhum pedido neste filtro.</div>
+            <AdminEmptyState icon="search_off" title="Nenhum pedido neste filtro" description="Ajuste status, período, busca ou ordenação para ampliar a fila." />
           ) : (
-            <div className="divide-y divide-stone-100">
+            <div className="mt-4 divide-y divide-stone-100 overflow-hidden rounded-lg border border-stone-100">
               {filteredOrders.map((order) => {
                 const itemCount = order.order_items?.reduce((total, item) => total + item.quantity, 0) || 0;
                 const isSelected = selectedOrder?.id === order.id;
@@ -430,7 +435,7 @@ export default function AdminPedidosPage() {
                     key={order.id}
                     type="button"
                     onClick={() => setSelectedOrderId(order.id)}
-                    className={`grid w-full grid-cols-1 gap-3 p-5 text-left transition md:grid-cols-[1.2fr_1fr_auto] md:items-center ${
+                    className={`grid w-full grid-cols-1 gap-3 p-4 text-left transition md:grid-cols-[1.2fr_1fr_auto] md:items-center md:p-5 ${
                       isSelected ? 'bg-stone-50' : 'hover:bg-stone-50'
                     }`}
                   >
@@ -445,9 +450,7 @@ export default function AdminPedidosPage() {
                       <p className="truncate text-xs font-bold text-stone-400">{order.customer_phone || order.delivery_type}</p>
                     </div>
                     <div className="flex items-center justify-between gap-3 md:justify-end">
-                      <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${statusStyles[order.status]}`}>
-                        {statusLabels[order.status]}
-                      </span>
+                      <AdminStatusBadge tone={statusTones[order.status]}>{statusLabels[order.status]}</AdminStatusBadge>
                       <span className="text-sm font-bold text-black">{formatMoney(order.total_amount)}</span>
                     </div>
                   </button>
@@ -455,11 +458,11 @@ export default function AdminPedidosPage() {
               })}
             </div>
           )}
-        </div>
+        </AdminSection>
 
-        <aside className="rounded-lg border border-stone-100 bg-white p-5 shadow-sm xl:sticky xl:top-24 xl:self-start">
+        <aside className="admin-surface p-5 xl:sticky xl:top-24 xl:self-start">
           {!selectedOrder ? (
-            <div className="py-10 text-center text-sm font-bold text-stone-400">Selecione um pedido.</div>
+            <AdminEmptyState icon="receipt_long" title="Selecione um pedido" description="Os detalhes, ações e contato por WhatsApp aparecerão aqui." />
           ) : (
             <div className="space-y-6">
               <div className="flex items-start justify-between gap-4">
@@ -467,22 +470,18 @@ export default function AdminPedidosPage() {
                   <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Pedido</p>
                   <h2 className="mt-1 text-xl font-bold text-black">#{selectedOrder.id.slice(0, 8)}</h2>
                 </div>
-                <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${statusStyles[selectedOrder.status]}`}>
-                  {statusLabels[selectedOrder.status]}
-                </span>
+                <AdminStatusBadge tone={statusTones[selectedOrder.status]}>{statusLabels[selectedOrder.status]}</AdminStatusBadge>
               </div>
 
               <div className="space-y-2 rounded-lg bg-stone-50 p-4">
                 <p className="font-bold text-black">{selectedOrder.customer_name || 'Cliente sem nome'}</p>
-                <p className="text-sm font-bold text-stone-500">{selectedOrder.customer_phone || 'Telefone nao informado'}</p>
+                <p className="text-sm font-bold text-stone-500">{selectedOrder.customer_phone || 'Telefone não informado'}</p>
                 <p className="text-xs font-bold text-stone-400">{selectedOrder.delivery_type}</p>
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="text-xs font-bold text-stone-400">
-                    Pagamento: {selectedOrder.payment_method || 'Nao informado'} ({selectedOrder.payment_provider})
+                    Pagamento: {selectedOrder.payment_method || 'Não informado'} ({selectedOrder.payment_provider})
                   </p>
-                  <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-widest ${paymentStatusStyles[selectedOrder.payment_status]}`}>
-                    {paymentStatusLabels[selectedOrder.payment_status]}
-                  </span>
+                  <AdminStatusBadge tone={paymentStatusTones[selectedOrder.payment_status]}>{paymentStatusLabels[selectedOrder.payment_status]}</AdminStatusBadge>
                 </div>
                 {selectedOrder.payment_reference && (
                   <p className="text-xs font-bold text-stone-400">Ref pagamento: {selectedOrder.payment_reference}</p>
@@ -501,7 +500,7 @@ export default function AdminPedidosPage() {
                   <p className="text-xs font-bold text-red-600">Erro pagamento: {selectedOrder.payment_error}</p>
                 )}
                 {selectedOrder.delivery_address && (
-                  <p className="text-xs font-bold text-stone-400">Endereco: {selectedOrder.delivery_address}</p>
+                  <p className="text-xs font-bold text-stone-400">Endereço: {selectedOrder.delivery_address}</p>
                 )}
                 {selectedOrder.delivery_zip_code && (
                   <p className="text-xs font-bold text-stone-400">CEP: {selectedOrder.delivery_zip_code}</p>
@@ -509,18 +508,18 @@ export default function AdminPedidosPage() {
                 {selectedOrder.delivery_zone_name && (
                   <p className="text-xs font-bold text-stone-400">
                     Frete: {formatMoney(selectedOrder.shipping_fee)} | {selectedOrder.delivery_zone_name}
-                    {selectedOrder.delivery_estimate_days ? ` em ate ${selectedOrder.delivery_estimate_days} dia(s)` : ''}
+                    {selectedOrder.delivery_estimate_days ? ` em até ${selectedOrder.delivery_estimate_days} dia(s)` : ''}
                   </p>
                 )}
                 {getWhatsAppUrl(selectedOrder.customer_phone) && (
                   <a
-                    href={getWhatsAppUrl(selectedOrder.customer_phone)!}
+                    href={getWhatsAppUrl(selectedOrder.customer_phone, getWhatsAppOrderMessage(selectedOrder))!}
                     target="_blank"
                     rel="noreferrer"
-                    className="mt-2 inline-flex items-center gap-2 rounded-lg bg-[#25D366] px-3 py-2 text-xs font-bold text-white transition hover:bg-[#1FAF55]"
+                    className="admin-button mt-2 inline-flex items-center gap-2 bg-[#25D366] px-3 text-xs text-white transition hover:bg-[#1FAF55]"
                   >
                     <span className="material-symbols-outlined text-[16px]">chat</span>
-                    Chamar no WhatsApp
+                    Enviar resumo no WhatsApp
                   </a>
                 )}
               </div>
@@ -568,7 +567,7 @@ export default function AdminPedidosPage() {
                     value={selectedOrder.status}
                     disabled={updatingId === selectedOrder.id}
                     onChange={(event) => updateOrderStatus(selectedOrder, event.target.value as OrderStatus)}
-                    className="h-12 w-full rounded-xl border border-stone-200 bg-white px-3 text-sm font-bold text-black outline-none transition focus:border-black disabled:opacity-50"
+                    className="h-12 w-full rounded-lg border border-stone-200 bg-white px-3 text-sm font-bold text-black outline-none transition focus:border-black disabled:opacity-50"
                   >
                     {statusFlow.concat('cancelled').map((status) => (
                       <option key={status} value={status}>
@@ -582,10 +581,10 @@ export default function AdminPedidosPage() {
                     type="button"
                     disabled={updatingId === selectedOrder.id}
                     onClick={() => updateOrderStatus(selectedOrder, nextStatus(selectedOrder.status)!)}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#B91C1C] py-3 text-sm font-bold text-white transition hover:bg-red-800 disabled:opacity-50"
+                    className="admin-button flex w-full items-center justify-center gap-2 bg-[#B91C1C] py-3 text-sm text-white transition hover:bg-red-800 disabled:opacity-50"
                   >
                     <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-                    Avancar para {statusLabels[nextStatus(selectedOrder.status)!]}
+                    Avançar para {statusLabels[nextStatus(selectedOrder.status)!]}
                   </button>
                 )}
                 {selectedOrder.payment_provider === 'manual' && selectedOrder.payment_status !== 'paid' && selectedOrder.status !== 'cancelled' && (
@@ -593,7 +592,7 @@ export default function AdminPedidosPage() {
                     type="button"
                     disabled={updatingId === selectedOrder.id}
                     onClick={() => markManualPaymentPaid(selectedOrder)}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 py-3 text-sm font-bold text-white transition hover:bg-emerald-800 disabled:opacity-50"
+                    className="admin-button flex w-full items-center justify-center gap-2 bg-emerald-700 py-3 text-sm text-white transition hover:bg-emerald-800 disabled:opacity-50"
                   >
                     <span className="material-symbols-outlined text-[18px]">payments</span>
                     Marcar pagamento como pago
@@ -604,7 +603,7 @@ export default function AdminPedidosPage() {
                     type="button"
                     disabled={updatingId === selectedOrder.id}
                     onClick={() => updateOrderStatus(selectedOrder, 'cancelled')}
-                    className="w-full rounded-xl border border-red-100 bg-red-50 py-3 text-sm font-bold text-red-600 transition hover:bg-red-100 disabled:opacity-50"
+                    className="admin-button w-full border border-red-100 bg-red-50 py-3 text-sm text-red-600 transition hover:bg-red-100 disabled:opacity-50"
                   >
                     Cancelar pedido
                   </button>

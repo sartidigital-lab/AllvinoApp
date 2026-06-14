@@ -50,7 +50,7 @@ const checks = [
   },
   {
     file: 'src/app/admin/pedidos/page.tsx',
-    includes: ['Buscar por cliente', 'Chamar no WhatsApp', 'Alterar status', 'statusCounts', 'promotion_code', 'shipping_fee', 'mark_manual_payment_paid', 'Marcar pagamento como pago'],
+    includes: ['Buscar por cliente', 'Enviar resumo no WhatsApp', 'getWhatsAppOrderMessage', 'Alterar status', 'statusCounts', 'promotion_code', 'shipping_fee', 'mark_manual_payment_paid', 'Marcar pagamento como pago'],
   },
   {
     file: 'src/app/admin/clientes/page.tsx',
