@@ -58,11 +58,11 @@ const checks = [
   },
   {
     file: 'src/app/admin/crm/page.tsx',
-    includes: ['CRM Kanban', 'customer_crm_cards', 'moveCustomer', 'onDrop', 'Marcar contato realizado', 'Abrir WhatsApp'],
+    includes: ['CRM Kanban', 'customer_crm_cards', 'moveCustomer', 'onDrop', 'Marcar contato realizado', 'Abrir conversa no admin'],
   },
   {
     file: 'src/app/admin/conversas/page.tsx',
-    includes: ['Conversas', 'customer_conversations', 'customer_conversation_messages', 'Abrir WhatsApp', 'Salvar no historico'],
+    includes: ['Conversas', 'customer_conversations', 'customer_conversation_messages', 'useSearchParams', 'Salvar no histórico'],
   },
   {
     file: 'supabase/migrations/20260611225128_add_customer_conversations.sql',

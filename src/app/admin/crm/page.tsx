@@ -1,6 +1,8 @@
 "use client";
 
 import { DragEvent, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { AdminEmptyState, AdminNotice, AdminPageHeader, AdminStatCard, AdminStatusBadge } from '@/components/admin/AdminPrimitives';
 import { createClient } from '@/utils/supabase/client';
 import { CustomerCrmCard, CustomerCrmPriority, CustomerCrmStage } from '@/types/database';
 
@@ -45,9 +47,9 @@ const stages: Array<{
 }> = [
   { id: 'novo', label: 'Novo cliente', icon: 'fiber_new', hint: 'Primeira compra ou lead recente', className: 'border-sky-100 bg-sky-50/40' },
   { id: 'contato', label: 'Contato', icon: 'forum', hint: 'Precisa de abordagem no WhatsApp', className: 'border-amber-100 bg-amber-50/40' },
-  { id: 'negociacao', label: 'Negociacao', icon: 'handshake', hint: 'Oferta, recorrencia ou cesta em curso', className: 'border-violet-100 bg-violet-50/40' },
-  { id: 'pedido', label: 'Pedido em andamento', icon: 'local_mall', hint: 'Pedido aberto ou em preparacao', className: 'border-blue-100 bg-blue-50/40' },
-  { id: 'pos_venda', label: 'Pos-venda', icon: 'workspace_premium', hint: 'Recompra e relacionamento', className: 'border-emerald-100 bg-emerald-50/40' },
+  { id: 'negociacao', label: 'Negociação', icon: 'handshake', hint: 'Oferta, recorrência ou cesta em curso', className: 'border-violet-100 bg-violet-50/40' },
+  { id: 'pedido', label: 'Pedido em andamento', icon: 'local_mall', hint: 'Pedido aberto ou em preparação', className: 'border-blue-100 bg-blue-50/40' },
+  { id: 'pos_venda', label: 'Pós-venda', icon: 'workspace_premium', hint: 'Recompra e relacionamento', className: 'border-emerald-100 bg-emerald-50/40' },
 ];
 
 const priorityLabels: Record<CustomerCrmPriority, string> = {
@@ -56,10 +58,10 @@ const priorityLabels: Record<CustomerCrmPriority, string> = {
   alta: 'Alta',
 };
 
-const priorityStyles: Record<CustomerCrmPriority, string> = {
-  baixa: 'bg-stone-100 text-stone-600',
-  normal: 'bg-blue-100 text-blue-700',
-  alta: 'bg-red-100 text-red-700',
+const priorityTones: Record<CustomerCrmPriority, 'neutral' | 'success' | 'warning' | 'danger' | 'info'> = {
+  baixa: 'neutral',
+  normal: 'info',
+  alta: 'danger',
 };
 
 const cardSelect = 'id,customer_key,user_id,customer_name,customer_phone,stage,priority,notes,next_action_at,last_contacted_at,created_at,updated_at';
@@ -84,8 +86,12 @@ function getWhatsAppUrl(phone: string | null, name: string) {
   if (!digits) return null;
 
   const normalizedPhone = digits.startsWith('55') ? digits : `55${digits}`;
-  const message = `Ola, ${name}! Aqui e da Allvino.`;
+  const message = `Olá, ${name}! Aqui é da Allvino.`;
   return `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(message)}`;
+}
+
+function getConversationHref(customerKey: string) {
+  return `/admin/conversas?customer=${encodeURIComponent(customerKey)}`;
 }
 
 function getCustomerKey(order: CustomerOrder) {
@@ -110,7 +116,7 @@ function getFavoriteProduct(orders: CustomerOrder[]) {
     });
   });
 
-  return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || 'Sem historico';
+  return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || 'Sem histórico';
 }
 
 function inferStage(orders: CustomerOrder[]): CustomerCrmStage {
@@ -129,7 +135,7 @@ function isDueTodayOrOverdue(value: string | null) {
 }
 
 function formatDateTime(value: string | null) {
-  if (!value) return 'Sem proxima acao';
+  if (!value) return 'Sem próxima ação';
   return new Date(value).toLocaleString('pt-BR', {
     day: '2-digit',
     month: '2-digit',
@@ -167,7 +173,7 @@ export default function AdminCrmPage() {
     ]);
 
     if (ordersResult.error || cardsResult.error) {
-      setMessage('Nao foi possivel carregar o CRM.');
+      setMessage('Não foi possível carregar o CRM.');
       setIsLoading(false);
       return;
     }
@@ -273,7 +279,7 @@ export default function AdminCrmPage() {
       .single();
 
     if (error) {
-      setMessage('Nao foi possivel atualizar o card do CRM.');
+      setMessage('Não foi possível atualizar o card do CRM.');
       setUpdatingKey(null);
       return;
     }
@@ -302,47 +308,33 @@ export default function AdminCrmPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 pb-6">
-        <div>
-          <h1 className="text-3xl font-bold font-serif text-black">CRM Kanban</h1>
-          <p className="mt-1 text-sm font-bold text-stone-500">Acompanhe contatos, recompra e oportunidades pelo WhatsApp.</p>
-        </div>
-        <button
-          type="button"
-          onClick={loadCrm}
-          className="flex items-center gap-2 rounded-lg bg-black px-5 py-2.5 text-sm font-bold text-white transition hover:bg-stone-800"
-        >
-          <span className="material-symbols-outlined text-[18px]">refresh</span>
-          Atualizar
-        </button>
-      </div>
+      <AdminPageHeader
+        title="CRM Kanban"
+        description="Acompanhe contatos, recompra e oportunidades pelo WhatsApp."
+        actions={(
+          <button
+            type="button"
+            onClick={loadCrm}
+            className="admin-button flex items-center gap-2 bg-black px-5 text-sm text-white transition hover:bg-stone-800"
+          >
+            <span className="material-symbols-outlined text-[18px]">refresh</span>
+            Atualizar
+          </button>
+        )}
+      />
 
       {message && (
-        <div className="rounded-lg border border-stone-200 bg-white px-4 py-3 text-sm font-bold text-stone-700">
-          {message}
-        </div>
+        <AdminNotice>{message}</AdminNotice>
       )}
 
-      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
-        <div className="rounded-lg bg-black p-5 text-white shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-white/60">Clientes no CRM</p>
-          <p className="mt-2 text-3xl font-bold">{isLoading ? '...' : summary.total}</p>
-        </div>
-        <div className="rounded-lg border border-stone-100 bg-white p-5 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Alta prioridade</p>
-          <p className="mt-2 text-3xl font-bold text-black">{isLoading ? '...' : summary.highPriority}</p>
-        </div>
-        <div className="rounded-lg border border-stone-100 bg-white p-5 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Acoes ate hoje</p>
-          <p className="mt-2 text-3xl font-bold text-black">{isLoading ? '...' : summary.due}</p>
-        </div>
-        <div className="rounded-lg border border-stone-100 bg-white p-5 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Receita historica</p>
-          <p className="mt-2 text-xl font-bold text-black">{isLoading ? '...' : formatMoney(summary.revenue)}</p>
-        </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <AdminStatCard label="Clientes no CRM" value={isLoading ? '...' : summary.total} icon="groups" tone="dark" />
+        <AdminStatCard label="Alta prioridade" value={isLoading ? '...' : summary.highPriority} icon="priority_high" tone="accent" />
+        <AdminStatCard label="Ações até hoje" value={isLoading ? '...' : summary.due} icon="event_upcoming" />
+        <AdminStatCard label="Receita histórica" value={isLoading ? '...' : formatMoney(summary.revenue)} icon="monitoring" />
       </div>
 
-      <div className="flex flex-col gap-3 rounded-lg border border-stone-100 bg-white p-4 shadow-sm lg:flex-row lg:items-center">
+      <div className="admin-surface flex flex-col gap-3 p-4 lg:flex-row lg:items-center">
         <label className="relative min-w-0 flex-1">
           <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-stone-400">search</span>
           <input
@@ -395,7 +387,7 @@ export default function AdminCrmPage() {
 
                   <div className="flex flex-1 flex-col gap-3">
                     {isLoading ? (
-                      <div className="rounded-lg bg-white p-4 text-center text-sm font-bold text-stone-400">Carregando...</div>
+                      <AdminEmptyState icon="hourglass_top" title="Carregando..." />
                     ) : stageCustomers.length === 0 ? (
                       <div className="rounded-lg border border-dashed border-stone-200 bg-white/70 p-4 text-center text-xs font-bold text-stone-400">
                         Arraste clientes para esta etapa.
@@ -423,11 +415,11 @@ export default function AdminCrmPage() {
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
                                 <h3 className="truncate text-sm font-bold text-black">{customer.name}</h3>
-                                <p className="mt-1 truncate text-xs font-bold text-stone-400">{customer.phone || 'Telefone nao informado'}</p>
+                                <p className="mt-1 truncate text-xs font-bold text-stone-400">{customer.phone || 'Telefone não informado'}</p>
                               </div>
-                              <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-bold uppercase ${priorityStyles[customer.priority]}`}>
+                              <AdminStatusBadge tone={priorityTones[customer.priority]} className="min-h-6 shrink-0 px-2 py-0 text-[10px] uppercase">
                                 {priorityLabels[customer.priority]}
-                              </span>
+                              </AdminStatusBadge>
                             </div>
 
                             <div className="mt-4 grid grid-cols-2 gap-2">
@@ -454,21 +446,29 @@ export default function AdminCrmPage() {
                                   event.stopPropagation();
                                   if (previousStage) moveCustomer(customer, previousStage);
                                 }}
-                                className="flex h-9 w-9 items-center justify-center rounded-lg border border-stone-200 text-stone-500 transition hover:bg-stone-50 disabled:opacity-30"
+                                className="admin-button flex h-9 w-9 min-h-9 items-center justify-center border border-stone-200 text-stone-500 transition hover:bg-stone-50 disabled:opacity-30"
                                 title="Mover para etapa anterior"
                               >
                                 <span className="material-symbols-outlined text-[18px]">chevron_left</span>
                               </button>
+                              <Link
+                                href={getConversationHref(customer.key)}
+                                onClick={(event) => event.stopPropagation()}
+                                className="admin-button flex h-9 min-h-9 flex-1 items-center justify-center gap-2 bg-black px-3 text-xs text-white transition hover:bg-stone-800"
+                              >
+                                <span className="material-symbols-outlined text-[16px]">forum</span>
+                                Conversa
+                              </Link>
                               {whatsappUrl && (
                                 <a
                                   href={whatsappUrl}
                                   target="_blank"
                                   rel="noreferrer"
                                   onClick={(event) => event.stopPropagation()}
-                                  className="flex h-9 flex-1 items-center justify-center gap-2 rounded-lg bg-[#25D366] px-3 text-xs font-bold text-white transition hover:bg-[#1FAF55]"
+                                  className="admin-button flex h-9 min-h-9 w-9 items-center justify-center bg-[#25D366] text-white transition hover:bg-[#1FAF55]"
+                                  title="Abrir WhatsApp"
                                 >
                                   <span className="material-symbols-outlined text-[16px]">chat</span>
-                                  WhatsApp
                                 </a>
                               )}
                               <button
@@ -478,8 +478,8 @@ export default function AdminCrmPage() {
                                   event.stopPropagation();
                                   if (nextStage) moveCustomer(customer, nextStage);
                                 }}
-                                className="flex h-9 w-9 items-center justify-center rounded-lg border border-stone-200 text-stone-500 transition hover:bg-stone-50 disabled:opacity-30"
-                                title="Mover para proxima etapa"
+                                className="admin-button flex h-9 w-9 min-h-9 items-center justify-center border border-stone-200 text-stone-500 transition hover:bg-stone-50 disabled:opacity-30"
+                                title="Mover para próxima etapa"
                               >
                                 <span className="material-symbols-outlined text-[18px]">chevron_right</span>
                               </button>
@@ -495,15 +495,15 @@ export default function AdminCrmPage() {
           </div>
         </div>
 
-        <aside className="rounded-lg border border-stone-100 bg-white p-5 shadow-sm 2xl:sticky 2xl:top-24 2xl:self-start">
+        <aside className="admin-surface p-5 2xl:sticky 2xl:top-24 2xl:self-start">
           {!selectedCustomer ? (
-            <div className="py-12 text-center text-sm font-bold text-stone-400">Selecione um card para editar.</div>
+            <AdminEmptyState icon="view_kanban" title="Selecione um card" description="Edite etapa, prioridade, próxima ação e abra a conversa do cliente." />
           ) : (
             <div className="space-y-5">
               <div>
                 <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Cliente</p>
                 <h2 className="mt-1 text-xl font-bold text-black">{selectedCustomer.name}</h2>
-                <p className="mt-1 text-sm font-bold text-stone-500">{selectedCustomer.phone || 'Telefone nao informado'}</p>
+                <p className="mt-1 text-sm font-bold text-stone-500">{selectedCustomer.phone || 'Telefone não informado'}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -534,7 +534,7 @@ export default function AdminCrmPage() {
               </div>
 
               <label className="space-y-1 block">
-                <span className="text-xs font-bold uppercase text-stone-400">Proxima acao</span>
+                <span className="text-xs font-bold uppercase text-stone-400">Próxima ação</span>
                 <input
                   type="datetime-local"
                   value={selectedCustomer.nextActionAt ? selectedCustomer.nextActionAt.slice(0, 16) : ''}
@@ -549,7 +549,7 @@ export default function AdminCrmPage() {
                   defaultValue={selectedCustomer.notes}
                   rows={5}
                   onBlur={(event) => upsertCustomerCard(selectedCustomer, { notes: event.target.value.trim() || null })}
-                  placeholder="Preferencias, objecoes, combinados e oportunidade de recompra."
+                  placeholder="Preferências, objeções, combinados e oportunidade de recompra."
                   className="w-full resize-none rounded-lg border border-stone-200 bg-white p-3 text-sm font-bold outline-none placeholder:text-stone-400 focus:border-black"
                 />
               </label>
@@ -557,7 +557,7 @@ export default function AdminCrmPage() {
               <button
                 type="button"
                 onClick={() => upsertCustomerCard(selectedCustomer, { last_contacted_at: new Date().toISOString() })}
-                className="flex w-full items-center justify-center gap-2 rounded-lg border border-stone-200 py-3 text-sm font-bold text-stone-700 transition hover:bg-stone-50"
+                className="admin-button flex w-full items-center justify-center gap-2 border border-stone-200 py-3 text-sm text-stone-700 transition hover:bg-stone-50"
               >
                 <span className="material-symbols-outlined text-[18px]">done_all</span>
                 Marcar contato realizado
@@ -568,12 +568,20 @@ export default function AdminCrmPage() {
                   href={getWhatsAppUrl(selectedCustomer.phone, selectedCustomer.name)!}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#25D366] py-3 text-sm font-bold text-white transition hover:bg-[#1FAF55]"
+                  className="admin-button flex w-full items-center justify-center gap-2 bg-[#25D366] py-3 text-sm text-white transition hover:bg-[#1FAF55]"
                 >
                   <span className="material-symbols-outlined text-[18px]">chat</span>
                   Abrir WhatsApp
                 </a>
               )}
+
+              <Link
+                href={getConversationHref(selectedCustomer.key)}
+                className="admin-button flex w-full items-center justify-center gap-2 bg-black py-3 text-sm text-white transition hover:bg-stone-800"
+              >
+                <span className="material-symbols-outlined text-[18px]">forum</span>
+                Abrir conversa no admin
+              </Link>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-lg bg-stone-50 p-4">
@@ -581,7 +589,7 @@ export default function AdminCrmPage() {
                   <p className="mt-1 text-sm font-bold text-black">{formatMoney(selectedCustomer.totalSpent)}</p>
                 </div>
                 <div className="rounded-lg bg-stone-50 p-4">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400">Ticket medio</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400">Ticket médio</p>
                   <p className="mt-1 text-sm font-bold text-black">{formatMoney(selectedCustomer.averageTicket)}</p>
                 </div>
               </div>
@@ -592,7 +600,7 @@ export default function AdminCrmPage() {
               </div>
 
               <div className="space-y-3">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-stone-400">Ultimos pedidos</h3>
+                <h3 className="text-xs font-bold uppercase tracking-widest text-stone-400">Últimos pedidos</h3>
                 {selectedCustomer.orders.slice(0, 4).map((order) => (
                   <div key={order.id} className="rounded-lg border border-stone-100 p-3">
                     <div className="flex items-start justify-between gap-3">

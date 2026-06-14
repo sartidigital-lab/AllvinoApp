@@ -1,6 +1,8 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, Suspense, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { AdminEmptyState, AdminNotice, AdminPageHeader, AdminStatusBadge } from '@/components/admin/AdminPrimitives';
 import { createClient } from '@/utils/supabase/client';
 import {
   CustomerConversation,
@@ -46,10 +48,10 @@ const statusLabels: Record<CustomerConversationStatus, string> = {
   closed: 'Encerrada',
 };
 
-const statusStyles: Record<CustomerConversationStatus, string> = {
-  open: 'bg-emerald-100 text-emerald-700',
-  waiting: 'bg-amber-100 text-amber-700',
-  closed: 'bg-stone-200 text-stone-700',
+const statusTones: Record<CustomerConversationStatus, 'neutral' | 'success' | 'warning' | 'danger' | 'info'> = {
+  open: 'success',
+  waiting: 'warning',
+  closed: 'neutral',
 };
 
 const directionLabels: Record<CustomerConversationMessageDirection, string> = {
@@ -78,7 +80,7 @@ function getWhatsAppUrl(phone: string | null, name: string, message: string) {
   if (!digits) return null;
 
   const normalizedPhone = digits.startsWith('55') ? digits : `55${digits}`;
-  const body = message.trim() || `Ola, ${name}! Aqui e da Allvino.`;
+  const body = message.trim() || `Olá, ${name}! Aqui é da Allvino.`;
   return `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(body)}`;
 }
 
@@ -104,7 +106,7 @@ function getFavoriteProduct(orders: CustomerOrder[]) {
     });
   });
 
-  return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || 'Sem historico';
+  return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || 'Sem histórico';
 }
 
 function formatShortDate(value: string | null) {
@@ -117,7 +119,9 @@ function formatShortDate(value: string | null) {
   });
 }
 
-export default function AdminConversasPage() {
+function AdminConversasContent() {
+  const searchParams = useSearchParams();
+  const requestedCustomerKey = searchParams.get('customer');
   const [orders, setOrders] = useState<CustomerOrder[]>([]);
   const [conversations, setConversations] = useState<CustomerConversation[]>([]);
   const [messages, setMessages] = useState<CustomerConversationMessage[]>([]);
@@ -148,7 +152,7 @@ export default function AdminConversasPage() {
     ]);
 
     if (ordersResult.error || conversationsResult.error) {
-      setMessage('Nao foi possivel carregar conversas.');
+      setMessage('Não foi possível carregar conversas.');
       setIsLoading(false);
       return;
     }
@@ -157,13 +161,19 @@ export default function AdminConversasPage() {
     const nextConversations = (conversationsResult.data || []) as CustomerConversation[];
     setOrders(nextOrders);
     setConversations(nextConversations);
-    setSelectedCustomerKey((current) => current || nextConversations[0]?.customer_key || (nextOrders[0] ? getCustomerKey(nextOrders[0]) : null));
+    setSelectedCustomerKey((current) => requestedCustomerKey || current || nextConversations[0]?.customer_key || (nextOrders[0] ? getCustomerKey(nextOrders[0]) : null));
     setIsLoading(false);
   };
 
   useEffect(() => {
     loadConversations();
   }, []);
+
+  useEffect(() => {
+    if (requestedCustomerKey) {
+      setSelectedCustomerKey(requestedCustomerKey);
+    }
+  }, [requestedCustomerKey]);
 
   const customers = useMemo(() => {
     const groups = new Map<string, CustomerOrder[]>();
@@ -241,6 +251,12 @@ export default function AdminConversasPage() {
       .sort((a, b) => new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime());
   }, [messages, selectedCustomer]);
 
+  useEffect(() => {
+    if (selectedCustomer?.conversation) {
+      loadMessages(selectedCustomer.conversation.id);
+    }
+  }, [selectedCustomer?.conversation?.id]);
+
   const loadMessages = async (conversationId: string) => {
     const supabase = createClient();
     const { data, error } = await supabase
@@ -250,7 +266,7 @@ export default function AdminConversasPage() {
       .order('sent_at', { ascending: true });
 
     if (error) {
-      setMessage('Nao foi possivel carregar o historico da conversa.');
+      setMessage('Não foi possível carregar o histórico da conversa.');
       return;
     }
 
@@ -279,7 +295,7 @@ export default function AdminConversasPage() {
       .single();
 
     if (error) {
-      setMessage('Nao foi possivel abrir a conversa.');
+      setMessage('Não foi possível abrir a conversa.');
       return null;
     }
 
@@ -331,7 +347,7 @@ export default function AdminConversasPage() {
       .single();
 
     if (error) {
-      setMessage('Nao foi possivel salvar a mensagem.');
+      setMessage('Não foi possível salvar a mensagem.');
       setIsSending(false);
       return;
     }
@@ -368,7 +384,7 @@ export default function AdminConversasPage() {
       .single();
 
     if (error) {
-      setMessage('Nao foi possivel atualizar o status da conversa.');
+      setMessage('Não foi possível atualizar o status da conversa.');
       return;
     }
 
@@ -382,29 +398,27 @@ export default function AdminConversasPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 pb-6">
-        <div>
-          <h1 className="text-3xl font-bold font-serif text-black">Conversas</h1>
-          <p className="mt-1 text-sm font-bold text-stone-500">Historico comercial, mensagens manuais e continuidade pelo WhatsApp.</p>
-        </div>
-        <button
-          type="button"
-          onClick={loadConversations}
-          className="flex items-center gap-2 rounded-lg bg-black px-5 py-2.5 text-sm font-bold text-white transition hover:bg-stone-800"
-        >
-          <span className="material-symbols-outlined text-[18px]">refresh</span>
-          Atualizar
-        </button>
-      </div>
+      <AdminPageHeader
+        title="Conversas"
+        description="Histórico comercial, mensagens manuais e continuidade pelo WhatsApp."
+        actions={(
+          <button
+            type="button"
+            onClick={loadConversations}
+            className="admin-button flex items-center gap-2 bg-black px-5 text-sm text-white transition hover:bg-stone-800"
+          >
+            <span className="material-symbols-outlined text-[18px]">refresh</span>
+            Atualizar
+          </button>
+        )}
+      />
 
       {message && (
-        <div className="rounded-lg border border-stone-200 bg-white px-4 py-3 text-sm font-bold text-stone-700">
-          {message}
-        </div>
+        <AdminNotice>{message}</AdminNotice>
       )}
 
       <div className="grid min-h-[calc(100vh-190px)] grid-cols-1 gap-4 xl:grid-cols-[360px_minmax(0,1fr)_320px]">
-        <aside className="overflow-hidden rounded-lg border border-stone-100 bg-white shadow-sm">
+        <aside className="admin-surface overflow-hidden">
           <div className="space-y-3 border-b border-stone-100 p-4">
             <label className="relative block">
               <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-stone-400">search</span>
@@ -428,11 +442,11 @@ export default function AdminConversasPage() {
             </select>
           </div>
 
-          <div className="max-h-[calc(100vh-330px)] overflow-y-auto">
+          <div className="admin-scrollbar max-h-[calc(100vh-330px)] overflow-y-auto">
             {isLoading ? (
-              <div className="p-6 text-center text-sm font-bold text-stone-400">Carregando conversas...</div>
+              <AdminEmptyState icon="hourglass_top" title="Carregando conversas..." />
             ) : filteredCustomers.length === 0 ? (
-              <div className="p-6 text-center text-sm font-bold text-stone-400">Nenhuma conversa encontrada.</div>
+              <AdminEmptyState icon="search_off" title="Nenhuma conversa encontrada" description="Ajuste a busca ou abra uma conversa a partir do CRM." />
             ) : (
               filteredCustomers.map((customer) => {
                 const status = customer.conversation?.status || 'open';
@@ -450,11 +464,11 @@ export default function AdminConversasPage() {
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-bold text-black">{customer.name}</p>
-                        <p className="mt-1 truncate text-xs font-bold text-stone-400">{customer.phone || 'Telefone nao informado'}</p>
+                      <p className="mt-1 truncate text-xs font-bold text-stone-400">{customer.phone || 'Telefone não informado'}</p>
                       </div>
-                      <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-bold uppercase ${statusStyles[status]}`}>
+                      <AdminStatusBadge tone={statusTones[status]} className="min-h-6 shrink-0 px-2 py-0 text-[10px] uppercase">
                         {statusLabels[status]}
-                      </span>
+                      </AdminStatusBadge>
                     </div>
                     <p className="mt-3 line-clamp-2 text-xs font-bold text-stone-500">
                       {customer.lastMessage?.body || customer.favoriteProduct}
@@ -469,17 +483,15 @@ export default function AdminConversasPage() {
           </div>
         </aside>
 
-        <section className="flex min-h-[620px] flex-col overflow-hidden rounded-lg border border-stone-100 bg-white shadow-sm">
+        <section className="admin-surface flex min-h-[620px] flex-col overflow-hidden">
           {!selectedCustomer ? (
-            <div className="flex flex-1 items-center justify-center p-8 text-sm font-bold text-stone-400">
-              Selecione uma conversa.
-            </div>
+            <AdminEmptyState icon="forum" title="Selecione uma conversa" description="O histórico e o composer aparecerão aqui." />
           ) : (
             <>
               <header className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-100 p-4">
                 <div>
                   <h2 className="text-lg font-bold text-black">{selectedCustomer.name}</h2>
-                  <p className="text-sm font-bold text-stone-500">{selectedCustomer.phone || 'Telefone nao informado'}</p>
+                  <p className="text-sm font-bold text-stone-500">{selectedCustomer.phone || 'Telefone não informado'}</p>
                 </div>
                 {selectedCustomer.conversation && (
                   <select
@@ -537,7 +549,7 @@ export default function AdminConversasPage() {
                       key={item}
                       type="button"
                       onClick={() => setDirection(item)}
-                      className={`rounded-lg px-3 py-2 text-xs font-bold transition ${
+                      className={`admin-button min-h-9 rounded-lg px-3 py-2 text-xs transition ${
                         direction === item ? 'bg-black text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
                       }`}
                     >
@@ -558,7 +570,7 @@ export default function AdminConversasPage() {
                       href={whatsappUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex h-11 items-center justify-center gap-2 rounded-lg bg-[#25D366] px-4 text-sm font-bold text-white transition hover:bg-[#1FAF55]"
+                      className="admin-button flex h-11 items-center justify-center gap-2 bg-[#25D366] px-4 text-sm text-white transition hover:bg-[#1FAF55]"
                     >
                       <span className="material-symbols-outlined text-[18px]">open_in_new</span>
                       Abrir WhatsApp
@@ -567,10 +579,10 @@ export default function AdminConversasPage() {
                   <button
                     type="submit"
                     disabled={isSending || !draft.trim()}
-                    className="flex h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-black px-4 text-sm font-bold text-white transition hover:bg-stone-800 disabled:opacity-50"
+                    className="admin-button flex h-11 flex-1 items-center justify-center gap-2 bg-black px-4 text-sm text-white transition hover:bg-stone-800 disabled:opacity-50"
                   >
                     <span className="material-symbols-outlined text-[18px]">save</span>
-                    {isSending ? 'Salvando...' : 'Salvar no historico'}
+                    {isSending ? 'Salvando...' : 'Salvar no histórico'}
                   </button>
                 </div>
               </form>
@@ -578,15 +590,15 @@ export default function AdminConversasPage() {
           )}
         </section>
 
-        <aside className="rounded-lg border border-stone-100 bg-white p-5 shadow-sm">
+        <aside className="admin-surface p-5">
           {!selectedCustomer ? (
-            <div className="py-10 text-center text-sm font-bold text-stone-400">Sem cliente selecionado.</div>
+            <AdminEmptyState icon="person_search" title="Sem cliente selecionado" />
           ) : (
             <div className="space-y-5">
               <div>
                 <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Resumo</p>
                 <h3 className="mt-1 text-xl font-bold text-black">{selectedCustomer.name}</h3>
-                <p className="mt-1 text-sm font-bold text-stone-500">{selectedCustomer.phone || 'Telefone nao informado'}</p>
+                <p className="mt-1 text-sm font-bold text-stone-500">{selectedCustomer.phone || 'Telefone não informado'}</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-lg bg-stone-50 p-4">
@@ -603,7 +615,7 @@ export default function AdminConversasPage() {
                 <p className="mt-1 text-sm font-bold text-black">{selectedCustomer.favoriteProduct}</p>
               </div>
               <div className="space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-widest text-stone-400">Ultimos pedidos</h4>
+                <h4 className="text-xs font-bold uppercase tracking-widest text-stone-400">Últimos pedidos</h4>
                 {selectedCustomer.orders.slice(0, 4).map((order) => (
                   <div key={order.id} className="rounded-lg border border-stone-100 p-3">
                     <div className="flex items-start justify-between gap-3">
@@ -622,5 +634,13 @@ export default function AdminConversasPage() {
         </aside>
       </div>
     </div>
+  );
+}
+
+export default function AdminConversasPage() {
+  return (
+    <Suspense fallback={<AdminEmptyState icon="forum" title="Carregando conversas..." />}>
+      <AdminConversasContent />
+    </Suspense>
   );
 }
