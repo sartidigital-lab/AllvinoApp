@@ -16,7 +16,27 @@ type AdminStatCardProps = {
 type AdminSectionProps = {
   title: string;
   icon?: string;
+  actions?: ReactNode;
   children: ReactNode;
+};
+
+type AdminNoticeProps = {
+  children: ReactNode;
+  tone?: 'default' | 'success' | 'warning' | 'danger';
+};
+
+type AdminEmptyStateProps = {
+  icon?: string;
+  title: string;
+  description?: string;
+  action?: ReactNode;
+};
+
+type AdminStatusBadgeProps = {
+  children: ReactNode;
+  icon?: string;
+  tone?: 'neutral' | 'success' | 'warning' | 'danger' | 'info';
+  className?: string;
 };
 
 export function AdminPageHeader({ title, description, actions }: AdminPageHeaderProps) {
@@ -52,14 +72,60 @@ export function AdminStatCard({ label, value, icon, tone = 'default' }: AdminSta
   );
 }
 
-export function AdminSection({ title, icon, children }: AdminSectionProps) {
+export function AdminSection({ title, icon, actions, children }: AdminSectionProps) {
   return (
     <section className="admin-surface p-5">
-      <h2 className="mb-4 flex items-center gap-2 text-base font-bold text-black">
-        {icon && <span className="material-symbols-outlined text-[20px] text-stone-500">{icon}</span>}
-        {title}
-      </h2>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="flex items-center gap-2 text-base font-bold text-black">
+          {icon && <span className="material-symbols-outlined text-[20px] text-stone-500">{icon}</span>}
+          {title}
+        </h2>
+        {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+      </div>
       {children}
     </section>
+  );
+}
+
+export function AdminNotice({ children, tone = 'default' }: AdminNoticeProps) {
+  const toneClass = {
+    default: 'border-stone-200 bg-white text-stone-700',
+    success: 'border-emerald-100 bg-emerald-50 text-emerald-800',
+    warning: 'border-amber-100 bg-amber-50 text-amber-800',
+    danger: 'border-red-100 bg-red-50 text-red-700',
+  }[tone];
+
+  return (
+    <div className={`rounded-lg border px-4 py-3 text-sm font-bold ${toneClass}`}>
+      {children}
+    </div>
+  );
+}
+
+export function AdminEmptyState({ icon = 'inbox', title, description, action }: AdminEmptyStateProps) {
+  return (
+    <div className="flex min-h-40 flex-col items-center justify-center rounded-lg border border-dashed border-stone-200 bg-stone-50/60 px-6 py-8 text-center">
+      <span className="material-symbols-outlined text-[34px] text-stone-300">{icon}</span>
+      <p className="mt-3 text-sm font-bold text-black">{title}</p>
+      {description && <p className="mt-1 max-w-md text-xs font-bold text-stone-400">{description}</p>}
+      {action && <div className="mt-4">{action}</div>}
+    </div>
+  );
+}
+
+export function AdminStatusBadge({ children, icon, tone = 'neutral', className = '' }: AdminStatusBadgeProps) {
+  const toneClass = {
+    neutral: 'bg-stone-100 text-stone-600',
+    success: 'bg-emerald-50 text-emerald-700',
+    warning: 'bg-amber-50 text-amber-700',
+    danger: 'bg-red-50 text-red-700',
+    info: 'bg-blue-50 text-blue-700',
+  }[tone];
+
+  return (
+    <span className={`inline-flex min-h-8 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${toneClass} ${className}`}>
+      {icon && <span className="material-symbols-outlined text-[16px]">{icon}</span>}
+      {children}
+    </span>
   );
 }

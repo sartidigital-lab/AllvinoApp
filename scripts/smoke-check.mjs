@@ -78,7 +78,7 @@ const checks = [
   },
   {
     file: 'src/app/admin/estoque/page.tsx',
-    includes: ['Estoque', 'Subir Excel', 'Codigo avulso', 'parseStockRows', 'importStockLevels'],
+    includes: ['Estoque', 'Subir Excel', 'Código avulso', 'parseStockRows', 'importStockLevels'],
   },
   {
     file: 'src/app/admin/logistica/page.tsx',
@@ -90,7 +90,7 @@ const checks = [
   },
   {
     file: 'src/app/admin/catalogo/page.tsx',
-    includes: ['allowedImageTypes', 'handleImageUpload', '/api/admin/produtos/imagem', 'image_url', 'Vinculo estoque', 'getStockLinkStatus', 'Codigo sem saldo'],
+    includes: ['allowedImageTypes', 'handleImageUpload', '/api/admin/produtos/imagem', 'image_url', 'Vínculo estoque', 'getStockLinkStatus', 'Código sem saldo'],
   },
   {
     file: 'src/app/api/admin/produtos/imagem/route.ts',

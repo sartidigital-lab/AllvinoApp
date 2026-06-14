@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { AdminEmptyState, AdminNotice, AdminPageHeader, AdminSection, AdminStatCard, AdminStatusBadge } from '@/components/admin/AdminPrimitives';
 import { createWine, deleteWine, fetchWinesFromSupabase, updateWine } from '@/lib/database/wines';
 import { fetchStockLevelByCode, fetchStockLevelsByCodes, normalizeProductCode } from '@/lib/database/stock';
 import { createClient } from '@/utils/supabase/client';
@@ -67,8 +68,8 @@ function getStockLinkStatus(wine: Wine, stockByCode: Map<string, number>): Stock
 
   if (!productCode) {
     return {
-      label: 'Sem codigo',
-      detail: 'Produto nao vinculado ao estoque',
+      label: 'Sem código',
+      detail: 'Produto não vinculado ao estoque',
       icon: 'link_off',
       className: 'bg-stone-100 text-stone-600',
     };
@@ -76,8 +77,8 @@ function getStockLinkStatus(wine: Wine, stockByCode: Map<string, number>): Stock
 
   if (!stockByCode.has(productCode)) {
     return {
-      label: 'Codigo sem saldo',
-      detail: 'Nao existe na base importada',
+      label: 'Código sem saldo',
+      detail: 'Não existe na base importada',
       icon: 'warning',
       className: 'bg-amber-50 text-amber-700',
     };
@@ -160,6 +161,18 @@ export default function AdminCatalogPage() {
     );
   }, [search, wines]);
 
+  const summary = useMemo(() => {
+    return wines.reduce(
+      (acc, wine) => {
+        acc.total += 1;
+        if (wine.stock <= 5) acc.lowStock += 1;
+        if (wine.image_url) acc.withImage += 1;
+        return acc;
+      },
+      { total: 0, lowStock: 0, withImage: 0 }
+    );
+  }, [wines]);
+
   const loadWines = async () => {
     setIsLoading(true);
     setMessage(null);
@@ -171,14 +184,14 @@ export default function AdminCatalogPage() {
       const { stockByCode: nextStockByCode, error: stockError } = await fetchStockLevelsByCodes(productCodes);
 
       if (stockError) {
-        setMessage('Catalogo carregado, mas nao foi possivel validar vinculos de estoque.');
+        setMessage('Catálogo carregado, mas não foi possível validar vínculos de estoque.');
       }
 
       setStockByCode(nextStockByCode);
       setWines(data);
     } catch (error) {
       console.error(error);
-      setMessage('Nao foi possivel carregar o catalogo.');
+      setMessage('Não foi possível carregar o catálogo.');
     } finally {
       setIsLoading(false);
     }
@@ -215,14 +228,14 @@ export default function AdminCatalogPage() {
 
       if (error) {
         if (options.showMessage) {
-          setMessage('Nao foi possivel consultar o estoque importado para este codigo.');
+          setMessage('Não foi possível consultar o estoque importado para este código.');
         }
         return null;
       }
 
       if (quantity === null) {
         if (options.showMessage) {
-          setMessage(`Codigo ${normalizedCode} ainda nao existe na base de estoque importada.`);
+          setMessage(`Código ${normalizedCode} ainda não existe na base de estoque importada.`);
         }
         return null;
       }
@@ -234,7 +247,7 @@ export default function AdminCatalogPage() {
       }));
 
       if (options.showMessage) {
-        setMessage(`Estoque sincronizado: ${quantity} un. para o codigo ${normalizedCode}.`);
+        setMessage(`Estoque sincronizado: ${quantity} un. para o código ${normalizedCode}.`);
       }
 
       return quantity;
@@ -265,7 +278,7 @@ export default function AdminCatalogPage() {
       const activeSession = refreshedSession || session;
 
       if (!activeSession?.access_token) {
-        setMessage('Sessao expirada. Entre novamente para enviar imagens.');
+        setMessage('Sessão expirada. Entre novamente para enviar imagens.');
         return;
       }
 
@@ -285,14 +298,14 @@ export default function AdminCatalogPage() {
       const responseText = await response.text();
 
       if (!response.ok) {
-        setMessage(`Nao foi possivel enviar a imagem. Detalhe: ${parseUploadError(response.status, responseText)}`);
+        setMessage(`Não foi possível enviar a imagem. Detalhe: ${parseUploadError(response.status, responseText)}`);
         return;
       }
 
       const payload = responseText ? JSON.parse(responseText) as { publicUrl?: string } : {};
 
       if (!payload.publicUrl) {
-        setMessage('Imagem enviada, mas a URL publica nao foi retornada.');
+        setMessage('Imagem enviada, mas a URL pública não foi retornada.');
         return;
       }
 
@@ -312,17 +325,17 @@ export default function AdminCatalogPage() {
     }
 
     if (!form.price || Number(form.price) < 0) {
-      setMessage('Informe um preco valido.');
+      setMessage('Informe um preço válido.');
       return;
     }
 
     if (!form.product_code.trim()) {
-      setMessage('Informe o codigo de estoque do produto.');
+      setMessage('Informe o código de estoque do produto.');
       return;
     }
 
     if (!form.category.trim()) {
-      setMessage('Informe o pais do produto.');
+      setMessage('Informe o país do produto.');
       return;
     }
 
@@ -336,7 +349,7 @@ export default function AdminCatalogPage() {
         : null;
 
       if (syncedQuantity === null) {
-        setMessage(`Codigo ${normalizedProductCode} nao encontrado na base de estoque. Importe a planilha ou cadastre este codigo em Estoque antes de salvar o produto.`);
+        setMessage(`Código ${normalizedProductCode} não encontrado na base de estoque. Importe a planilha ou cadastre este código em Estoque antes de salvar o produto.`);
         return;
       }
 
@@ -350,7 +363,7 @@ export default function AdminCatalogPage() {
         : await createWine(payload);
 
       if (!savedWine) {
-        setMessage('Nao foi possivel salvar. Verifique sua permissao de admin.');
+        setMessage('Não foi possível salvar. Verifique sua permissão de admin.');
         return;
       }
 
@@ -359,57 +372,63 @@ export default function AdminCatalogPage() {
       setMessage(editingWine ? 'Vinho atualizado.' : 'Vinho cadastrado.');
     } catch (error) {
       const detail = getErrorMessage(error);
-      setMessage(`Nao foi possivel salvar.${detail ? ` Detalhe: ${detail}` : ' Verifique sua permissao de admin.'}`);
+      setMessage(`Não foi possível salvar.${detail ? ` Detalhe: ${detail}` : ' Verifique sua permissão de admin.'}`);
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleDelete = async (wine: Wine) => {
-    if (!confirm(`Excluir "${wine.name}" do catalogo?`)) return;
+    if (!confirm(`Excluir "${wine.name}" do catálogo?`)) return;
 
     setMessage(null);
     const wasDeleted = await deleteWine(wine.id);
     if (!wasDeleted) {
-      setMessage('Nao foi possivel excluir. Verifique sua permissao de admin.');
+      setMessage('Não foi possível excluir. Verifique sua permissão de admin.');
       return;
     }
 
     await loadWines();
-    setMessage('Vinho excluido.');
+    setMessage('Vinho excluído.');
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center border-b border-stone-200 pb-6 flex-wrap gap-4">
-        <div>
-          <h1 className="text-3xl font-bold font-serif text-black">Catalogo de Vinhos</h1>
-          <p className="text-stone-500 mt-1 font-bold">Gerencie produtos, estoque e informacoes comerciais.</p>
-        </div>
-        <button
-          type="button"
-          onClick={openCreateForm}
-          className="bg-black text-white px-5 py-2.5 rounded-lg font-bold shadow-lg hover:bg-stone-800 transition flex items-center gap-2"
-        >
-          <span className="material-symbols-outlined text-[20px]">add</span>
-          Novo Vinho
-        </button>
+      <AdminPageHeader
+        title="Catálogo de Vinhos"
+        description="Gerencie produtos, imagens, estoque e informações comerciais."
+        actions={(
+          <button
+            type="button"
+            onClick={openCreateForm}
+            className="admin-button flex items-center gap-2 bg-black px-5 text-sm text-white shadow-sm hover:bg-stone-800"
+          >
+            <span className="material-symbols-outlined text-[20px]">add</span>
+            Novo Vinho
+          </button>
+        )}
+      />
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <AdminStatCard label="Produtos" value={summary.total} icon="wine_bar" tone="dark" />
+        <AdminStatCard label="Com imagem" value={summary.withImage} icon="image" />
+        <AdminStatCard label="Estoque baixo" value={summary.lowStock} icon="production_quantity_limits" tone="accent" />
       </div>
 
-      <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+      <div className="admin-surface flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
         <label className="relative w-full md:max-w-sm">
           <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-[20px]">search</span>
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Buscar por nome, uva, pais, regiao..."
-            className="w-full border border-stone-200 bg-white rounded-lg py-2.5 pl-10 pr-3 text-sm font-bold outline-none focus:border-black"
+            placeholder="Buscar por nome, uva, país, região..."
+            className="h-11 w-full rounded-lg border border-stone-200 bg-white pl-10 pr-3 text-sm font-bold outline-none transition focus:border-black"
           />
         </label>
         <button
           type="button"
           onClick={loadWines}
-          className="border border-stone-200 bg-white text-black px-4 py-2.5 rounded-lg font-bold hover:bg-stone-50 transition flex items-center justify-center gap-2"
+          className="admin-button flex items-center justify-center gap-2 border border-stone-200 bg-white px-4 text-sm text-black hover:bg-stone-50"
         >
           <span className="material-symbols-outlined text-[20px]">refresh</span>
           Atualizar
@@ -417,16 +436,14 @@ export default function AdminCatalogPage() {
       </div>
 
       {message && (
-        <div className="border border-stone-200 bg-white px-4 py-3 rounded-lg text-sm font-bold text-stone-700">
-          {message}
-        </div>
+        <AdminNotice>{message}</AdminNotice>
       )}
 
       {isFormOpen && (
-        <form onSubmit={handleSubmit} className="bg-white border border-stone-100 shadow-sm rounded-lg p-5 space-y-5">
+        <form onSubmit={handleSubmit} className="admin-surface space-y-5 p-5">
           <div className="flex items-center justify-between gap-4">
             <h2 className="text-lg font-bold text-black">{editingWine ? 'Editar vinho' : 'Novo vinho'}</h2>
-            <button type="button" onClick={closeForm} className="text-stone-500 hover:text-black">
+            <button type="button" onClick={closeForm} className="admin-button flex h-10 w-10 items-center justify-center text-stone-500 hover:bg-stone-100 hover:text-black" aria-label="Fechar formulário">
               <span className="material-symbols-outlined">close</span>
             </button>
           </div>
@@ -434,41 +451,41 @@ export default function AdminCatalogPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <label className="space-y-1 lg:col-span-2">
               <span className="text-xs font-bold uppercase text-stone-400">Nome</span>
-              <input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className="w-full border border-stone-200 rounded-lg p-3 text-sm font-bold outline-none focus:border-black" />
+              <input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black" />
             </label>
             <label className="space-y-1">
               <span className="text-xs font-bold uppercase text-stone-400">Preco</span>
-              <input type="number" min="0" step="0.01" value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} className="w-full border border-stone-200 rounded-lg p-3 text-sm font-bold outline-none focus:border-black" />
+              <input type="number" min="0" step="0.01" value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black" />
             </label>
             <label className="space-y-1">
-              <span className="text-xs font-bold uppercase text-stone-400">Codigo estoque</span>
+              <span className="text-xs font-bold uppercase text-stone-400">Código estoque</span>
               <input
                 value={form.product_code}
                 onBlur={(event) => syncStockFromProductCode(event.target.value, { showMessage: true })}
                 onChange={(event) => setForm({ ...form, product_code: normalizeProductCode(event.target.value) })}
-                className="w-full border border-stone-200 rounded-lg p-3 text-sm font-bold uppercase outline-none focus:border-black"
+                className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold uppercase outline-none focus:border-black"
               />
             </label>
             <label className="space-y-1">
               <span className="text-xs font-bold uppercase text-stone-400">Estoque</span>
-              <input type="number" min="0" value={form.stock} onChange={(event) => setForm({ ...form, stock: event.target.value })} className="w-full border border-stone-200 rounded-lg p-3 text-sm font-bold outline-none focus:border-black" />
+              <input type="number" min="0" value={form.stock} onChange={(event) => setForm({ ...form, stock: event.target.value })} className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black" />
               {isSyncingStock && <p className="text-xs font-bold text-stone-400">Sincronizando estoque...</p>}
             </label>
             <label className="space-y-1">
               <span className="text-xs font-bold uppercase text-stone-400">Tipo</span>
-              <input value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })} className="w-full border border-stone-200 rounded-lg p-3 text-sm font-bold outline-none focus:border-black" />
+              <input value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })} className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black" />
             </label>
             <label className="space-y-1">
-              <span className="text-xs font-bold uppercase text-stone-400">Pais</span>
-              <input value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })} className="w-full border border-stone-200 rounded-lg p-3 text-sm font-bold outline-none focus:border-black" />
+              <span className="text-xs font-bold uppercase text-stone-400">País</span>
+              <input value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })} className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black" />
             </label>
             <label className="space-y-1">
               <span className="text-xs font-bold uppercase text-stone-400">Uva</span>
-              <input value={form.grape} onChange={(event) => setForm({ ...form, grape: event.target.value })} className="w-full border border-stone-200 rounded-lg p-3 text-sm font-bold outline-none focus:border-black" />
+              <input value={form.grape} onChange={(event) => setForm({ ...form, grape: event.target.value })} className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black" />
             </label>
             <label className="space-y-1">
-              <span className="text-xs font-bold uppercase text-stone-400">Regiao</span>
-              <input value={form.region} onChange={(event) => setForm({ ...form, region: event.target.value })} className="w-full border border-stone-200 rounded-lg p-3 text-sm font-bold outline-none focus:border-black" />
+              <span className="text-xs font-bold uppercase text-stone-400">Região</span>
+              <input value={form.region} onChange={(event) => setForm({ ...form, region: event.target.value })} className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black" />
             </label>
             <div className="space-y-2 lg:col-span-2">
               <span className="text-xs font-bold uppercase text-stone-400">Imagem do produto</span>
@@ -482,7 +499,7 @@ export default function AdminCatalogPage() {
                     )}
                   </div>
                   <div className="min-w-0 flex-1 space-y-2">
-                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-black px-4 py-2.5 text-sm font-bold text-white transition hover:bg-stone-800">
+                    <label className="admin-button inline-flex cursor-pointer items-center gap-2 bg-black px-4 text-sm text-white transition hover:bg-stone-800">
                       <span className="material-symbols-outlined text-[18px]">upload</span>
                       {isUploadingImage ? 'Enviando...' : 'Subir imagem'}
                       <input
@@ -497,58 +514,104 @@ export default function AdminCatalogPage() {
                         className="hidden"
                       />
                     </label>
-                    <p className="text-xs font-bold text-stone-400">PNG, JPG, JPEG ou WebP. A URL sera preenchida automaticamente.</p>
+                    <p className="text-xs font-bold text-stone-400">PNG, JPG, JPEG ou WebP. A URL será preenchida automaticamente.</p>
                   </div>
                 </div>
                 <input
                   value={form.image_url}
                   readOnly
-                  placeholder="URL gerada automaticamente apos upload"
+                  placeholder="URL gerada automaticamente após upload"
                   className="w-full border border-stone-200 bg-stone-50 rounded-lg p-3 text-xs font-bold text-stone-500 outline-none"
                 />
               </div>
             </div>
             <label className="space-y-1 lg:col-span-2">
-              <span className="text-xs font-bold uppercase text-stone-400">Descricao</span>
-              <textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} rows={3} className="w-full border border-stone-200 rounded-lg p-3 text-sm font-bold outline-none focus:border-black resize-none" />
+              <span className="text-xs font-bold uppercase text-stone-400">Descrição</span>
+              <textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} rows={3} className="w-full resize-none rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black" />
             </label>
           </div>
 
-          <div className="flex justify-end gap-3">
-            <button type="button" onClick={closeForm} className="border border-stone-200 px-4 py-2.5 rounded-lg font-bold text-stone-600 hover:bg-stone-50">
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button type="button" onClick={closeForm} className="admin-button border border-stone-200 px-4 text-sm text-stone-600 hover:bg-stone-50">
               Cancelar
             </button>
-            <button type="submit" disabled={isSaving} className="bg-[#B91C1C] text-white px-5 py-2.5 rounded-lg font-bold hover:bg-red-800 disabled:opacity-60">
+            <button type="submit" disabled={isSaving} className="admin-button bg-[#B91C1C] px-5 text-sm text-white hover:bg-red-800 disabled:opacity-60">
               {isSaving ? 'Salvando...' : 'Salvar'}
             </button>
           </div>
         </form>
       )}
 
-      <div className="bg-white rounded-lg border border-stone-100 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+      <AdminSection title="Produtos cadastrados" icon="inventory_2">
+        {isLoading ? (
+          <AdminEmptyState icon="hourglass_top" title="Carregando catálogo..." />
+        ) : filteredWines.length === 0 ? (
+          <AdminEmptyState
+            icon="search_off"
+            title="Nenhum vinho encontrado"
+            description="Ajuste a busca ou cadastre um novo produto no catálogo."
+            action={(
+              <button type="button" onClick={openCreateForm} className="admin-button bg-black px-4 text-sm text-white hover:bg-stone-800">
+                Novo Vinho
+              </button>
+            )}
+          />
+        ) : (
+          <>
+            <div className="grid grid-cols-1 gap-3 lg:hidden">
+              {filteredWines.map((wine) => {
+                const stockStatus = getStockLinkStatus(wine, stockByCode);
+
+                return (
+                  <article key={wine.id} className="rounded-lg border border-stone-100 bg-white p-4">
+                    <div className="flex gap-3">
+                      <img src={wine.image_url || 'https://via.placeholder.com/50x150'} alt={wine.name} className="h-24 w-16 shrink-0 rounded bg-stone-50 object-contain" />
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-2 text-sm font-bold text-black">{wine.name}</p>
+                        <p className="mt-1 text-xs font-bold text-stone-400">{wine.product_code || 'Sem código'}</p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          <AdminStatusBadge tone="neutral">{[wine.type, wine.category].filter(Boolean).join(' / ') || 'Vinho'}</AdminStatusBadge>
+                          <AdminStatusBadge tone={wine.stock > 10 ? 'success' : 'danger'}>{wine.stock} un.</AdminStatusBadge>
+                        </div>
+                      </div>
+                    </div>
+                    <div className={`mt-3 flex items-start gap-2 rounded-lg px-3 py-2 text-xs font-bold ${stockStatus.className}`}>
+                      <span className="material-symbols-outlined text-[16px]">{stockStatus.icon}</span>
+                      <div>
+                        <p>{stockStatus.label}</p>
+                        <p className="opacity-70">{stockStatus.detail}</p>
+                      </div>
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <button onClick={() => openEditForm(wine)} className="admin-button flex items-center justify-center gap-2 border border-stone-200 text-sm text-stone-700 hover:bg-stone-50" type="button">
+                        <span className="material-symbols-outlined text-[18px]">edit</span>
+                        Editar
+                      </button>
+                      <button onClick={() => handleDelete(wine)} className="admin-button flex items-center justify-center gap-2 border border-red-100 text-sm text-red-700 hover:bg-red-50" type="button">
+                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                        Excluir
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+
+            <div className="hidden overflow-x-auto lg:block">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-[#FDFBF7] text-stone-500 text-xs uppercase tracking-wider border-b border-stone-100">
                 <th className="p-4 font-bold">Produto</th>
-                <th className="p-4 font-bold">Tipo / Pais</th>
+                <th className="p-4 font-bold">Tipo / País</th>
                 <th className="p-4 font-bold">Preco</th>
                 <th className="p-4 font-bold">Estoque</th>
-                <th className="p-4 font-bold">Vinculo estoque</th>
+                <th className="p-4 font-bold">Vínculo estoque</th>
                 <th className="p-4 font-bold">Status</th>
                 <th className="p-4 font-bold text-center">Acoes</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={7} className="p-8 text-center text-stone-500 font-bold">Carregando catalogo...</td>
-                </tr>
-              ) : filteredWines.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="p-8 text-center text-stone-500 font-bold">Nenhum vinho encontrado.</td>
-                </tr>
-              ) : filteredWines.map((wine) => {
+              {filteredWines.map((wine) => {
                 const stockStatus = getStockLinkStatus(wine, stockByCode);
 
                 return (
@@ -558,18 +621,16 @@ export default function AdminCatalogPage() {
                       <img src={wine.image_url || 'https://via.placeholder.com/50x150'} alt={wine.name} className="h-16 w-12 object-contain bg-stone-50 rounded" />
                       <div>
                         <p className="font-bold text-black">{wine.name}</p>
-                        <p className="text-xs text-stone-400 font-bold">{wine.product_code || 'Sem codigo'} | {wine.grape || 'Uva'} | {wine.category || 'Pais'} | {wine.region || 'Regiao'}</p>
+                        <p className="text-xs text-stone-400 font-bold">{wine.product_code || 'Sem código'} | {wine.grape || 'Uva'} | {wine.category || 'País'} | {wine.region || 'Região'}</p>
                       </div>
                     </div>
                   </td>
                   <td className="p-4">
-                    <span className="bg-stone-100 text-stone-600 px-3 py-1 rounded-full text-xs font-bold uppercase">{[wine.type, wine.category].filter(Boolean).join(' / ') || 'Vinho'}</span>
+                    <AdminStatusBadge tone="neutral">{[wine.type, wine.category].filter(Boolean).join(' / ') || 'Vinho'}</AdminStatusBadge>
                   </td>
                   <td className="p-4 font-bold text-black">R$ {wine.price.toFixed(2).replace('.', ',')}</td>
                   <td className="p-4">
-                    <span className={`px-2 py-1 rounded text-xs font-bold ${wine.stock > 10 ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'}`}>
-                      {wine.stock} un.
-                    </span>
+                    <AdminStatusBadge tone={wine.stock > 10 ? 'success' : 'danger'}>{wine.stock} un.</AdminStatusBadge>
                   </td>
                   <td className="p-4">
                     <div className={`inline-flex min-w-36 items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold ${stockStatus.className}`}>
@@ -581,17 +642,16 @@ export default function AdminCatalogPage() {
                     </div>
                   </td>
                   <td className="p-4">
-                    <span className="text-green-600 font-bold flex items-center gap-1 text-sm">
-                      <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                    <AdminStatusBadge icon="check_circle" tone="success">
                       Ativo
-                    </span>
+                    </AdminStatusBadge>
                   </td>
                   <td className="p-4">
                     <div className="flex justify-center gap-2">
-                      <button onClick={() => openEditForm(wine)} className="text-blue-500 hover:text-blue-700 p-1" title="Editar">
+                      <button onClick={() => openEditForm(wine)} className="admin-button flex h-10 w-10 items-center justify-center text-blue-500 hover:bg-blue-50 hover:text-blue-700" title="Editar" type="button">
                         <span className="material-symbols-outlined">edit</span>
                       </button>
-                      <button onClick={() => handleDelete(wine)} className="text-red-500 hover:text-red-700 p-1" title="Excluir">
+                      <button onClick={() => handleDelete(wine)} className="admin-button flex h-10 w-10 items-center justify-center text-red-500 hover:bg-red-50 hover:text-red-700" title="Excluir" type="button">
                         <span className="material-symbols-outlined">delete</span>
                       </button>
                     </div>
@@ -600,8 +660,10 @@ export default function AdminCatalogPage() {
               )})}
             </tbody>
           </table>
-        </div>
-      </div>
+            </div>
+          </>
+        )}
+      </AdminSection>
     </div>
   );
 }

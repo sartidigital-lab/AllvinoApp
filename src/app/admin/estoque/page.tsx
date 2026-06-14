@@ -2,6 +2,7 @@
 
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
+import { AdminEmptyState, AdminNotice, AdminPageHeader, AdminSection, AdminStatCard, AdminStatusBadge } from '@/components/admin/AdminPrimitives';
 import {
   fetchStockImports,
   fetchStockLevels,
@@ -122,7 +123,7 @@ export default function AdminEstoquePage() {
     ]);
 
     if (error) {
-      setMessage('Nao foi possivel carregar o estoque. Verifique sua permissao de admin.');
+      setMessage('Não foi possível carregar o estoque. Verifique sua permissão de admin.');
     }
 
     setStockLevels(nextStockLevels);
@@ -170,7 +171,7 @@ export default function AdminEstoquePage() {
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
 
       if (!sheet) {
-        setMessage('Nao encontrei uma aba valida na planilha.');
+        setMessage('Não encontrei uma aba válida na planilha.');
         return;
       }
 
@@ -178,7 +179,7 @@ export default function AdminEstoquePage() {
       const parsedRows = parseStockRows(rows);
 
       if (parsedRows.length === 0) {
-        setMessage('Nao encontrei colunas de codigo e quantidade. Use, por exemplo: Codigo do Produto e Estoque.');
+        setMessage('Não encontrei colunas de código e quantidade. Use, por exemplo: Código do Produto e Estoque.');
         return;
       }
 
@@ -186,15 +187,15 @@ export default function AdminEstoquePage() {
 
       if (error) {
         const detail = getErrorMessage(error);
-        setMessage(`Nao foi possivel importar o estoque.${detail ? ` Detalhe: ${detail}` : ''}`);
+        setMessage(`Não foi possível importar o estoque.${detail ? ` Detalhe: ${detail}` : ''}`);
         return;
       }
 
       await loadStock();
-      setMessage(`${count} codigos de estoque importados.`);
+      setMessage(`${count} códigos de estoque importados.`);
     } catch (error) {
       const detail = getErrorMessage(error);
-      setMessage(`Nao foi possivel ler o arquivo.${detail ? ` Detalhe: ${detail}` : ''}`);
+      setMessage(`Não foi possível ler o arquivo.${detail ? ` Detalhe: ${detail}` : ''}`);
     } finally {
       event.target.value = '';
       setIsImporting(false);
@@ -207,7 +208,7 @@ export default function AdminEstoquePage() {
     const quantity = Number(manualForm.quantity);
 
     if (!productCode || !Number.isFinite(quantity) || quantity < 0) {
-      setMessage('Informe codigo e quantidade validos.');
+      setMessage('Informe código e quantidade válidos.');
       return;
     }
 
@@ -221,61 +222,50 @@ export default function AdminEstoquePage() {
 
     if (error) {
       const detail = getErrorMessage(error);
-      setMessage(`Nao foi possivel salvar o codigo avulso.${detail ? ` Detalhe: ${detail}` : ''}`);
+      setMessage(`Não foi possível salvar o código avulso.${detail ? ` Detalhe: ${detail}` : ''}`);
       setIsSavingManual(false);
       return;
     }
 
     setManualForm(emptyManualForm);
     await loadStock();
-    setMessage('Codigo de estoque salvo.');
+    setMessage('Código de estoque salvo.');
     setIsSavingManual(false);
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 pb-6">
-        <div>
-          <h1 className="text-3xl font-bold font-serif text-black">Estoque</h1>
-          <p className="mt-1 text-sm font-bold text-stone-500">Atualize saldo por codigo de produto via Excel ou cadastro avulso.</p>
-        </div>
-        <label className="flex cursor-pointer items-center gap-2 rounded-lg bg-black px-5 py-2.5 text-sm font-bold text-white shadow-lg transition hover:bg-stone-800">
-          <span className="material-symbols-outlined text-[20px]">upload_file</span>
-          {isImporting ? 'Importando...' : 'Subir Excel'}
-          <input
-            type="file"
-            accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
-            disabled={isImporting}
-            onChange={handleFileUpload}
-            className="hidden"
-          />
-        </label>
-      </div>
+      <AdminPageHeader
+        title="Estoque"
+        description="Atualize saldos por código de produto via Excel, CSV ou cadastro avulso."
+        actions={(
+          <label className="admin-button flex cursor-pointer items-center gap-2 bg-black px-5 text-sm text-white shadow-sm transition hover:bg-stone-800">
+            <span className="material-symbols-outlined text-[20px]">upload_file</span>
+            {isImporting ? 'Importando...' : 'Subir Excel'}
+            <input
+              type="file"
+              accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
+              disabled={isImporting}
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+          </label>
+        )}
+      />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div className="rounded-lg bg-black p-5 text-white">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-white/60">Codigos</p>
-          <p className="mt-2 text-3xl font-bold">{summary.codes}</p>
-        </div>
-        <div className="rounded-lg border border-stone-100 bg-white p-5">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Unidades</p>
-          <p className="mt-2 text-3xl font-bold text-black">{summary.units}</p>
-        </div>
-        <div className="rounded-lg border border-stone-100 bg-white p-5">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Baixo estoque</p>
-          <p className="mt-2 text-3xl font-bold text-black">{summary.low}</p>
-        </div>
+        <AdminStatCard label="Códigos" value={summary.codes} icon="tag" tone="dark" />
+        <AdminStatCard label="Unidades" value={summary.units} icon="inventory_2" />
+        <AdminStatCard label="Baixo estoque" value={summary.low} icon="production_quantity_limits" tone="accent" />
       </div>
 
       {message && (
-        <div className="rounded-lg border border-stone-200 bg-white px-4 py-3 text-sm font-bold text-stone-700">
-          {message}
-        </div>
+        <AdminNotice>{message}</AdminNotice>
       )}
 
-      <form onSubmit={handleManualSubmit} className="grid grid-cols-1 gap-4 rounded-lg border border-stone-100 bg-white p-5 shadow-sm md:grid-cols-[minmax(0,1fr)_180px_auto] md:items-end">
+      <form onSubmit={handleManualSubmit} className="admin-surface grid grid-cols-1 gap-4 p-5 md:grid-cols-[minmax(0,1fr)_180px_auto] md:items-end">
         <label className="space-y-1">
-          <span className="text-xs font-bold uppercase text-stone-400">Codigo avulso</span>
+          <span className="text-xs font-bold uppercase text-stone-400">Código avulso</span>
           <input
             value={manualForm.product_code}
             onChange={(event) => setManualForm({ ...manualForm, product_code: event.target.value.toUpperCase() })}
@@ -296,26 +286,24 @@ export default function AdminEstoquePage() {
         <button
           type="submit"
           disabled={isSavingManual}
-          className="rounded-lg bg-[#B91C1C] px-5 py-3 text-sm font-bold text-white transition hover:bg-red-800 disabled:opacity-60"
+          className="admin-button bg-[#B91C1C] px-5 text-sm text-white transition hover:bg-red-800 disabled:opacity-60"
         >
-          {isSavingManual ? 'Salvando...' : 'Salvar codigo'}
+          {isSavingManual ? 'Salvando...' : 'Salvar código'}
         </button>
       </form>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="overflow-hidden rounded-lg border border-stone-100 bg-white shadow-sm">
-          <div className="space-y-4 border-b border-stone-100 px-5 py-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="font-bold text-black">Saldo atual por codigo</h2>
+        <AdminSection title="Saldo atual por código" icon="inventory" actions={(
               <button
                 type="button"
                 onClick={loadStock}
-                className="flex items-center gap-2 rounded-lg border border-stone-200 px-4 py-2 text-xs font-bold text-stone-600"
+                className="admin-button flex items-center gap-2 border border-stone-200 px-4 text-xs text-stone-600 hover:bg-stone-50"
               >
                 <span className="material-symbols-outlined text-[16px]">refresh</span>
                 Atualizar
               </button>
-            </div>
+            )}>
+          <div className="space-y-4">
             <label className="relative block">
               <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-stone-400">
                 search
@@ -324,16 +312,16 @@ export default function AdminEstoquePage() {
                 type="search"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Buscar por codigo ou produto"
+                placeholder="Buscar por código ou produto"
                 className="h-11 w-full rounded-lg border border-stone-200 bg-white pl-10 pr-3 text-sm font-bold text-stone-800 outline-none transition placeholder:text-stone-400 focus:border-black"
               />
             </label>
           </div>
 
           {isLoading ? (
-            <div className="p-8 text-center text-sm font-bold text-stone-400">Carregando estoque...</div>
+            <AdminEmptyState icon="hourglass_top" title="Carregando estoque..." />
           ) : filteredStock.length === 0 ? (
-            <div className="p-8 text-center text-sm font-bold text-stone-400">Nenhum saldo encontrado.</div>
+            <AdminEmptyState icon="search_off" title="Nenhum saldo encontrado" description="Ajuste a busca ou importe uma planilha de estoque." />
           ) : (
             <div className="divide-y divide-stone-100">
               {filteredStock.map((stock) => (
@@ -342,21 +330,20 @@ export default function AdminEstoquePage() {
                     <p className="text-sm font-bold text-black">{stock.product_code}</p>
                     <p className="mt-1 truncate text-xs font-bold text-stone-400">{stock.product_name || 'Sem produto vinculado'}</p>
                   </div>
-                  <span className={`w-fit rounded-full px-3 py-1 text-xs font-bold ${stock.quantity <= 5 ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>
+                  <AdminStatusBadge tone={stock.quantity <= 5 ? 'danger' : 'success'} className="w-fit">
                     {stock.quantity} un.
-                  </span>
+                  </AdminStatusBadge>
                   <p className="text-xs font-bold text-stone-400">{new Date(stock.updated_at).toLocaleString('pt-BR')}</p>
                 </div>
               ))}
             </div>
           )}
-        </div>
+        </AdminSection>
 
-        <aside className="rounded-lg border border-stone-100 bg-white p-5 shadow-sm xl:sticky xl:top-24 xl:self-start">
-          <h2 className="font-bold text-black">Ultimas importacoes</h2>
-          <div className="mt-4 space-y-3">
+        <AdminSection title="Últimas importações" icon="history">
+          <div className="space-y-3 xl:sticky xl:top-24 xl:self-start">
             {imports.length === 0 ? (
-              <p className="text-sm font-bold text-stone-400">Nenhum arquivo importado.</p>
+              <AdminEmptyState icon="upload_file" title="Nenhum arquivo importado" description="As importações recentes aparecerão aqui." />
             ) : (
               imports.map((stockImport) => (
                 <div key={stockImport.id} className="rounded-lg border border-stone-100 p-3">
@@ -367,7 +354,7 @@ export default function AdminEstoquePage() {
               ))
             )}
           </div>
-        </aside>
+        </AdminSection>
       </div>
     </div>
   );
