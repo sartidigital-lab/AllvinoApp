@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { useWines } from '@/hooks/useWines';
 import { useCart } from '@/context/CartContext';
 import { useToast } from '@/context/ToastContext';
+import { useFavorites } from '@/context/FavoritesContext';
 import { WineCardSkeleton } from '@/components/ui';
 
 const priceRanges = [
@@ -24,6 +25,7 @@ export default function CatalogoPage() {
   const { wines, isLoading, isOffline } = useWines();
   const { addToCart } = useCart();
   const { showToast } = useToast();
+  const { toggleFavorite, isFavorite } = useFavorites();
 
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState('recent');
@@ -204,16 +206,28 @@ export default function CatalogoPage() {
                       <span className="font-bold text-[#B91C1C]">
                         R$ {wine.price.toFixed(2).replace('.', ',')}
                       </span>
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if (wine.stock > 0) { addToCart(wine); showToast('Vinho adicionado ao carrinho!', 'success'); }
-                        }}
+                      <div className="flex gap-1.5">
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            toggleFavorite(wine);
+                            showToast(isFavorite(wine.id) ? 'Removido dos favoritos' : 'Adicionado aos favoritos', 'info');
+                          }}
+                          className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center hover:bg-red-50 transition"
+                        >
+                          <span className={`material-symbols-outlined text-[16px] ${isFavorite(wine.id) ? 'text-[#B91C1C]' : 'text-stone-300'}`}>favorite</span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (wine.stock > 0) { addToCart(wine); showToast('Vinho adicionado ao carrinho!', 'success'); }
+                          }}
                         disabled={wine.stock === 0}
                         className="w-9 h-9 bg-[#B91C1C] text-white rounded-full flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#991B1B] transition"
                       >
                         <span className="material-symbols-outlined text-[18px]">add</span>
                       </button>
+                      </div>
                     </div>
                   </div>
                 </a>

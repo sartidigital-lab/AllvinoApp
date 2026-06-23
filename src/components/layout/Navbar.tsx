@@ -7,13 +7,14 @@ export function Navbar() {
   const pathname = usePathname();
 
   const navItems = [
-    { href: '/', icon: 'home', label: 'Início', match: pathname === '/' },
-    { href: '/catalogo', icon: 'apps', label: 'Catálogo', match: pathname?.startsWith('/catalogo') },
+    { href: '/', icon: 'home', label: 'Inicio', match: pathname === '/' },
+    { href: '/catalogo', icon: 'apps', label: 'Catalogo', match: pathname?.startsWith('/catalogo') },
+    { href: '/favoritos', icon: 'favorite', label: 'Favoritos', match: pathname?.startsWith('/favoritos') },
     { href: '/conta', icon: 'person', label: 'Conta', match: pathname?.startsWith('/conta') },
   ];
 
   return (
-    <nav className="bg-white/90 backdrop-blur-md fixed bottom-0 left-0 w-full z-40 rounded-t-2xl border-t border-stone-100 shadow-[0_-10px_30px_rgba(0,0,0,0.04)] flex justify-around items-center px-6 pb-6 pt-3">
+    <nav className="bg-white/90 backdrop-blur-md fixed bottom-0 left-0 w-full z-40 rounded-t-2xl border-t border-stone-100 shadow-[0_-10px_30px_rgba(0,0,0,0.04)] flex justify-around items-center px-4 pb-6 pt-3">
       {navItems.map((item) => (
         <Link
           key={item.href}
@@ -23,7 +24,7 @@ export function Navbar() {
           }`}
         >
           <span className="material-symbols-outlined mb-1">{item.icon}</span>
-          <span className="text-[10px] uppercase tracking-tighter mt-1">{item.label}</span>
+          <span className="text-[9px] uppercase tracking-tighter mt-1">{item.label}</span>
         </Link>
       ))}
     </nav>
