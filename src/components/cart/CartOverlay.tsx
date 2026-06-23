@@ -3,6 +3,7 @@
 import { useCart } from '@/context/CartContext';
 import Link from 'next/link';
 import { useState } from 'react';
+import { IconButton, Button, Checkbox } from '@/components/ui';
 
 export function CartOverlay() {
   const { cart, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, cartTotal } = useCart();
@@ -25,12 +26,11 @@ export function CartOverlay() {
       <div className="relative w-full max-w-md h-full bg-white flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
         <div className="p-6 border-b flex justify-between items-center">
           <h2 className="text-xl font-bold">Sua Seleção</h2>
-          <button 
-            onClick={() => setIsCartOpen(false)} 
-            className="p-2 hover:bg-stone-100 rounded-full transition"
-          >
-            <span className="material-symbols-outlined">close</span>
-          </button>
+          <IconButton
+            icon={<span className="material-symbols-outlined">close</span>}
+            aria-label="Fechar carrinho"
+            onClick={() => setIsCartOpen(false)}
+          />
         </div>
         
         <div className="flex-1 overflow-y-auto p-6 space-y-4 no-scrollbar">
@@ -79,18 +79,12 @@ export function CartOverlay() {
         
         {cart.length > 0 && (
           <div className="p-6 bg-stone-50 border-t space-y-4">
-            <label className="flex items-center justify-between p-4 bg-white rounded-2xl border border-stone-200 cursor-pointer hover:border-black transition">
-              <div className="flex items-center gap-3">
-                <input 
-                  type="checkbox" 
-                  checked={retirada}
-                  onChange={(e) => setRetirada(e.target.checked)}
-                  className="text-[#B91C1C] rounded focus:ring-0 w-5 h-5"
-                /> 
-                <span className="font-bold text-sm">Retirada na Loja</span>
-              </div>
-              <span className="text-xs font-bold text-green-600">-10% OFF</span>
-            </label>
+            <Checkbox
+              label="Retirada na Loja"
+              description="Ganhe 10% de desconto"
+              checked={retirada}
+              onChange={(e) => setRetirada(e.target.checked)}
+            />
             
             <div className="flex justify-between text-xl font-bold">
               <span>Total</span> 
@@ -100,9 +94,11 @@ export function CartOverlay() {
             <Link 
               href="/checkout" 
               onClick={() => setIsCartOpen(false)}
-              className="w-full block text-center bg-[#B91C1C] text-white py-4 rounded-2xl font-bold shadow-lg shadow-red-900/20 hover:scale-[1.02] active:scale-95 transition"
+              className="w-full block"
             >
-              Ir para Pagamento
+              <Button variant="primary" size="lg" className="w-full">
+                Ir para Pagamento
+              </Button>
             </Link>
           </div>
         )}

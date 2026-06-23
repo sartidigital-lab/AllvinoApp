@@ -1,0 +1,66 @@
+/* ============================================
+   Allvino Design Tokens
+   Centralized design system tokens for CSS
+   ============================================ */
+
+:root {
+  /* ---- Brand Colors ---- */
+  --color-primary: #B91C1C;
+  --color-primary-hover: #991B1B;
+  --color-primary-light: #FEE2E2;
+  --color-primary-dark: #7F1D1D;
+
+  /* ---- Neutral Colors ---- */
+  --color-bg: #FDFBF7;
+  --color-surface: #FFFFFF;
+  --color-surface-elevated: #F9F7F4;
+  --color-border: #E7E5E4;
+  --color-border-light: #F5F5F4;
+  --color-muted: #78716C;
+  --color-ink: #1C1917;
+  --color-ink-light: #57534E;
+
+  /* ---- Semantic Colors ---- */
+  --color-success: #16A34A;
+  --color-success-bg: #F0FDF4;
+  --color-warning: #D97706;
+  --color-warning-bg: #FFFBEB;
+  --color-danger: #DC2626;
+  --color-danger-bg: #FEF2F2;
+  --color-info: #2563EB;
+  --color-info-bg: #EFF6FF;
+
+  /* ---- Typography ---- */
+  --font-sans: 'Manrope', sans-serif;
+  --font-serif: 'Noto Serif', serif;
+
+  /* ---- Spacing Scale ---- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  /* ---- Border Radius ---- */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-full: 9999px;
+
+  /* ---- Shadows ---- */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+
+  /* ---- Transitions ---- */
+  --transition-fast: 150ms ease;
+  --transition-normal: 200ms ease;
+  --transition-slow: 300ms ease;
+}

@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,300;0,700&family=Manrope:wght@400;700&display=swap');
 @import "tailwindcss";
+@import "../styles/tokens.css";
 
 @theme {
   --font-serif: "Noto Serif", serif;
@@ -8,8 +9,8 @@
 }
 
 body {
-  background-color: #FDFBF7;
-  font-family: 'Manrope', sans-serif;
+  background-color: var(--color-bg);
+  font-family: var(--font-sans);
 }
 
 body:has(.admin-shell) {
@@ -22,7 +23,7 @@ body:has(.admin-shell) {
   --admin-border: #E7E1D8;
   --admin-muted: #756F66;
   --admin-ink: #111111;
-  --admin-accent: #B91C1C;
+  --admin-accent: var(--color-primary);
 }
 
 .material-symbols-outlined { 
