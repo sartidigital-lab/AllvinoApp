@@ -1,5 +1,6 @@
 import { AppChrome } from '../components/layout/AppChrome';
 import { CartProvider } from '../context/CartContext';
+import { ToastProvider } from '../context/ToastContext';
 import './globals.css';
 
 export const metadata = {
@@ -27,10 +28,12 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,300;0,700&family=Manrope:wght@400;700&display=swap" rel="stylesheet" />
       </head>
       <body className="pb-24">
-        <CartProvider>
-          <AppChrome />
-          {children}
-        </CartProvider>
+        <ToastProvider>
+          <CartProvider>
+            <AppChrome />
+            {children}
+          </CartProvider>
+        </ToastProvider>
       </body>
     </html>
   );

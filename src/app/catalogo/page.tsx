@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { useWines } from '@/hooks/useWines';
 import { useCart } from '@/context/CartContext';
+import { useToast } from '@/context/ToastContext';
 import { WineCardSkeleton } from '@/components/ui';
 
 const priceRanges = [
@@ -22,6 +23,7 @@ function getStockStatus(stock: number) {
 export default function CatalogoPage() {
   const { wines, isLoading, isOffline } = useWines();
   const { addToCart } = useCart();
+  const { showToast } = useToast();
 
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState('recent');
@@ -205,7 +207,7 @@ export default function CatalogoPage() {
                       <button
                         onClick={(e) => {
                           e.preventDefault();
-                          if (wine.stock > 0) addToCart(wine);
+                          if (wine.stock > 0) { addToCart(wine); showToast('Vinho adicionado ao carrinho!', 'success'); }
                         }}
                         disabled={wine.stock === 0}
                         className="w-9 h-9 bg-[#B91C1C] text-white rounded-full flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#991B1B] transition"

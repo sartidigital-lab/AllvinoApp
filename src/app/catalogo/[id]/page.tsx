@@ -3,6 +3,7 @@
 import { Suspense } from 'react';
 import { useWine, useWines } from '@/hooks/useWines';
 import { useCart } from '@/context/CartContext';
+import { useToast } from '@/context/ToastContext';
 import { WineDetailSkeleton } from '@/components/ui';
 import { useParams } from 'next/navigation';
 
@@ -34,6 +35,7 @@ export default function WineDetailPage() {
   const { wine, isLoading, error } = useWine(id);
   const { wines } = useWines();
   const { addToCart } = useCart();
+  const { showToast } = useToast();
 
   if (isLoading) return <WineDetailSkeleton />;
 
@@ -112,7 +114,7 @@ export default function WineDetailPage() {
             </div>
 
             <button
-              onClick={() => addToCart(wine)}
+              onClick={() => { addToCart(wine); showToast('Vinho adicionado ao carrinho!', 'success'); }}
               disabled={wine.stock === 0}
               className="w-full bg-[#B91C1C] text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-red-900/20 hover:scale-[1.02] active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
