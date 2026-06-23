@@ -1,358 +1,320 @@
 "use client";
 
-import { useMemo, useState } from 'react';
-import Link from 'next/link';
+import { useState, useMemo } from 'react';
 import { useWines } from '@/hooks/useWines';
 import { useCart } from '@/context/CartContext';
+import { WineCardSkeleton } from '@/components/ui';
 
-type PriceRange = {
-  label: string;
-  min: number;
-  max: number;
-};
-
-type SortOrder = 'recent' | 'name' | 'price-asc' | 'price-desc';
-
-const priceRanges: PriceRange[] = [
-  { label: 'Ate R$ 40', min: 0, max: 40 },
-  { label: 'R$ 40 a R$ 100', min: 40.01, max: 100 },
-  { label: 'R$ 100 a R$ 500', min: 100.01, max: 500 },
-  { label: 'R$ 500 a R$ 1.000', min: 500.01, max: 1000 },
-  { label: 'Acima de R$ 1.000', min: 1000.01, max: Number.POSITIVE_INFINITY },
+const priceRanges = [
+  { label: 'Até R$50', min: 0, max: 50 },
+  { label: 'R$50 - R$100', min: 50, max: 100 },
+  { label: 'R$100 - R$200', min: 100, max: 200 },
+  { label: 'R$200 - R$500', min: 200, max: 500 },
+  { label: 'Acima de R$500', min: 500, max: Infinity },
 ];
 
-function uniqueSorted(values: Array<string | null>) {
-  return Array.from(new Set(values.map((value) => value?.trim()).filter(Boolean) as string[])).sort((a, b) =>
-    a.localeCompare(b, 'pt-BR')
-  );
-}
-
 function getStockStatus(stock: number) {
-  if (stock <= 0) {
-    return {
-      label: 'Esgotado',
-      className: 'bg-red-50 text-red-700',
-    };
-  }
-
-  if (stock <= 5) {
-    return {
-      label: `Ultimas ${stock} un.`,
-      className: 'bg-amber-50 text-amber-700',
-    };
-  }
-
-  return {
-    label: `${stock} un. disponiveis`,
-    className: 'bg-emerald-50 text-emerald-700',
-  };
+  if (stock === 0) return { label: 'Esgotado', color: 'bg-red-100 text-red-700', icon: 'block' };
+  if (stock <= 5) return { label: `Últimas ${stock} un.`, color: 'bg-amber-100 text-amber-700', icon: 'warning' };
+  return { label: `${stock} un.`, color: 'bg-emerald-100 text-emerald-700', icon: 'check_circle' };
 }
 
 export default function CatalogoPage() {
   const { wines, isLoading, isOffline } = useWines();
   const { addToCart } = useCart();
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [selectedPrice, setSelectedPrice] = useState<PriceRange | null>(null);
-  const [selectedType, setSelectedType] = useState<string | null>(null);
-  const [selectedGrape, setSelectedGrape] = useState<string | null>(null);
-  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('recent');
 
-  const types = useMemo(() => uniqueSorted(wines.map((wine) => wine.type)), [wines]);
-  const grapes = useMemo(() => uniqueSorted(wines.map((wine) => wine.grape)), [wines]);
-  const countries = useMemo(() => uniqueSorted(wines.map((wine) => wine.category)), [wines]);
+  const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState('recent');
+  const [selectedPrice, setSelectedPrice] = useState<number | null>(null);
+  const [selectedType, setSelectedType] = useState('');
+  const [selectedGrape, setSelectedGrape] = useState('');
+  const [selectedRegion, setSelectedRegion] = useState('');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  const types = useMemo(() => [...new Set(wines.map((w) => w.type).filter(Boolean))], [wines]);
+  const grapes = useMemo(() => [...new Set(wines.map((w) => w.grape).filter(Boolean))], [wines]);
+  const regions = useMemo(() => [...new Set(wines.map((w) => w.region).filter(Boolean))], [wines]);
 
   const filteredWines = useMemo(() => {
-    const normalizedSearch = searchTerm.trim().toLowerCase();
+    let result = [...wines];
 
-    return wines.filter((wine) => {
-      const matchesPrice = !selectedPrice || (wine.price >= selectedPrice.min && wine.price <= selectedPrice.max);
-      const matchesType = !selectedType || wine.type === selectedType;
-      const matchesGrape = !selectedGrape || wine.grape === selectedGrape;
-      const matchesCountry = !selectedCountry || wine.category === selectedCountry;
-      const searchableText = [wine.name, wine.type, wine.grape, wine.region, wine.category]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-      const matchesSearch = !normalizedSearch || searchableText.includes(normalizedSearch);
+    if (search) {
+      const q = search.toLowerCase();
+      result = result.filter(
+        (w) =>
+          w.name.toLowerCase().includes(q) ||
+          w.grape?.toLowerCase().includes(q) ||
+          w.region?.toLowerCase().includes(q) ||
+          w.type?.toLowerCase().includes(q)
+      );
+    }
 
-      return matchesPrice && matchesType && matchesGrape && matchesCountry && matchesSearch;
-    }).sort((firstWine, secondWine) => {
-      if (sortOrder === 'name') {
-        return firstWine.name.localeCompare(secondWine.name, 'pt-BR');
-      }
+    if (selectedPrice !== null) {
+      const range = priceRanges[selectedPrice];
+      result = result.filter((w) => w.price >= range.min && w.price < range.max);
+    }
 
-      if (sortOrder === 'price-asc') {
-        return firstWine.price - secondWine.price;
-      }
+    if (selectedType) result = result.filter((w) => w.type === selectedType);
+    if (selectedGrape) result = result.filter((w) => w.grape === selectedGrape);
+    if (selectedRegion) result = result.filter((w) => w.region === selectedRegion);
 
-      if (sortOrder === 'price-desc') {
-        return secondWine.price - firstWine.price;
-      }
+    if (sortBy === 'name') result.sort((a, b) => a.name.localeCompare(b.name));
+    else if (sortBy === 'price-asc') result.sort((a, b) => a.price - b.price);
+    else if (sortBy === 'price-desc') result.sort((a, b) => b.price - a.price);
+    else result.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
 
-      return new Date(secondWine.created_at).getTime() - new Date(firstWine.created_at).getTime();
-    });
-  }, [wines, selectedPrice, selectedType, selectedGrape, selectedCountry, searchTerm, sortOrder]);
+    return result;
+  }, [wines, search, sortBy, selectedPrice, selectedType, selectedGrape, selectedRegion]);
 
-  const activeFilterCount =
-    [selectedPrice, selectedType, selectedGrape, selectedCountry].filter(Boolean).length +
-    (searchTerm.trim() ? 1 : 0);
+  const activeFilterCount = [selectedPrice !== null, selectedType, selectedGrape, selectedRegion, search].filter(Boolean).length;
 
   const clearFilters = () => {
+    setSearch('');
     setSelectedPrice(null);
-    setSelectedType(null);
-    setSelectedGrape(null);
-    setSelectedCountry(null);
-    setSearchTerm('');
-    setSortOrder('recent');
+    setSelectedType('');
+    setSelectedGrape('');
+    setSelectedRegion('');
   };
 
-  const filterButtonClass = (isSelected: boolean) =>
-    `rounded-xl border px-4 py-3 text-left text-sm font-bold transition ${
-      isSelected ? 'border-black bg-black text-white' : 'border-stone-200 bg-white text-stone-700 hover:border-black'
-    }`;
-
   return (
-    <main className="max-w-4xl mx-auto px-5 pt-6 pb-24">
-      <div className="flex justify-between items-end mb-6">
-        <div className="flex items-center gap-4">
-          <h1 className="text-3xl font-bold font-serif" id="titulo-pagina">Catalogo</h1>
+    <main className="min-h-screen bg-[#FDFBF7] pb-24">
+      {/* Header */}
+      <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-stone-100">
+        <div className="flex items-center justify-between px-4 py-3">
+          <h1 className="font-serif text-xl font-bold">Catálogo</h1>
           {isOffline && (
-            <span className="text-xs font-bold bg-amber-100 text-amber-800 px-2 py-1 rounded">Modo Offline</span>
+            <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-1 rounded-full">Modo Offline</span>
           )}
-        </div>
-        <button
-          type="button"
-          onClick={() => setIsFilterOpen(true)}
-          className="relative flex h-11 w-11 items-center justify-center rounded-full border border-stone-200 bg-white text-black shadow-sm transition hover:border-black"
-          aria-label="Abrir filtros"
-        >
-          <span className="material-symbols-outlined text-[22px]">tune</span>
-          {activeFilterCount > 0 && (
-            <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#B91C1C] text-[10px] font-bold text-white">
-              {activeFilterCount}
-            </span>
-          )}
-        </button>
-      </div>
-
-      <div className="mb-5 grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
-        <label className="relative block">
-          <span className="material-symbols-outlined pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[22px] text-stone-400">
-            search
-          </span>
-          <input
-            type="search"
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="Buscar por nome, uva, pais ou tipo"
-            className="h-12 w-full rounded-2xl border border-stone-200 bg-white pl-12 pr-4 text-sm font-bold text-stone-800 shadow-sm outline-none transition placeholder:text-stone-400 focus:border-black"
-            aria-label="Buscar vinhos"
-          />
-        </label>
-
-        <label className="relative block">
-          <span className="material-symbols-outlined pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[22px] text-stone-400">
-            sort
-          </span>
-          <select
-            value={sortOrder}
-            onChange={(event) => setSortOrder(event.target.value as SortOrder)}
-            className="h-12 w-full appearance-none rounded-2xl border border-stone-200 bg-white pl-12 pr-10 text-sm font-bold text-stone-800 shadow-sm outline-none transition focus:border-black"
-            aria-label="Ordenar catalogo"
+          <button
+            onClick={() => setIsFilterOpen(true)}
+            className="relative p-2 hover:bg-stone-100 rounded-full transition"
           >
-            <option value="recent">Mais recentes</option>
-            <option value="name">Nome A-Z</option>
-            <option value="price-asc">Menor preco</option>
-            <option value="price-desc">Maior preco</option>
+            <span className="material-symbols-outlined">tune</span>
+            {activeFilterCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-[#B91C1C] text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Search & Sort */}
+        <div className="px-4 pb-3 flex gap-2">
+          <div className="flex-1 relative">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-[18px]">search</span>
+            <input
+              type="text"
+              placeholder="Buscar vinho, uva, país..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-3 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#B91C1C] focus:border-transparent"
+            />
+          </div>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#B91C1C]"
+          >
+            <option value="recent">Recentes</option>
+            <option value="name">Nome</option>
+            <option value="price-asc">Menor preço</option>
+            <option value="price-desc">Maior preço</option>
           </select>
-          <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[20px] text-stone-400">
-            expand_more
-          </span>
-        </label>
+        </div>
       </div>
 
+      {/* Active Filters */}
       {activeFilterCount > 0 && (
-        <div className="mb-5 flex flex-wrap items-center gap-2">
-          {searchTerm.trim() && (
-            <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-bold text-stone-600">
-              Busca: {searchTerm.trim()}
+        <div className="px-4 py-2 flex flex-wrap gap-2">
+          {selectedPrice !== null && (
+            <span className="inline-flex items-center gap-1 bg-[#B91C1C]/10 text-[#B91C1C] text-xs font-bold px-2.5 py-1 rounded-full">
+              {priceRanges[selectedPrice].label}
+              <button onClick={() => setSelectedPrice(null)} className="ml-1">×</button>
             </span>
           )}
-          {selectedPrice && <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-bold text-stone-600">{selectedPrice.label}</span>}
-          {selectedType && <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-bold text-stone-600">{selectedType}</span>}
-          {selectedGrape && <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-bold text-stone-600">{selectedGrape}</span>}
-          {selectedCountry && <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-bold text-stone-600">{selectedCountry}</span>}
-          <button type="button" onClick={clearFilters} className="text-xs font-bold text-[#B91C1C] underline">
+          {selectedType && (
+            <span className="inline-flex items-center gap-1 bg-[#B91C1C]/10 text-[#B91C1C] text-xs font-bold px-2.5 py-1 rounded-full">
+              {selectedType}
+              <button onClick={() => setSelectedType('')} className="ml-1">×</button>
+            </span>
+          )}
+          {selectedGrape && (
+            <span className="inline-flex items-center gap-1 bg-[#B91C1C]/10 text-[#B91C1C] text-xs font-bold px-2.5 py-1 rounded-full">
+              {selectedGrape}
+              <button onClick={() => setSelectedGrape('')} className="ml-1">×</button>
+            </span>
+          )}
+          {selectedRegion && (
+            <span className="inline-flex items-center gap-1 bg-[#B91C1C]/10 text-[#B91C1C] text-xs font-bold px-2.5 py-1 rounded-full">
+              {selectedRegion}
+              <button onClick={() => setSelectedRegion('')} className="ml-1">×</button>
+            </span>
+          )}
+          <button onClick={clearFilters} className="text-xs font-bold text-stone-400 hover:text-[#B91C1C]">
             Limpar filtros
           </button>
         </div>
       )}
 
-      {isLoading ? (
-        <p className="text-center py-12 animate-pulse font-bold text-stone-400">CARREGANDO ADEGA...</p>
-      ) : filteredWines.length === 0 ? (
-        <p className="text-center text-stone-400 font-bold py-12">Nenhum vinho encontrado.</p>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
-          {filteredWines.map((wine) => {
-            const stockStatus = getStockStatus(wine.stock);
-            const isOutOfStock = wine.stock <= 0;
+      {/* Content */}
+      <div className="px-4 pt-4">
+        {isLoading ? (
+          <div className="grid grid-cols-2 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <WineCardSkeleton key={i} />
+            ))}
+          </div>
+        ) : filteredWines.length === 0 ? (
+          <div className="text-center py-16">
+            <span className="material-symbols-outlined text-[48px] text-stone-200">wine_bar</span>
+            <p className="mt-4 font-bold text-stone-400">Nenhum vinho encontrado.</p>
+            {activeFilterCount > 0 && (
+              <button onClick={clearFilters} className="mt-2 text-sm font-bold text-[#B91C1C]">
+                Limpar filtros
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-4">
+            {filteredWines.map((wine) => {
+              const stock = getStockStatus(wine.stock);
+              return (
+                <a
+                  key={wine.id}
+                  href={`/catalogo/${wine.id}`}
+                  className="bg-white rounded-2xl border border-stone-100 overflow-hidden active:scale-[0.98] transition-transform"
+                >
+                  <div className="relative">
+                    <img
+                      src={wine.image_url || 'https://via.placeholder.com/300x400'}
+                      alt={wine.name}
+                      className="w-full h-48 object-contain mix-blend-multiply p-4"
+                    />
+                    <span className={`absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${stock.color}`}>
+                      <span className="material-symbols-outlined text-[12px] mr-0.5 align-middle">{stock.icon}</span>
+                      {stock.label}
+                    </span>
+                  </div>
+                  <div className="p-3">
+                    <p className="text-[10px] font-bold text-stone-400 uppercase">{wine.type || wine.region}</p>
+                    <p className="font-bold text-sm line-clamp-2 mt-0.5">{wine.name}</p>
+                    <div className="flex justify-between items-center mt-2">
+                      <span className="font-bold text-[#B91C1C]">
+                        R$ {wine.price.toFixed(2).replace('.', ',')}
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (wine.stock > 0) addToCart(wine);
+                        }}
+                        disabled={wine.stock === 0}
+                        className="w-9 h-9 bg-[#B91C1C] text-white rounded-full flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#991B1B] transition"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">add</span>
+                      </button>
+                    </div>
+                  </div>
+                </a>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
-            return (
-            <div key={wine.id} className="bg-white p-4 rounded-3xl shadow-sm border border-stone-100 flex flex-col h-full hover:shadow-md transition-shadow">
-              <Link href={`/catalogo/${wine.id}`} className="block h-full flex flex-col">
-                <div className="aspect-[3/4] bg-stone-50 rounded-2xl flex items-center justify-center p-6 mb-4 relative overflow-hidden group">
-                  <span className={`absolute left-3 top-3 z-10 rounded-full px-3 py-1 text-[11px] font-bold ${stockStatus.className}`}>
-                    {stockStatus.label}
-                  </span>
-                  <img
-                    src={wine.image_url || 'https://via.placeholder.com/300x400?text=Sem+Imagem'}
-                    alt={wine.name}
-                    className="h-full w-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500"
-                  />
-                </div>
-                <h3 className="font-bold text-xl line-clamp-2">{wine.name}</h3>
-                <p className="text-xs text-stone-400 font-bold uppercase tracking-widest mt-1">
-                  {[wine.category, wine.region].filter(Boolean).join(' - ') || 'Vinho'}
-                </p>
-                <div className="flex justify-between items-end mt-auto pt-5">
-                  <span className="text-2xl font-bold">R$ {wine.price.toFixed(2).replace('.', ',')}</span>
-                  <button
-                    type="button"
-                    disabled={isOutOfStock}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      if (isOutOfStock) return;
-                      addToCart(wine);
-                    }}
-                    className="bg-black text-white p-3 rounded-2xl flex items-center justify-center hover:bg-stone-800 transition active:scale-90 disabled:cursor-not-allowed disabled:bg-stone-200 disabled:text-stone-400"
-                    aria-label={isOutOfStock ? 'Produto esgotado' : 'Adicionar ao carrinho'}
-                  >
-                    <span className="material-symbols-outlined">{isOutOfStock ? 'block' : 'add_shopping_cart'}</span>
-                  </button>
-                </div>
-              </Link>
-            </div>
-          )})}
-        </div>
-      )}
-
+      {/* Filter Sidebar */}
       {isFilterOpen && (
-        <div className="fixed inset-0 z-[70] flex">
+        <div className="fixed inset-0 z-50 flex justify-end">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsFilterOpen(false)} />
-          <aside className="relative flex h-full w-full max-w-[88%] flex-col bg-white shadow-2xl sm:max-w-sm">
-            <div className="flex items-center justify-between border-b border-stone-100 bg-[#FDFBF7] p-5">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-black">tune</span>
-                <h2 className="text-xl font-bold font-serif text-black">Filtros</h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsFilterOpen(false)}
-                className="flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-stone-200"
-                aria-label="Fechar filtros"
-              >
-                <span className="material-symbols-outlined text-black">close</span>
+          <div className="relative w-full max-w-sm h-full bg-white shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col">
+            <div className="p-5 border-b flex justify-between items-center">
+              <h2 className="font-bold text-lg">Filtros</h2>
+              <button onClick={() => setIsFilterOpen(false)} className="p-2 hover:bg-stone-100 rounded-full">
+                <span className="material-symbols-outlined">close</span>
               </button>
             </div>
-
-            <div className="flex-1 space-y-8 overflow-y-auto p-5 pb-28">
-              <section>
-                <h3 className="mb-4 text-xs font-bold uppercase tracking-widest text-stone-400">Faixa de preco</h3>
-                <div className="grid grid-cols-1 gap-2">
-                  {priceRanges.map((range) => (
+            <div className="flex-1 overflow-y-auto p-5 space-y-6">
+              <div>
+                <p className="text-xs font-bold text-stone-400 uppercase mb-3">Faixa de Preco</p>
+                <div className="flex flex-wrap gap-2">
+                  {priceRanges.map((range, i) => (
                     <button
-                      key={range.label}
-                      type="button"
-                      onClick={() => setSelectedPrice(selectedPrice?.label === range.label ? null : range)}
-                      className={filterButtonClass(selectedPrice?.label === range.label)}
+                      key={i}
+                      onClick={() => setSelectedPrice(selectedPrice === i ? null : i)}
+                      className={`px-3 py-2 rounded-xl text-xs font-bold border transition ${
+                        selectedPrice === i
+                          ? 'bg-[#B91C1C] text-white border-[#B91C1C]'
+                          : 'bg-white text-stone-600 border-stone-200 hover:border-[#B91C1C]'
+                      }`}
                     >
                       {range.label}
                     </button>
                   ))}
                 </div>
-              </section>
-
-              <section>
-                <h3 className="mb-4 text-xs font-bold uppercase tracking-widest text-stone-400">Tipo de vinho</h3>
+              </div>
+              <div>
+                <p className="text-xs font-bold text-stone-400 uppercase mb-3">Tipo</p>
                 <div className="flex flex-wrap gap-2">
-                  {types.length === 0 ? (
-                    <p className="text-sm font-bold text-stone-400">Nenhum tipo disponivel.</p>
-                  ) : (
-                    types.map((type) => (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() => setSelectedType(selectedType === type ? null : type)}
-                        className={filterButtonClass(selectedType === type)}
-                      >
-                        {type}
-                      </button>
-                    ))
-                  )}
+                  {types.map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => setSelectedType(selectedType === type ? '' : type)}
+                      className={`px-3 py-2 rounded-xl text-xs font-bold border transition ${
+                        selectedType === type
+                          ? 'bg-[#B91C1C] text-white border-[#B91C1C]'
+                          : 'bg-white text-stone-600 border-stone-200 hover:border-[#B91C1C]'
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
                 </div>
-              </section>
-
-              <section>
-                <h3 className="mb-4 text-xs font-bold uppercase tracking-widest text-stone-400">Tipo de uva</h3>
+              </div>
+              <div>
+                <p className="text-xs font-bold text-stone-400 uppercase mb-3">Uva</p>
                 <div className="flex flex-wrap gap-2">
-                  {grapes.length === 0 ? (
-                    <p className="text-sm font-bold text-stone-400">Nenhuma uva disponivel.</p>
-                  ) : (
-                    grapes.map((grape) => (
-                      <button
-                        key={grape}
-                        type="button"
-                        onClick={() => setSelectedGrape(selectedGrape === grape ? null : grape)}
-                        className={filterButtonClass(selectedGrape === grape)}
-                      >
-                        {grape}
-                      </button>
-                    ))
-                  )}
+                  {grapes.map((grape) => (
+                    <button
+                      key={grape}
+                      onClick={() => setSelectedGrape(selectedGrape === grape ? '' : grape)}
+                      className={`px-3 py-2 rounded-xl text-xs font-bold border transition ${
+                        selectedGrape === grape
+                          ? 'bg-[#B91C1C] text-white border-[#B91C1C]'
+                          : 'bg-white text-stone-600 border-stone-200 hover:border-[#B91C1C]'
+                      }`}
+                    >
+                      {grape}
+                    </button>
+                  ))}
                 </div>
-              </section>
-
-              <section>
-                <h3 className="mb-4 text-xs font-bold uppercase tracking-widest text-stone-400">Pais</h3>
+              </div>
+              <div>
+                <p className="text-xs font-bold text-stone-400 uppercase mb-3">Pais</p>
                 <div className="flex flex-wrap gap-2">
-                  {countries.length === 0 ? (
-                    <p className="text-sm font-bold text-stone-400">Nenhum pais disponivel.</p>
-                  ) : (
-                    countries.map((country) => (
-                      <button
-                        key={country}
-                        type="button"
-                        onClick={() => setSelectedCountry(selectedCountry === country ? null : country)}
-                        className={filterButtonClass(selectedCountry === country)}
-                      >
-                        {country}
-                      </button>
-                    ))
-                  )}
+                  {regions.map((region) => (
+                    <button
+                      key={region}
+                      onClick={() => setSelectedRegion(selectedRegion === region ? '' : region)}
+                      className={`px-3 py-2 rounded-xl text-xs font-bold border transition ${
+                        selectedRegion === region
+                          ? 'bg-[#B91C1C] text-white border-[#B91C1C]'
+                          : 'bg-white text-stone-600 border-stone-200 hover:border-[#B91C1C]'
+                      }`}
+                    >
+                      {region}
+                    </button>
+                  ))}
                 </div>
-              </section>
+              </div>
             </div>
-
-            <div className="absolute bottom-0 left-0 right-0 flex gap-3 border-t border-stone-100 bg-white p-5">
+            <div className="p-5 border-t">
               <button
-                type="button"
-                onClick={clearFilters}
-                className="flex-1 rounded-2xl border border-stone-200 py-3 text-sm font-bold text-stone-600 transition hover:border-black"
-              >
-                Limpar
-              </button>
-              <button
-                type="button"
                 onClick={() => setIsFilterOpen(false)}
-                className="flex-1 rounded-2xl bg-[#B91C1C] py-3 text-sm font-bold text-white transition hover:bg-red-800"
+                className="w-full bg-[#B91C1C] text-white py-3 rounded-xl font-bold"
               >
-                Ver {filteredWines.length} vinhos
+                Aplicar Filtros
               </button>
             </div>
-          </aside>
+          </div>
         </div>
       )}
     </main>

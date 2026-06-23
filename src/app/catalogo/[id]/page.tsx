@@ -1,235 +1,150 @@
 "use client";
 
-import { useMemo, useState, use } from 'react';
-import Link from 'next/link';
+import { Suspense } from 'react';
 import { useWine, useWines } from '@/hooks/useWines';
 import { useCart } from '@/context/CartContext';
+import { WineDetailSkeleton } from '@/components/ui';
+import { useParams } from 'next/navigation';
 
 function formatMoney(value: number) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
 function getStockStatus(stock: number) {
-  if (stock <= 0) {
-    return {
-      label: 'Esgotado',
-      description: 'Este rotulo esta temporariamente indisponivel.',
-      className: 'border-red-100 bg-red-50 text-red-700',
-      icon: 'block',
-    };
-  }
-
-  if (stock <= 5) {
-    return {
-      label: `Ultimas ${stock} unidades`,
-      description: 'Baixo estoque disponivel para compra.',
-      className: 'border-amber-100 bg-amber-50 text-amber-700',
-      icon: 'inventory_2',
-    };
-  }
-
-  return {
-    label: `${stock} unidades disponiveis`,
-    description: 'Pronto para adicionar ao pedido.',
-    className: 'border-emerald-100 bg-emerald-50 text-emerald-700',
-    icon: 'inventory_2',
-  };
+  if (stock === 0) return { label: 'Esgotado', desc: 'Este vinho está fora de estoque.', color: 'text-red-600 bg-red-50 border-red-200', icon: 'block' };
+  if (stock <= 5) return { label: `Últimas ${stock} unidades`, desc: 'Corra, estão quase esgotando!', color: 'text-amber-700 bg-amber-50 border-amber-200', icon: 'warning' };
+  return { label: `${stock} unidades disponíveis`, desc: 'Estoque disponível para entrega.', color: 'text-emerald-700 bg-emerald-50 border-emerald-200', icon: 'check_circle' };
 }
 
-function productAttribute(label: string, value: string | null | undefined, icon: string) {
-  if (!value) return null;
-
+function productAttribute(icon: string, label: string, value: string) {
   return (
-    <div className="rounded-2xl border border-stone-100 bg-white p-4 shadow-sm">
-      <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-stone-100 text-black">
-        <span className="material-symbols-outlined text-[20px]">{icon}</span>
+    <div className="bg-stone-50 border border-stone-100 rounded-xl p-3">
+      <div className="flex items-center gap-2 mb-1">
+        <span className="material-symbols-outlined text-[14px] text-stone-400">{icon}</span>
+        <span className="text-[10px] font-bold text-stone-400 uppercase">{label}</span>
       </div>
-      <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400">{label}</p>
-      <p className="mt-1 text-sm font-bold text-black">{value}</p>
+      <p className="font-bold text-sm">{value}</p>
     </div>
   );
 }
 
-export default function WineDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = use(params);
-  const { wine, isLoading, isOffline } = useWine(resolvedParams.id);
+export default function WineDetailPage() {
+  const params = useParams();
+  const id = params.id as string;
+  const { wine, isLoading, error } = useWine(id);
   const { wines } = useWines();
-  const { addManyToCart } = useCart();
-  const [quantity, setQuantity] = useState(1);
+  const { addToCart } = useCart();
 
-  const relatedWines = useMemo(() => {
-    if (!wine) return [];
+  if (isLoading) return <WineDetailSkeleton />;
 
-    return wines
-      .filter((item) => item.id !== wine.id)
-      .filter((item) => item.type === wine.type || item.region === wine.region || item.category === wine.category || item.grape === wine.grape)
-      .slice(0, 3);
-  }, [wine, wines]);
-
-  const handleAddToCart = () => {
-    if (!wine || wine.stock <= 0) return;
-    addManyToCart([{ ...wine, quantity: Math.min(quantity, wine.stock) }]);
-  };
-
-  if (isLoading) {
+  if (error || !wine) {
     return (
-      <main className="mx-auto max-w-5xl px-5 pb-24 pt-8">
-        <div className="rounded-3xl border border-stone-100 bg-white p-8 shadow-sm">
-          <p className="animate-pulse py-12 text-center text-sm font-bold uppercase tracking-widest text-stone-400">
-            Carregando detalhes...
-          </p>
-        </div>
-      </main>
+      <div className="min-h-screen flex flex-col items-center justify-center px-4">
+        <span className="material-symbols-outlined text-[64px] text-stone-200">wine_bar</span>
+        <p className="mt-4 text-lg font-bold">Vinho não encontrado</p>
+        <a href="/catalogo" className="mt-4 text-sm font-bold text-[#B91C1C]">
+          ← Voltar ao catálogo
+        </a>
+      </div>
     );
   }
 
-  if (!wine) {
-    return (
-      <main className="mx-auto max-w-4xl px-5 pb-24 pt-8 text-center">
-        <div className="rounded-3xl border border-stone-100 bg-white p-8 shadow-sm">
-          <h1 className="mb-4 font-serif text-2xl font-bold text-black">Vinho nao encontrado</h1>
-          <Link href="/catalogo" className="text-sm font-bold text-[#B91C1C] underline">
-            Voltar para o catalogo
-          </Link>
-        </div>
-      </main>
-    );
-  }
+  const stock = getStockStatus(wine.stock);
 
-  const stockStatus = getStockStatus(wine.stock);
-  const isOutOfStock = wine.stock <= 0;
+  const relatedWines = wines
+    .filter((w) => w.id !== wine.id && (w.type === wine.type || w.region === wine.region || w.category === wine.category || w.grape === wine.grape))
+    .slice(0, 3);
 
   return (
-    <main className="mx-auto max-w-5xl px-5 pb-24 pt-6">
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <Link href="/catalogo" className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-stone-500 transition hover:text-black">
-          <span className="material-symbols-outlined text-[20px]">arrow_back</span>
-          Catalogo
-        </Link>
-        {isOffline && (
-          <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">Modo Offline</span>
-        )}
+    <main className="min-h-screen bg-[#FDFBF7] pb-24">
+      {/* Header */}
+      <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-stone-100">
+        <div className="flex items-center px-4 py-3">
+          <a href="/catalogo" className="p-2 hover:bg-stone-100 rounded-full transition">
+            <span className="material-symbols-outlined">arrow_back</span>
+          </a>
+          <p className="ml-2 font-bold text-sm truncate">{wine.name}</p>
+        </div>
       </div>
 
-      <section className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start">
-        <div className="rounded-[2rem] border border-stone-100 bg-white p-5 shadow-sm md:p-8">
-          <div className="aspect-[4/5] rounded-[1.5rem] bg-stone-50 p-8 md:p-12">
+      {/* Product Display */}
+      <div className="max-w-6xl mx-auto px-4 py-6">
+        <div className="grid lg:grid-cols-[minmax(0,1fr)_420px] gap-8">
+          {/* Image */}
+          <div className="bg-white rounded-2xl border border-stone-100 p-8 flex items-center justify-center">
             <img
-              src={wine.image_url || 'https://via.placeholder.com/500x650?text=Sem+Imagem'}
+              src={wine.image_url || 'https://via.placeholder.com/300x400'}
               alt={wine.name}
-              className="h-full w-full object-contain mix-blend-multiply"
+              className="w-full max-h-[500px] object-contain mix-blend-multiply"
             />
           </div>
-        </div>
 
-        <div className="space-y-6">
-          <div>
-            <p className="mb-3 text-xs font-bold uppercase tracking-widest text-[#B91C1C]">
-              {[wine.category, wine.region].filter(Boolean).join(' - ') || 'Vinho premium'}
-            </p>
-            <h1 className="font-serif text-4xl font-bold leading-tight text-black md:text-5xl">{wine.name}</h1>
-            <p className="mt-5 text-base font-medium leading-7 text-stone-600">
-              {wine.description || 'Descricao ainda nao cadastrada para este rotulo.'}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            {productAttribute('Tipo', wine.type, 'wine_bar')}
-            {productAttribute('Uva', wine.grape, 'yard')}
-            {productAttribute('Pais', wine.category, 'public')}
-            {productAttribute('Regiao', wine.region, 'travel_explore')}
-          </div>
-
-          <div className="rounded-3xl border border-stone-100 bg-white p-5 shadow-sm">
-            <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Valor</p>
-            <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <p className="text-4xl font-bold text-black">{formatMoney(wine.price)}</p>
-                <p className="mt-1 text-xs font-bold text-stone-400">Pedido enviado pelo WhatsApp da Allvino</p>
-              </div>
-              <div className="flex h-12 items-center rounded-2xl border border-stone-200 bg-stone-50">
-                <button
-                  type="button"
-                  onClick={() => setQuantity((current) => Math.max(1, current - 1))}
-                  disabled={isOutOfStock}
-                  className="flex h-12 w-12 items-center justify-center text-black transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:text-stone-300"
-                  aria-label="Diminuir quantidade"
-                >
-                  <span className="material-symbols-outlined text-[20px]">remove</span>
-                </button>
-                <span className="w-10 text-center text-sm font-bold text-black">{isOutOfStock ? 0 : quantity}</span>
-                <button
-                  type="button"
-                  onClick={() => setQuantity((current) => Math.min(wine.stock, current + 1))}
-                  disabled={isOutOfStock || quantity >= wine.stock}
-                  className="flex h-12 w-12 items-center justify-center text-black transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:text-stone-300"
-                  aria-label="Aumentar quantidade"
-                >
-                  <span className="material-symbols-outlined text-[20px]">add</span>
-                </button>
-              </div>
+          {/* Details */}
+          <div className="space-y-6">
+            <div>
+              <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">
+                {wine.category || wine.type} · {wine.region || wine.region}
+              </p>
+              <h1 className="font-serif text-3xl font-bold mt-2">{wine.name}</h1>
+              {wine.description && (
+                <p className="mt-3 text-stone-500 text-sm leading-relaxed">{wine.description}</p>
+              )}
             </div>
 
-            <div className={`mt-5 flex items-center gap-3 rounded-2xl border px-4 py-3 ${stockStatus.className}`}>
-              <span className="material-symbols-outlined text-[20px]">{stockStatus.icon}</span>
+            <div className="grid grid-cols-2 gap-3">
+              {wine.type && productAttribute('wine_bar', 'Tipo', wine.type)}
+              {wine.grape && productAttribute('grass', 'Uva', wine.grape)}
+              {wine.region && productAttribute('public', 'Região', wine.region)}
+              {wine.region && productAttribute('location_on', 'Região', wine.region)}
+            </div>
+
+            <div className="border-t border-stone-100 pt-6">
+              <p className="text-3xl font-bold text-[#B91C1C]">{formatMoney(wine.price)}</p>
+              <p className="text-xs text-stone-400 mt-1">Preço para pedidos online</p>
+            </div>
+
+            <div className={`flex items-center gap-3 p-4 rounded-xl border ${stock.color}`}>
+              <span className="material-symbols-outlined text-[20px]">{stock.icon}</span>
               <div>
-                <p className="text-sm font-bold">{stockStatus.label}</p>
-                <p className="text-xs font-bold opacity-70">{stockStatus.description}</p>
+                <p className="font-bold text-sm">{stock.label}</p>
+                <p className="text-xs opacity-70">{stock.desc}</p>
               </div>
             </div>
 
             <button
-              type="button"
-              onClick={handleAddToCart}
-              disabled={isOutOfStock}
-              className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#B91C1C] px-6 py-4 text-sm font-bold uppercase tracking-wide text-white shadow-lg shadow-red-900/20 transition hover:bg-red-800 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-stone-200 disabled:text-stone-400 disabled:shadow-none"
+              onClick={() => addToCart(wine)}
+              disabled={wine.stock === 0}
+              className="w-full bg-[#B91C1C] text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-red-900/20 hover:scale-[1.02] active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
-              <span className="material-symbols-outlined text-[20px]">{isOutOfStock ? 'block' : 'add_shopping_cart'}</span>
-              {isOutOfStock ? 'Produto esgotado' : 'Adicionar ao carrinho'}
+              {wine.stock === 0 ? 'Indisponível' : 'Adicionar ao Carrinho'}
             </button>
-
-            <Link
-              href="/catalogo"
-              className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-stone-200 bg-white px-6 py-4 text-sm font-bold text-stone-700 transition hover:border-black hover:text-black"
-            >
-              Continuar comprando
-            </Link>
           </div>
         </div>
-      </section>
 
-      {relatedWines.length > 0 && (
-        <section className="mt-10">
-          <div className="mb-4 flex items-end justify-between gap-4">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Sugestoes</p>
-              <h2 className="font-serif text-2xl font-bold text-black">Voce tambem pode gostar</h2>
-            </div>
-            <Link href="/catalogo" className="text-xs font-bold uppercase tracking-widest text-[#B91C1C]">
-              Ver catalogo
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            {relatedWines.map((item) => (
-              <Link
-                key={item.id}
-                href={`/catalogo/${item.id}`}
-                className="rounded-2xl border border-stone-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-              >
-                <div className="mb-3 aspect-[4/5] rounded-xl bg-stone-50 p-5">
+        {/* Related Wines */}
+        {relatedWines.length > 0 && (
+          <div className="mt-12">
+            <h2 className="font-serif text-xl font-bold mb-4">Você também pode gostar</h2>
+            <div className="grid grid-cols-3 gap-4">
+              {relatedWines.map((w) => (
+                <a
+                  key={w.id}
+                  href={`/catalogo/${w.id}`}
+                  className="bg-white rounded-2xl border border-stone-100 p-4 text-center active:scale-[0.98] transition-transform"
+                >
                   <img
-                    src={item.image_url || 'https://via.placeholder.com/300x400?text=Sem+Imagem'}
-                    alt={item.name}
-                    className="h-full w-full object-contain mix-blend-multiply"
+                    src={w.image_url || 'https://via.placeholder.com/300x400'}
+                    alt={w.name}
+                    className="w-full h-28 object-contain mix-blend-multiply mb-2"
                   />
-                </div>
-                <p className="line-clamp-2 text-sm font-bold text-black">{item.name}</p>
-                <p className="mt-2 text-sm font-bold text-[#B91C1C]">{formatMoney(item.price)}</p>
-              </Link>
-            ))}
+                  <p className="font-bold text-xs line-clamp-2">{w.name}</p>
+                  <p className="text-xs font-bold text-[#B91C1C] mt-1">{formatMoney(w.price)}</p>
+                </a>
+              ))}
+            </div>
           </div>
-        </section>
-      )}
+        )}
+      </div>
     </main>
   );
 }

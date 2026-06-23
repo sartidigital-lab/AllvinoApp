@@ -5,3 +5,4 @@ export { Card, CardHeader } from './Card';
 export { Badge } from './Badge';
 export { IconButton } from './IconButton';
 export { Checkbox } from './Checkbox';
+export { Skeleton, WineCardSkeleton, WineDetailSkeleton } from './Skeleton';
