@@ -46,7 +46,7 @@ function getWhatsAppUrl(phone: string | null, name: string) {
   if (!digits) return null;
 
   const normalizedPhone = digits.startsWith('55') ? digits : `55${digits}`;
-  const message = `Ola, ${name}! Aqui e da Allvino.`;
+  const message = `Olá, ${name}! Aqui é da Allvino.`;
   return `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(message)}`;
 }
 
@@ -64,7 +64,7 @@ function getFavoriteProduct(orders: CustomerOrder[]) {
     });
   });
 
-  return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || 'Sem historico';
+  return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || 'Sem histórico';
 }
 
 export default function AdminClientesPage() {
@@ -86,7 +86,7 @@ export default function AdminClientesPage() {
       .limit(300);
 
     if (error) {
-      setErrorMessage('Nao foi possivel carregar clientes.');
+      setErrorMessage('Não foi possível carregar clientes.');
       setIsLoading(false);
       return;
     }
@@ -163,7 +163,7 @@ export default function AdminClientesPage() {
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 pb-6">
         <div>
           <h1 className="text-3xl font-bold font-serif text-black">Clientes</h1>
-          <p className="mt-1 text-sm font-bold text-stone-500">Acompanhe historico, gasto total e recompra.</p>
+          <p className="mt-1 text-sm font-bold text-stone-500">Acompanhe histórico, gasto total e recompra.</p>
         </div>
         <button
           type="button"
@@ -195,7 +195,7 @@ export default function AdminClientesPage() {
           <p className="mt-2 text-xl font-bold text-black">{isLoading ? '...' : formatMoney(summary.totalSpent)}</p>
         </div>
         <div className="rounded-lg border border-stone-100 bg-white p-5 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Ticket medio</p>
+          <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Ticket médio</p>
           <p className="mt-2 text-xl font-bold text-black">{isLoading ? '...' : formatMoney(summary.averageTicket)}</p>
         </div>
       </div>
@@ -241,7 +241,7 @@ export default function AdminClientesPage() {
                   >
                     <div className="min-w-0">
                       <p className="truncate text-sm font-bold text-black">{customer.name}</p>
-                      <p className="mt-1 truncate text-xs font-bold text-stone-400">{customer.phone || 'Telefone nao informado'}</p>
+                      <p className="mt-1 truncate text-xs font-bold text-stone-400">{customer.phone || 'Telefone não informado'}</p>
                     </div>
                     <div>
                       <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Pedidos</p>
@@ -266,7 +266,7 @@ export default function AdminClientesPage() {
               <div>
                 <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Cliente</p>
                 <h2 className="mt-1 text-xl font-bold text-black">{selectedCustomer.name}</h2>
-                <p className="mt-1 text-sm font-bold text-stone-500">{selectedCustomer.phone || 'Telefone nao informado'}</p>
+                <p className="mt-1 text-sm font-bold text-stone-500">{selectedCustomer.phone || 'Telefone não informado'}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -275,7 +275,7 @@ export default function AdminClientesPage() {
                   <p className="mt-1 text-lg font-bold text-black">{formatMoney(selectedCustomer.totalSpent)}</p>
                 </div>
                 <div className="rounded-lg bg-stone-50 p-4">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400">Ticket medio</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400">Ticket médio</p>
                   <p className="mt-1 text-lg font-bold text-black">{formatMoney(selectedCustomer.averageTicket)}</p>
                 </div>
               </div>
@@ -298,7 +298,7 @@ export default function AdminClientesPage() {
               )}
 
               <div>
-                <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-stone-400">Historico</h3>
+                <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-stone-400">Histórico</h3>
                 <div className="space-y-3">
                   {selectedCustomer.orders.map((order) => (
                     <div key={order.id} className="rounded-lg border border-stone-100 p-3">

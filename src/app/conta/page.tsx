@@ -11,7 +11,7 @@ import { OrderWithItems } from '@/types/database';
 const statusLabels: Record<string, string> = {
   pending: 'Pendente',
   confirmed: 'Confirmado',
-  preparing: 'Em separacao',
+  preparing: 'Em separação',
   delivered: 'Entregue',
   cancelled: 'Cancelado',
 };
@@ -42,6 +42,7 @@ export default function ContaPage() {
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
   const [openOrderId, setOpenOrderId] = useState<string | null>(null);
   const [isLoadingOrders, setIsLoadingOrders] = useState(true);
+  const [profileMessage, setProfileMessage] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null);
 
   useEffect(() => {
     const fetchUserAndOrders = async () => {
@@ -94,6 +95,7 @@ export default function ContaPage() {
   const salvarPerfil = async (event: React.FormEvent) => {
     event.preventDefault();
     setIsSaving(true);
+    setProfileMessage(null);
 
     const supabase = createClient();
     const { error } = await supabase.auth.updateUser({
@@ -105,9 +107,9 @@ export default function ContaPage() {
     });
 
     if (error) {
-      alert('Erro ao atualizar dados: ' + error.message);
+      setProfileMessage({ tone: 'danger', text: `Erro ao atualizar dados: ${error.message}` });
     } else {
-      alert('Perfil atualizado com sucesso!');
+      setProfileMessage({ tone: 'success', text: 'Perfil atualizado com sucesso.' });
     }
 
     setIsSaving(false);
@@ -140,9 +142,9 @@ export default function ContaPage() {
           <span className="material-symbols-outlined text-[16px]">receipt_long</span> Meus Pedidos
         </h2>
         {isLoadingOrders ? (
-          <p className="text-sm text-stone-400 text-center py-4 font-bold animate-pulse">Buscando historico...</p>
-        ) : orders.length === 0 ? (
-          <p className="text-sm text-stone-400 text-center py-4">Voce ainda nao fez nenhum pedido.</p>
+        <p className="text-sm text-stone-400 text-center py-4 font-bold animate-pulse">Buscando histórico...</p>
+      ) : orders.length === 0 ? (
+          <p className="text-sm text-stone-400 text-center py-4">Você ainda não fez nenhum pedido.</p>
         ) : (
           <div className="space-y-3">
             {orders.map((order) => {
@@ -189,9 +191,9 @@ export default function ContaPage() {
 
                       <div className="space-y-2">
                         <div className="rounded-xl bg-white p-3 text-xs font-bold text-stone-500">
-                          <p>Pagamento: <span className="text-black">{order.payment_method || 'Nao informado'}</span></p>
+                          <p>Pagamento: <span className="text-black">{order.payment_method || 'Não informado'}</span></p>
                           <p>Entrega: <span className="text-black">{order.delivery_type}</span></p>
-                          {order.delivery_address && <p>Endereco: <span className="text-black">{order.delivery_address}</span></p>}
+                          {order.delivery_address && <p>Endereço: <span className="text-black">{order.delivery_address}</span></p>}
                         </div>
                         {order.order_items.map((item) => (
                           <div key={item.id} className="flex justify-between gap-3 rounded-xl bg-white p-3">
@@ -280,8 +282,17 @@ export default function ContaPage() {
             disabled={isSaving}
             className="w-full bg-black text-white py-4 rounded-2xl font-bold text-sm active:scale-95 transition-transform shadow-lg mt-2 flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            {isSaving ? 'Salvando...' : <><span className="material-symbols-outlined text-[18px]">save</span> Salvar Alteracoes</>}
+            {isSaving ? 'Salvando...' : <><span className="material-symbols-outlined text-[18px]">save</span> Salvar Alterações</>}
           </button>
+          {profileMessage && (
+            <div className={`rounded-2xl border px-4 py-3 text-center text-sm font-bold ${
+              profileMessage.tone === 'success'
+                ? 'border-emerald-100 bg-emerald-50 text-emerald-700'
+                : 'border-red-100 bg-red-50 text-red-700'
+            }`}>
+              {profileMessage.text}
+            </div>
+          )}
         </form>
       </div>
 

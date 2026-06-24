@@ -22,19 +22,19 @@ const checks = [
   },
   {
     file: 'src/app/catalogo/page.tsx',
-    includes: ['Buscar por nome', 'Mais recentes', 'Menor preco', 'Limpar filtros', 'addToCart'],
+    includes: ['Buscar por nome', 'Mais recentes', 'Menor preço', 'Limpar filtros', 'addToCart'],
   },
   {
     file: 'src/app/catalogo/[id]/page.tsx',
-    includes: ['Adicionar ao carrinho', 'Continuar comprando', 'Voce tambem pode gostar', 'addManyToCart'],
+    includes: ['Adicionar ao carrinho', 'Continuar comprando', 'Você também pode gostar', 'addManyToCart'],
   },
   {
     file: 'src/app/checkout/page.tsx',
-    includes: ['552723453060', 'O pedido sera recebido em nosso WhatsApp', 'Pedido realizado', 'createOrder', 'fetchActivePromotionByCode', 'fetchDeliveryQuote', 'Consultar atendimento pelo WhatsApp', 'Cupom', 'CEP'],
+    includes: ['552723453060', 'O pedido será recebido em nosso WhatsApp', 'Pedido realizado', 'createOrder', 'fetchActivePromotionByCode', 'fetchDeliveryQuote', 'Consultar atendimento pelo WhatsApp', 'Cupom', 'CEP'],
   },
   {
     file: 'src/app/conta/page.tsx',
-    includes: ['Meus Pedidos', 'Repetir pedido', 'Salvar Alteracoes', 'getUserOrders'],
+    includes: ['Meus Pedidos', 'Repetir pedido', 'Salvar Alterações', 'getUserOrders'],
   },
   {
     file: 'src/app/admin/layout.tsx',
@@ -82,11 +82,11 @@ const checks = [
   },
   {
     file: 'src/app/admin/logistica/page.tsx',
-    includes: ['Logistica & Frete', 'Nova Regiao', 'saveDeliveryZone', 'deleteDeliveryZone'],
+    includes: ['Logística & Frete', 'Nova Região', 'saveDeliveryZone', 'deleteDeliveryZone'],
   },
   {
     file: 'src/app/admin/promocoes/page.tsx',
-    includes: ['Promocoes & Cupons', 'Novo Cupom', 'savePromotion', 'deletePromotion'],
+    includes: ['Promoções & Cupons', 'Novo Cupom', 'savePromotion', 'deletePromotion'],
   },
   {
     file: 'src/app/admin/catalogo/page.tsx',

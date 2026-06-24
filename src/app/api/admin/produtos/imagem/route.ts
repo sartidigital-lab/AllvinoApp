@@ -58,7 +58,7 @@ export async function POST(request: Request) {
   } = accessToken ? await supabase.auth.getUser(accessToken) : await supabase.auth.getUser();
 
   if (userError || !user) {
-    return NextResponse.json({ error: 'Nao autenticado. Entre novamente e tente subir a imagem outra vez.' }, { status: 401 });
+    return NextResponse.json({ error: 'Não autenticado. Entre novamente e tente subir a imagem outra vez.' }, { status: 401 });
   }
 
   if (user.app_metadata?.role !== 'admin') {
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
   const productName = String(formData.get('productName') || 'produto');
 
   if (!(file instanceof File)) {
-    return NextResponse.json({ error: 'Arquivo nao enviado.' }, { status: 400 });
+    return NextResponse.json({ error: 'Arquivo não enviado.' }, { status: 400 });
   }
 
   if (!allowedImageTypes.has(file.type)) {
@@ -87,7 +87,7 @@ export async function POST(request: Request) {
 
   if (uploadError) {
     return NextResponse.json(
-      { error: `Nao foi possivel enviar a imagem: ${uploadError.message}` },
+      { error: `Não foi possível enviar a imagem: ${uploadError.message}` },
       { status: 400 }
     );
   }

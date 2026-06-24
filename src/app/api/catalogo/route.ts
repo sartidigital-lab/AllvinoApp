@@ -23,7 +23,7 @@ export async function GET() {
     .order('criado_em', { ascending: false });
 
   if (error) {
-    return NextResponse.json({ error: 'Nao foi possivel carregar o catalogo.' }, { status: 500 });
+    return NextResponse.json({ error: 'Não foi possível carregar o catálogo.' }, { status: 500 });
   }
 
   return NextResponse.json(((data || []) as LegacyProduct[]).map(mapProductToWine), {

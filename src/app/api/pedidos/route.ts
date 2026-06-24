@@ -17,7 +17,7 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    return NextResponse.json({ error: 'Nao autenticado.' }, { status: 401 });
+    return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
   }
 
   const body = (await request.json()) as {
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
   const deliveryZipCode = normalizeZipCode(body.deliveryZipCode || '');
 
   if (cartItems.length === 0) {
-    return NextResponse.json({ error: 'Pedido invalido.' }, { status: 400 });
+    return NextResponse.json({ error: 'Pedido inválido.' }, { status: 400 });
   }
 
   const { data: orderId, error: checkoutError } = await supabase.rpc(
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
   );
 
   if (checkoutError || !orderId) {
-    const message = checkoutError?.message || 'Nao foi possivel criar o pedido.';
+    const message = checkoutError?.message || 'Não foi possível criar o pedido.';
     const status = /estoque/i.test(message) ? 409 : 400;
     return NextResponse.json({ error: message }, { status });
   }
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
     .single();
 
   if (orderError || !order) {
-    return NextResponse.json({ error: 'Pedido criado, mas nao foi possivel carregar o resumo.' }, { status: 500 });
+    return NextResponse.json({ error: 'Pedido criado, mas não foi possível carregar o resumo.' }, { status: 500 });
   }
 
   return NextResponse.json({ order });

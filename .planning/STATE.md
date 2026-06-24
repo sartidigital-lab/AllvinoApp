@@ -5,7 +5,7 @@
 See: .planning/PROJECT.md (updated 2026-05-17)
 
 **Core value:** Proporcionar uma experiência de compra de vinhos fluida, rápida e elegante, que se comporte como um aplicativo nativo no celular, com máxima estabilidade e segurança.
-**Current focus:** Authentication (Phase 2)
+**Current focus:** Pre-v2.0 audit corrections and checkout hardening
 
 ## Current Position
 
@@ -63,6 +63,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-05-17
-Stopped at: Phase 5 executed
+Last session: 2026-06-02
+Stopped at: Applying audit corrections before formal v2.0 planning
 Resume file: .planning/phases/05-admin-dashboard/05-SUMMARY.md

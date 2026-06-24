@@ -100,7 +100,7 @@ export default function AdminPromotionsPage() {
     const { promotions: nextPromotions, error } = await fetchPromotions();
 
     if (error) {
-      setMessage('Nao foi possivel carregar as promocoes. Verifique sua permissao de admin.');
+      setMessage('Não foi possível carregar as promoções. Verifique sua permissão de admin.');
     }
 
     setPromotions(nextPromotions);
@@ -160,17 +160,17 @@ export default function AdminPromotionsPage() {
     const payload = toPayload(form);
 
     if (!payload.code || !payload.title) {
-      setMessage('Informe codigo e nome da campanha.');
+      setMessage('Informe código e nome da campanha.');
       return;
     }
 
     if (payload.discount_value <= 0 || payload.min_subtotal < 0) {
-      setMessage('Informe valores validos para desconto e pedido minimo.');
+      setMessage('Informe valores válidos para desconto e pedido mínimo.');
       return;
     }
 
     if (payload.discount_type === 'percent' && payload.discount_value > 100) {
-      setMessage('O desconto percentual nao pode passar de 100%.');
+      setMessage('O desconto percentual não pode passar de 100%.');
       return;
     }
 
@@ -180,14 +180,14 @@ export default function AdminPromotionsPage() {
     const { promotion, error } = await savePromotion(payload, editingPromotion?.id);
 
     if (error || !promotion) {
-      setMessage('Nao foi possivel salvar a promocao. Verifique se o codigo ja existe.');
+      setMessage('Não foi possível salvar a promoção. Verifique se o código já existe.');
       setIsSaving(false);
       return;
     }
 
     await loadPromotions();
     closeForm();
-    setMessage(editingPromotion ? 'Promocao atualizada.' : 'Promocao criada.');
+    setMessage(editingPromotion ? 'Promoção atualizada.' : 'Promoção criada.');
     setIsSaving(false);
   };
 
@@ -196,19 +196,19 @@ export default function AdminPromotionsPage() {
 
     const wasDeleted = await deletePromotion(promotion.id);
     if (!wasDeleted) {
-      setMessage('Nao foi possivel excluir a promocao.');
+      setMessage('Não foi possível excluir a promoção.');
       return;
     }
 
     await loadPromotions();
-    setMessage('Promocao excluida.');
+    setMessage('Promoção excluída.');
   };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 pb-6">
         <div>
-          <h1 className="text-3xl font-bold font-serif text-black">Promocoes & Cupons</h1>
+          <h1 className="text-3xl font-bold font-serif text-black">Promoções & Cupons</h1>
           <p className="mt-1 text-sm font-bold text-stone-500">Gerencie cupons aplicados no checkout.</p>
         </div>
         <button
@@ -275,7 +275,7 @@ export default function AdminPromotionsPage() {
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             <label className="space-y-1">
-              <span className="text-xs font-bold uppercase text-stone-400">Codigo</span>
+              <span className="text-xs font-bold uppercase text-stone-400">Código</span>
               <input
                 value={form.code}
                 onChange={(event) => setForm({ ...form, code: normalizePromotionCode(event.target.value) })}
@@ -322,7 +322,7 @@ export default function AdminPromotionsPage() {
               />
             </label>
             <label className="space-y-1">
-              <span className="text-xs font-bold uppercase text-stone-400">Pedido minimo</span>
+              <span className="text-xs font-bold uppercase text-stone-400">Pedido mínimo</span>
               <input
                 type="number"
                 min="0"
@@ -345,7 +345,7 @@ export default function AdminPromotionsPage() {
               />
             </label>
             <label className="space-y-1">
-              <span className="text-xs font-bold uppercase text-stone-400">Inicio</span>
+              <span className="text-xs font-bold uppercase text-stone-400">Início</span>
               <input
                 type="datetime-local"
                 value={form.starts_at}
@@ -363,7 +363,7 @@ export default function AdminPromotionsPage() {
               />
             </label>
             <label className="space-y-1 md:col-span-2">
-              <span className="text-xs font-bold uppercase text-stone-400">Descricao</span>
+              <span className="text-xs font-bold uppercase text-stone-400">Descrição</span>
               <textarea
                 value={form.description}
                 onChange={(event) => setForm({ ...form, description: event.target.value })}
@@ -391,19 +391,19 @@ export default function AdminPromotionsPage() {
               <tr className="border-b border-stone-100 bg-[#FDFBF7] text-xs uppercase tracking-wider text-stone-500">
                 <th className="p-4 font-bold">Cupom</th>
                 <th className="p-4 font-bold">Desconto</th>
-                <th className="p-4 font-bold">Periodo</th>
+                <th className="p-4 font-bold">Período</th>
                 <th className="p-4 font-bold">Status</th>
-                <th className="p-4 text-center font-bold">Acoes</th>
+                <th className="p-4 text-center font-bold">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center font-bold text-stone-500">Carregando promocoes...</td>
+                  <td colSpan={5} className="p-8 text-center font-bold text-stone-500">Carregando promoções...</td>
                 </tr>
               ) : filteredPromotions.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center font-bold text-stone-500">Nenhuma promocao encontrada.</td>
+                  <td colSpan={5} className="p-8 text-center font-bold text-stone-500">Nenhuma promoção encontrada.</td>
                 </tr>
               ) : (
                 filteredPromotions.map((promotion) => {
@@ -426,7 +426,7 @@ export default function AdminPromotionsPage() {
                         </p>
                       </td>
                       <td className="p-4 text-xs font-bold text-stone-500">
-                        <p>{promotion.starts_at ? new Date(promotion.starts_at).toLocaleString('pt-BR') : 'Inicio imediato'}</p>
+                        <p>{promotion.starts_at ? new Date(promotion.starts_at).toLocaleString('pt-BR') : 'Início imediato'}</p>
                         <p>{promotion.ends_at ? new Date(promotion.ends_at).toLocaleString('pt-BR') : 'Sem data final'}</p>
                       </td>
                       <td className="p-4">

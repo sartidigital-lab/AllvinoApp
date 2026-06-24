@@ -74,7 +74,7 @@ export default function AdminLogisticsPage() {
     const { zones: nextZones, error } = await fetchDeliveryZones();
 
     if (error) {
-      setMessage('Nao foi possivel carregar as regioes. Verifique sua permissao de admin.');
+      setMessage('Não foi possível carregar as regiões. Verifique sua permissão de admin.');
     }
 
     setZones(nextZones);
@@ -122,7 +122,7 @@ export default function AdminLogisticsPage() {
     const payload = toPayload(form);
 
     if (!payload.name || payload.zip_start.length !== 8 || payload.zip_end.length !== 8) {
-      setMessage('Informe nome e faixas de CEP validas.');
+      setMessage('Informe nome e faixas de CEP válidas.');
       return;
     }
 
@@ -132,7 +132,7 @@ export default function AdminLogisticsPage() {
     }
 
     if (payload.fee < 0 || payload.estimate_days <= 0) {
-      setMessage('Informe taxa e prazo validos.');
+      setMessage('Informe taxa e prazo válidos.');
       return;
     }
 
@@ -142,36 +142,36 @@ export default function AdminLogisticsPage() {
     const { zone, error } = await saveDeliveryZone(payload, editingZone?.id);
 
     if (error || !zone) {
-      setMessage('Nao foi possivel salvar a regiao de entrega.');
+      setMessage('Não foi possível salvar a região de entrega.');
       setIsSaving(false);
       return;
     }
 
     await loadZones();
     closeForm();
-    setMessage(editingZone ? 'Regiao atualizada.' : 'Regiao criada.');
+    setMessage(editingZone ? 'Região atualizada.' : 'Região criada.');
     setIsSaving(false);
   };
 
   const handleDelete = async (zone: DeliveryZone) => {
-    if (!confirm(`Excluir a regiao ${zone.name}?`)) return;
+    if (!confirm(`Excluir a região ${zone.name}?`)) return;
 
     const wasDeleted = await deleteDeliveryZone(zone.id);
     if (!wasDeleted) {
-      setMessage('Nao foi possivel excluir a regiao.');
+      setMessage('Não foi possível excluir a região.');
       return;
     }
 
     await loadZones();
-    setMessage('Regiao excluida.');
+    setMessage('Região excluída.');
   };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 pb-6">
         <div>
-          <h1 className="text-3xl font-bold font-serif text-black">Logistica & Frete</h1>
-          <p className="mt-1 text-sm font-bold text-stone-500">Configure regioes, taxas e prazos de entrega.</p>
+          <h1 className="text-3xl font-bold font-serif text-black">Logística & Frete</h1>
+          <p className="mt-1 text-sm font-bold text-stone-500">Configure regiões, taxas e prazos de entrega.</p>
         </div>
         <button
           type="button"
@@ -179,13 +179,13 @@ export default function AdminLogisticsPage() {
           className="flex items-center gap-2 rounded-lg bg-black px-5 py-2.5 text-sm font-bold text-white shadow-lg transition hover:bg-stone-800"
         >
           <span className="material-symbols-outlined text-[20px]">add</span>
-          Nova Regiao
+          Nova Região
         </button>
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <div className="rounded-lg bg-black p-5 text-white">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-white/60">Regioes</p>
+          <p className="text-[11px] font-bold uppercase tracking-widest text-white/60">Regiões</p>
           <p className="mt-2 text-3xl font-bold">{stats.total}</p>
         </div>
         <div className="rounded-lg border border-stone-100 bg-white p-5">
@@ -193,7 +193,7 @@ export default function AdminLogisticsPage() {
           <p className="mt-2 text-3xl font-bold text-black">{stats.active}</p>
         </div>
         <div className="rounded-lg border border-stone-100 bg-white p-5">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Frete gratis</p>
+          <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Frete grátis</p>
           <p className="mt-2 text-3xl font-bold text-black">{stats.freeRules}</p>
         </div>
       </div>
@@ -218,7 +218,7 @@ export default function AdminLogisticsPage() {
       {isFormOpen && (
         <form onSubmit={handleSubmit} className="space-y-5 rounded-lg border border-stone-100 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between gap-4">
-            <h2 className="text-lg font-bold text-black">{editingZone ? 'Editar regiao' : 'Nova regiao'}</h2>
+            <h2 className="text-lg font-bold text-black">{editingZone ? 'Editar região' : 'Nova região'}</h2>
             <button type="button" onClick={closeForm} className="text-stone-500 hover:text-black">
               <span className="material-symbols-outlined">close</span>
             </button>
@@ -250,7 +250,7 @@ export default function AdminLogisticsPage() {
               <input type="number" min="0" step="0.01" value={form.fee} onChange={(event) => setForm({ ...form, fee: event.target.value })} className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black" />
             </label>
             <label className="space-y-1">
-              <span className="text-xs font-bold uppercase text-stone-400">Gratis a partir de</span>
+              <span className="text-xs font-bold uppercase text-stone-400">Grátis a partir de</span>
               <input type="number" min="0" step="0.01" value={form.free_shipping_min_subtotal} onChange={(event) => setForm({ ...form, free_shipping_min_subtotal: event.target.value })} placeholder="Opcional" className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black" />
             </label>
           </div>
@@ -271,34 +271,34 @@ export default function AdminLogisticsPage() {
           <table className="w-full border-collapse text-left">
             <thead>
               <tr className="border-b border-stone-100 bg-[#FDFBF7] text-xs uppercase tracking-wider text-stone-500">
-                <th className="p-4 font-bold">Regiao</th>
+                <th className="p-4 font-bold">Região</th>
                 <th className="p-4 font-bold">Faixa de CEP</th>
                 <th className="p-4 font-bold">Frete</th>
                 <th className="p-4 font-bold">Prazo</th>
                 <th className="p-4 font-bold">Status</th>
-                <th className="p-4 text-center font-bold">Acoes</th>
+                <th className="p-4 text-center font-bold">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center font-bold text-stone-500">Carregando regioes...</td>
+                  <td colSpan={6} className="p-8 text-center font-bold text-stone-500">Carregando regiões...</td>
                 </tr>
               ) : zones.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center font-bold text-stone-500">Nenhuma regiao configurada.</td>
+                  <td colSpan={6} className="p-8 text-center font-bold text-stone-500">Nenhuma região configurada.</td>
                 </tr>
               ) : zones.map((zone) => (
                 <tr key={zone.id} className="transition-colors hover:bg-stone-50">
                   <td className="p-4 font-bold text-black">{zone.name}</td>
-                  <td className="p-4 text-sm font-bold text-stone-500">{formatZipCode(zone.zip_start)} ate {formatZipCode(zone.zip_end)}</td>
+                  <td className="p-4 text-sm font-bold text-stone-500">{formatZipCode(zone.zip_start)} até {formatZipCode(zone.zip_end)}</td>
                   <td className="p-4">
                     <p className="font-bold text-black">{formatMoney(zone.fee)}</p>
                     {zone.free_shipping_min_subtotal !== null && (
-                      <p className="text-xs font-bold text-emerald-700">Gratis acima de {formatMoney(zone.free_shipping_min_subtotal)}</p>
+                      <p className="text-xs font-bold text-emerald-700">Grátis acima de {formatMoney(zone.free_shipping_min_subtotal)}</p>
                     )}
                   </td>
-                  <td className="p-4 text-sm font-bold text-stone-500">Ate {zone.estimate_days} dia(s)</td>
+                  <td className="p-4 text-sm font-bold text-stone-500">Até {zone.estimate_days} dia(s)</td>
                   <td className="p-4">
                     <span className={`rounded-full px-3 py-1 text-xs font-bold ${zone.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-stone-100 text-stone-500'}`}>
                       {zone.is_active ? 'Ativa' : 'Inativa'}

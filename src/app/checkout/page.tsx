@@ -30,6 +30,7 @@ export default function CheckoutPage() {
   const [promotionMessage, setPromotionMessage] = useState<string | null>(null);
   const [isCheckingPromotion, setIsCheckingPromotion] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
   const [successOrderId, setSuccessOrderId] = useState<string | null>(null);
   const [successSummary, setSuccessSummary] = useState<{
     total: number;
@@ -72,7 +73,7 @@ export default function CheckoutPage() {
   const cartItemsMessage = cart.map((item) => `${item.quantity}x ${item.name}`).join('\n');
   const unsupportedZipWhatsAppUrl = unsupportedZip
     ? `https://wa.me/${salesPhone}?text=${encodeURIComponent(
-        `Ola, Allvino! Quero consultar entrega para o CEP ${formatZipCode(unsupportedZip)}.\n\nItens no carrinho:\n${cartItemsMessage || 'Carrinho ainda sem itens'}\n\nSubtotal: R$ ${cartTotal.toFixed(2).replace('.', ',')}`
+        `Olá, Allvino! Quero consultar entrega para o CEP ${formatZipCode(unsupportedZip)}.\n\nItens no carrinho:\n${cartItemsMessage || 'Carrinho ainda sem itens'}\n\nSubtotal: R$ ${cartTotal.toFixed(2).replace('.', ',')}`
       )}`
     : null;
 
@@ -90,14 +91,14 @@ export default function CheckoutPage() {
     const { promotion, error } = await fetchActivePromotionByCode(normalizedCode);
 
     if (error) {
-      setPromotionMessage('Nao foi possivel validar o cupom agora.');
+      setPromotionMessage('Não foi possível validar o cupom agora.');
       setAppliedPromotion(null);
       setIsCheckingPromotion(false);
       return;
     }
 
     if (!promotion) {
-      setPromotionMessage('Cupom invalido ou expirado.');
+      setPromotionMessage('Cupom inválido ou expirado.');
       setAppliedPromotion(null);
       setIsCheckingPromotion(false);
       return;
@@ -105,7 +106,7 @@ export default function CheckoutPage() {
 
     const nextDiscount = calculatePromotionDiscount(promotion, cartTotal);
     if (nextDiscount <= 0) {
-      setPromotionMessage(`Cupom valido para pedidos a partir de R$ ${promotion.min_subtotal.toFixed(2).replace('.', ',')}.`);
+      setPromotionMessage(`Cupom válido para pedidos a partir de R$ ${promotion.min_subtotal.toFixed(2).replace('.', ',')}.`);
       setAppliedPromotion(null);
       setIsCheckingPromotion(false);
       return;
@@ -127,7 +128,7 @@ export default function CheckoutPage() {
     const normalizedZip = normalizeZipCode(cep);
 
     if (normalizedZip.length !== 8) {
-      setDeliveryMessage('Informe um CEP com 8 digitos.');
+      setDeliveryMessage('Informe um CEP com 8 dígitos.');
       setDeliveryZone(null);
       setUnsupportedZip(null);
       return;
@@ -139,7 +140,7 @@ export default function CheckoutPage() {
     const { zone, shippingFee: nextShippingFee, error } = await fetchDeliveryQuote(normalizedZip, cartTotal);
 
     if (error) {
-      setDeliveryMessage('Nao foi possivel calcular o frete agora.');
+      setDeliveryMessage('Não foi possível calcular o frete agora.');
       setDeliveryZone(null);
       setUnsupportedZip(null);
       setIsCheckingDelivery(false);
@@ -147,7 +148,7 @@ export default function CheckoutPage() {
     }
 
     if (!zone) {
-      setDeliveryMessage('Ainda nao entregamos neste CEP.');
+      setDeliveryMessage('Ainda não entregamos neste CEP.');
       setDeliveryZone(null);
       setUnsupportedZip(normalizedZip);
       setIsCheckingDelivery(false);
@@ -158,24 +159,26 @@ export default function CheckoutPage() {
     setDeliveryZone(zone);
     setUnsupportedZip(null);
     setDeliveryMessage(
-      `${zone.name}: ${nextShippingFee === 0 ? 'frete gratis' : `frete R$ ${nextShippingFee.toFixed(2).replace('.', ',')}`} em ate ${zone.estimate_days} dia(s).`
+      `${zone.name}: ${nextShippingFee === 0 ? 'frete grátis' : `frete R$ ${nextShippingFee.toFixed(2).replace('.', ',')}`} em até ${zone.estimate_days} dia(s).`
     );
     setIsCheckingDelivery(false);
   };
 
   const handleFinalizar = async () => {
+    setCheckoutMessage(null);
+
     if (cart.length === 0) {
-      alert('Carrinho vazio!');
+      setCheckoutMessage('Carrinho vazio. Adicione pelo menos um vinho antes de finalizar.');
       return;
     }
 
     if (entrega === 'entrega' && !endereco.trim()) {
-      alert('Informe o seu endereco para entrega.');
+      setCheckoutMessage('Informe o seu endereço para entrega.');
       return;
     }
 
     if (entrega === 'entrega' && !deliveryZone) {
-      alert('Calcule o frete para o CEP de entrega.');
+      setCheckoutMessage('Calcule o frete para o CEP de entrega.');
       return;
     }
 
@@ -187,7 +190,7 @@ export default function CheckoutPage() {
       user.id,
       cart,
       finalTotal,
-      entrega === 'retirada' ? 'Retirada na Loja' : 'Entrega no Endereco',
+      entrega === 'retirada' ? 'Retirada na Loja' : 'Entrega no Endereço',
       pagamento,
       entrega === 'entrega' ? endereco : undefined,
       appliedPromotion?.code,
@@ -195,20 +198,20 @@ export default function CheckoutPage() {
     );
 
     if (error || !order) {
-      alert(error?.message || 'Erro ao criar pedido. Tente novamente.');
+      setCheckoutMessage(error?.message || 'Erro ao criar pedido. Tente novamente.');
       setIsLoading(false);
       return;
     }
 
     const itensMsg = cart.map((item) => `*${item.quantity}x ${item.name}*`).join('\n');
-    let msg = `*NOVO PEDIDO - ALLVINO*\n\n*Cliente:* ${user.name}\n*WhatsApp:* ${user.phone || 'Nao informado'}\n\n*ITENS DO PEDIDO:*\n${itensMsg}\n\n*Pagamento:* ${pagamento}\n*Modalidade:* ${entrega === 'retirada' ? 'Retirada na Loja (-10% OFF)' : 'Entrega no Endereco'}\n`;
+    let msg = `*NOVO PEDIDO - ALLVINO*\n\n*Cliente:* ${user.name}\n*WhatsApp:* ${user.phone || 'Não informado'}\n\n*ITENS DO PEDIDO:*\n${itensMsg}\n\n*Pagamento:* ${pagamento}\n*Modalidade:* ${entrega === 'retirada' ? 'Retirada na Loja (-10% OFF)' : 'Entrega no Endereço'}\n`;
 
     if (order.promotion_code) {
       msg += `*Cupom:* ${order.promotion_code}\n`;
     }
 
     if (entrega === 'entrega') {
-      msg += `*Endereco:* ${endereco}\n`;
+      msg += `*Endereço:* ${endereco}\n`;
       if (order.delivery_zip_code) msg += `*CEP:* ${formatZipCode(order.delivery_zip_code)}\n`;
       if (order.shipping_fee > 0) msg += `*Frete:* R$ ${order.shipping_fee.toFixed(2).replace('.', ',')}\n`;
     }
@@ -253,7 +256,7 @@ export default function CheckoutPage() {
           <div>
             <h1 className="text-3xl font-bold font-serif text-black">Pedido realizado</h1>
             <p className="mt-2 text-sm font-bold text-stone-500">
-              Enviamos o pedido para o WhatsApp da Allvino. Agora e so acompanhar o status na sua conta.
+              Enviamos o pedido para o WhatsApp da Allvino. Agora é só acompanhar o status na sua conta.
             </p>
           </div>
           <p className="rounded-2xl bg-stone-50 px-4 py-3 text-xs font-bold uppercase tracking-widest text-stone-500">
@@ -276,7 +279,7 @@ export default function CheckoutPage() {
             </div>
             {successSummary.address && (
               <div className="flex justify-between gap-4">
-                <span className="font-bold text-stone-500">Endereco</span>
+                <span className="font-bold text-stone-500">Endereço</span>
                 <span className="text-right font-bold text-black">{successSummary.address}</span>
               </div>
             )}
@@ -291,7 +294,7 @@ export default function CheckoutPage() {
                 <span className="font-bold text-stone-500">Prazo</span>
                 <span className="text-right font-bold text-black">
                   {successSummary.zoneName}
-                  {successSummary.estimateDays ? `, ate ${successSummary.estimateDays} dia(s)` : ''}
+                  {successSummary.estimateDays ? `, até ${successSummary.estimateDays} dia(s)` : ''}
                 </span>
               </div>
             )}
@@ -348,7 +351,7 @@ export default function CheckoutPage() {
         <h2 className="text-xs font-bold text-stone-400 uppercase tracking-widest border-b pb-2">Seus Itens</h2>
         <div className="space-y-3">
           {cart.length === 0 ? (
-            <p className="text-stone-500 text-sm">O seu carrinho esta vazio.</p>
+            <p className="text-stone-500 text-sm">O seu carrinho está vazio.</p>
           ) : (
             cart.map((item) => (
               <div key={item.id} className="flex justify-between items-center text-sm">
@@ -394,7 +397,7 @@ export default function CheckoutPage() {
           </div>
           <div>
             <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest ml-1">WhatsApp</label>
-            <input type="text" readOnly value={user.phone || 'Nao informado'} className="w-full border-stone-200 bg-stone-50 rounded-xl text-sm font-bold text-stone-500 mt-1 focus:ring-0" />
+            <input type="text" readOnly value={user.phone || 'Não informado'} className="w-full border-stone-200 bg-stone-50 rounded-xl text-sm font-bold text-stone-500 mt-1 focus:ring-0" />
           </div>
         </div>
       </div>
@@ -448,7 +451,7 @@ export default function CheckoutPage() {
           <div className="space-y-3">
             <label className="flex items-center gap-3 p-4 border rounded-2xl border-stone-200 cursor-pointer has-[:checked]:border-black has-[:checked]:bg-stone-50 transition">
               <input type="radio" name="entrega" value="entrega" checked={entrega === 'entrega'} onChange={() => setEntrega('entrega')} className="text-black focus:ring-0" />
-              <div className="flex-1 text-sm font-bold">Entrega no Endereco</div>
+              <div className="flex-1 text-sm font-bold">Entrega no Endereço</div>
             </label>
             <label className="flex items-center gap-3 p-4 border rounded-2xl border-stone-200 cursor-pointer has-[:checked]:border-black has-[:checked]:bg-stone-50 transition">
               <input type="radio" name="entrega" value="retirada" checked={entrega === 'retirada'} onChange={() => setEntrega('retirada')} className="text-black focus:ring-0" />
@@ -496,7 +499,7 @@ export default function CheckoutPage() {
               <textarea
                 value={endereco}
                 onChange={(event) => setEndereco(event.target.value)}
-                placeholder="Rua, numero, bairro e cidade para entrega..."
+                placeholder="Rua, número, bairro e cidade para entrega..."
                 className="w-full border-stone-200 rounded-2xl p-4 text-sm outline-none focus:border-black transition-colors"
                 rows={3}
               />
@@ -511,15 +514,20 @@ export default function CheckoutPage() {
             onChange={(event) => setPagamento(event.target.value)}
             className="w-full border-stone-200 rounded-2xl p-4 text-sm outline-none focus:border-black transition-colors font-bold"
           >
-            <option value="Pix">Pix (Rapido e Seguro)</option>
-            <option value="Cartao (Link)">Cartao de Credito (Link de Pagamento)</option>
-            <option value="Cartao (Maquininha)">Cartao (Levar maquininha)</option>
+            <option value="Pix">Pix (Rápido e Seguro)</option>
+            <option value="Cartao (Link)">Cartão de Crédito (Link de Pagamento)</option>
+            <option value="Cartao (Maquininha)">Cartão (Levar maquininha)</option>
           </select>
         </div>
       </div>
 
       <div className="space-y-3">
-        <p className="text-center text-sm font-bold text-stone-500">O pedido sera recebido em nosso WhatsApp.</p>
+        {checkoutMessage && (
+          <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-center text-sm font-bold text-red-700">
+            {checkoutMessage}
+          </div>
+        )}
+        <p className="text-center text-sm font-bold text-stone-500">O pedido será recebido em nosso WhatsApp.</p>
         <button
           onClick={handleFinalizar}
           disabled={isLoading}
