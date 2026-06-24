@@ -1,6 +1,7 @@
 "use client";
 
 import { useFavorites } from '@/context/FavoritesContext';
+import { EmptyState, PageTransition, StaggerChildren, ListItem } from '@/components/ui';
 import { useCart } from '@/context/CartContext';
 import { useToast } from '@/context/ToastContext';
 
@@ -14,7 +15,7 @@ export default function FavoritosPage() {
   const { showToast } = useToast();
 
   return (
-    <main className="min-h-screen bg-[#FDFBF7] pb-24">
+    <PageTransition><main className="min-h-screen bg-[#FDFBF7] pb-24">
       <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-stone-100">
         <div className="flex items-center px-4 py-3">
           <h1 className="font-serif text-xl font-bold">Favoritos</h1>
@@ -23,15 +24,16 @@ export default function FavoritosPage() {
       </div>
       <div className="px-4 pt-4">
         {favorites.length === 0 ? (
-          <div className="text-center py-16">
-            <span className="material-symbols-outlined text-[48px] text-stone-200">favorite</span>
-            <p className="mt-4 font-bold text-stone-400">Nenhum favorito ainda.</p>
-            <p className="text-sm text-stone-300 mt-1">Toque no coracao nos vinhos para salvar aqui.</p>
-          </div>
+          <EmptyState
+            icon="favorite"
+            title="Nenhum favorito ainda"
+            description="Toque no coracao nos vinhos do catalogo para salvar seus preferidos aqui."
+            action={{ label: 'Ver Catalogo', href: '/catalogo' }}
+          />
         ) : (
-          <div className="space-y-3">
+          <StaggerChildren className="space-y-3">
             {favorites.map((wine) => (
-              <div key={wine.id} className="bg-white rounded-2xl border border-stone-100 p-4 flex gap-4 items-center">
+              <ListItem key={wine.id}><div className="bg-white rounded-2xl border border-stone-100 p-4 flex gap-4 items-center">
                 <a href={`/catalogo/${wine.id}`} className="flex-shrink-0">
                   <img src={wine.image_url || 'https://via.placeholder.com/300x400'} alt={wine.name} className="w-16 h-20 object-contain mix-blend-multiply" />
                 </a>
@@ -48,11 +50,11 @@ export default function FavoritosPage() {
                     <span className="material-symbols-outlined text-[18px]">add</span>
                   </button>
                 </div>
-              </div>
+              </div></ListItem>
             ))}
-          </div>
+          </StaggerChildren>
         )}
       </div>
-    </main>
+    </main></PageTransition>
   );
 }

@@ -3,7 +3,7 @@
 import { useCart } from '@/context/CartContext';
 import Link from 'next/link';
 import { useState } from 'react';
-import { IconButton, Button, Checkbox } from '@/components/ui';
+import { IconButton, Button, Checkbox, EmptyState } from '@/components/ui';
 
 export function CartOverlay() {
   const { cart, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, cartTotal } = useCart();
@@ -35,7 +35,7 @@ export function CartOverlay() {
         
         <div className="flex-1 overflow-y-auto p-6 space-y-4 no-scrollbar">
           {cart.length === 0 ? (
-            <p className="text-center text-stone-500 py-10 font-bold">Seu carrinho está vazio.</p>
+            <EmptyState icon="shopping_cart" title="Seu carrinho está vazio" description='Explore nosso catálogo e adicione vinhos deliciosos.' action={{ label: 'Ver Catálogo', href: '/catalogo' }} />
           ) : (
             cart.map((item) => (
               <div key={item.id} className="flex gap-4 items-center border-b pb-4">

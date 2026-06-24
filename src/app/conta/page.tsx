@@ -7,6 +7,7 @@ import { CurrentUser, getCurrentUserFast } from '@/lib/auth/currentUser';
 import { getUserOrders } from '@/lib/database/orders';
 import { CartItem, useCart } from '@/context/CartContext';
 import { OrderWithItems } from '@/types/database';
+import { EmptyState, PageTransition } from '@/components/ui';
 
 const statusLabels: Record<string, string> = {
   pending: 'Pendente',
@@ -128,7 +129,7 @@ export default function ContaPage() {
   }
 
   return (
-    <main className="max-w-xl mx-auto px-5 pt-8 pb-32 space-y-6 animate-in fade-in duration-300">
+    <PageTransition><main className="max-w-xl mx-auto px-5 pt-8 pb-32 space-y-6">
       <div className="space-y-2 text-center mb-8">
         <div className="w-20 h-20 bg-stone-200 rounded-full mx-auto flex items-center justify-center mb-4">
           <span className="material-symbols-outlined text-4xl text-stone-400">person</span>
@@ -304,6 +305,6 @@ export default function ContaPage() {
           <span className="material-symbols-outlined text-[18px]">logout</span> Sair da minha conta
         </button>
       </div>
-    </main>
+    </main></PageTransition>
   );
 }

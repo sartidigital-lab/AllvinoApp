@@ -5,7 +5,7 @@ import { useWines } from '@/hooks/useWines';
 import { useCart } from '@/context/CartContext';
 import { useToast } from '@/context/ToastContext';
 import { useFavorites } from '@/context/FavoritesContext';
-import { WineCardSkeleton } from '@/components/ui';
+import { WineCardSkeleton, EmptyState, PageTransition } from '@/components/ui';
 
 const priceRanges = [
   { label: 'Até R$50', min: 0, max: 50 },
@@ -81,7 +81,7 @@ export default function CatalogoPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#FDFBF7] pb-24">
+    <PageTransition><main className="min-h-screen bg-[#FDFBF7] pb-24">
       {/* Header */}
       <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-stone-100">
         <div className="flex items-center justify-between px-4 py-3">
@@ -333,6 +333,6 @@ export default function CatalogoPage() {
           </div>
         </div>
       )}
-    </main>
+    </main></PageTransition>
   );
 }
