@@ -30,6 +30,18 @@ body:has(.admin-shell) {
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; 
 }
 
+/* Shimmer skeleton animation */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-shimmer {
+  animation: shimmer 1.8s ease-in-out infinite;
+  background: linear-gradient(90deg, #e7e5e4 25%, #f5f5f4 50%, #e7e5e4 75%);
+  background-size: 200% 100%;
+}
+
 .admin-shell {
   min-height: 100vh;
   background:
