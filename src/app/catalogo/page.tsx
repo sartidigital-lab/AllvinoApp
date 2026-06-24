@@ -5,6 +5,7 @@ import { useWines } from '@/hooks/useWines';
 import { useCart } from '@/context/CartContext';
 import { useToast } from '@/context/ToastContext';
 import { useFavorites } from '@/context/FavoritesContext';
+import { useRecentlyViewed } from '@/context/RecentlyViewedContext';
 import { WineCardSkeleton, EmptyState, PageTransition } from '@/components/ui';
 
 const priceRanges = [
@@ -26,6 +27,7 @@ export default function CatalogoPage() {
   const { addToCart } = useCart();
   const { showToast } = useToast();
   const { toggleFavorite, isFavorite } = useFavorites();
+  const { recentlyViewed } = useRecentlyViewed();
 
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState('recent');
@@ -157,6 +159,40 @@ export default function CatalogoPage() {
           <button onClick={clearFilters} className="text-xs font-bold text-stone-400 hover:text-[#B91C1C]">
             Limpar filtros
           </button>
+        </div>
+      )}
+
+      {/* Recently Viewed */}
+      {recentlyViewed.length > 0 && !search && selectedPrice === null && !selectedType && !selectedGrape && !selectedRegion && (
+        <div className="px-4 pt-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-serif text-lg font-bold">Vistos Recentemente</h2>
+            <a href="/favoritos" className="text-xs font-bold text-stone-400 hover:text-[#B91C1C]">
+              Ver todos
+            </a>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+            {recentlyViewed.slice(0, 8).map((wine) => (
+              <a
+                key={wine.id}
+                href={`/catalogo/${wine.id}`}
+                className="shrink-0 w-[140px] bg-white rounded-2xl border border-stone-100 overflow-hidden active:scale-[0.98] transition-transform"
+              >
+                <img
+                  src={wine.image_url || 'https://via.placeholder.com/300x400'}
+                  alt={wine.name}
+                  className="w-full h-28 object-contain mix-blend-multiply p-2"
+                />
+                <div className="p-2">
+                  <p className="text-[10px] font-bold text-stone-400 uppercase truncate">{wine.type || wine.region}</p>
+                  <p className="font-bold text-xs line-clamp-2 mt-0.5">{wine.name}</p>
+                  <p className="text-xs font-bold text-[#B91C1C] mt-1">
+                    R$ {wine.price.toFixed(2).replace('.', ',')}
+                  </p>
+                </div>
+              </a>
+            ))}
+          </div>
         </div>
       )}
 

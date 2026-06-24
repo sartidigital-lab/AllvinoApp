@@ -2,6 +2,7 @@ import { AppChrome } from '../components/layout/AppChrome';
 import { CartProvider } from '../context/CartContext';
 import { ToastProvider } from '../context/ToastContext';
 import { FavoritesProvider } from '../context/FavoritesContext';
+import { RecentlyViewedProvider } from '../context/RecentlyViewedContext';
 import './globals.css';
 
 export const metadata = {
@@ -26,12 +27,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="pb-24">
         <ToastProvider>
-          <FavoritesProvider>
-            <CartProvider>
+          <RecentlyViewedProvider>
+            <FavoritesProvider>
+              <CartProvider>
               <AppChrome />
-              {children}
-            </CartProvider>
-          </FavoritesProvider>
+              {children}              </CartProvider>
+            </FavoritesProvider>
+          </RecentlyViewedProvider>
         </ToastProvider>
       </body>
     </html>

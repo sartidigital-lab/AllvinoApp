@@ -1,10 +1,11 @@
 "use client";
 
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useWine, useWines } from '@/hooks/useWines';
 import { useCart } from '@/context/CartContext';
 import { useToast } from '@/context/ToastContext';
 import { useFavorites } from '@/context/FavoritesContext';
+import { useRecentlyViewed } from '@/context/RecentlyViewedContext';
 import { WineDetailSkeleton } from '@/components/ui';
 import { useParams } from 'next/navigation';
 
@@ -53,6 +54,11 @@ export default function WineDetailPage() {
   const { addToCart } = useCart();
   const { showToast } = useToast();
   const { toggleFavorite, isFavorite } = useFavorites();
+  const { trackView } = useRecentlyViewed();
+
+  useEffect(() => {
+    if (wine) trackView(wine);
+  }, [wine, trackView]);
 
   if (isLoading) return <WineDetailSkeleton />;
 
