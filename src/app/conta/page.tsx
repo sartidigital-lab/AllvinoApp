@@ -86,6 +86,7 @@ export default function ContaPage() {
       category: 'Vinho',
       product_code: null,
       stock: 0,
+      published: true,
       created_at: order.created_at,
       quantity: item.quantity,
     }));

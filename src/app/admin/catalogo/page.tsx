@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { AdminEmptyState, AdminNotice, AdminPageHeader, AdminSection, AdminStatCard, AdminStatusBadge } from '@/components/admin/AdminPrimitives';
-import { createWine, deleteWine, fetchWinesFromSupabase, updateWine } from '@/lib/database/wines';
+import { createWine, deleteWine, fetchWinesFromSupabase, toggleWinePublished, updateWine } from '@/lib/database/wines';
 import { fetchStockLevelByCode, fetchStockLevelsByCodes, normalizeProductCode } from '@/lib/database/stock';
 import { createClient } from '@/utils/supabase/client';
 import { Wine } from '@/types/database';
@@ -18,6 +18,7 @@ type WineForm = {
   grape: string;
   stock: string;
   category: string;
+  published: boolean;
 };
 
 const emptyForm: WineForm = {
@@ -31,6 +32,7 @@ const emptyForm: WineForm = {
   grape: '',
   stock: '0',
   category: '',
+  published: true,
 };
 
 const allowedImageTypes = ['image/png', 'image/jpeg', 'image/webp'];
@@ -115,6 +117,7 @@ function toForm(wine: Wine): WineForm {
     grape: wine.grape || '',
     stock: String(wine.stock),
     category: wine.category || '',
+    published: wine.published,
   };
 }
 
@@ -130,6 +133,7 @@ function toPayload(form: WineForm): Partial<Wine> {
     grape: form.grape.trim() || null,
     stock: Number(form.stock || 0),
     category: form.category.trim() || null,
+    published: form.published,
   };
 }
 
@@ -167,9 +171,11 @@ export default function AdminCatalogPage() {
         acc.total += 1;
         if (wine.stock <= 5) acc.lowStock += 1;
         if (wine.image_url) acc.withImage += 1;
+        if (wine.published) acc.published += 1;
+        if (!wine.published) acc.unpublished += 1;
         return acc;
       },
-      { total: 0, lowStock: 0, withImage: 0 }
+      { total: 0, lowStock: 0, withImage: 0, published: 0, unpublished: 0 }
     );
   }, [wines]);
 
@@ -235,7 +241,7 @@ export default function AdminCatalogPage() {
 
       if (quantity === null) {
         if (options.showMessage) {
-          setMessage(`Código ${normalizedCode} ainda não existe na base de estoque importada.`);
+          setMessage(`Código ${normalizedCode} não encontrado na base importada. Você pode inserir o estoque manualmente.`);
         }
         return null;
       }
@@ -254,6 +260,18 @@ export default function AdminCatalogPage() {
     } finally {
       setIsSyncingStock(false);
     }
+  };
+
+  const handleTogglePublished = async (wine: Wine) => {
+    setMessage(null);
+    const newPublished = !wine.published;
+    const updated = await toggleWinePublished(wine.id, newPublished);
+    if (!updated) {
+      setMessage('Não foi possível alterar a visibilidade do produto.');
+      return;
+    }
+    await loadWines();
+    setMessage(`"${wine.name}" ${newPublished ? 'publicado' : 'despublicado'} com sucesso.`);
   };
 
   const handleImageUpload = async (file: File | undefined) => {
@@ -329,11 +347,6 @@ export default function AdminCatalogPage() {
       return;
     }
 
-    if (!form.product_code.trim()) {
-      setMessage('Informe o código de estoque do produto.');
-      return;
-    }
-
     if (!form.category.trim()) {
       setMessage('Informe o país do produto.');
       return;
@@ -343,20 +356,24 @@ export default function AdminCatalogPage() {
     setMessage(null);
 
     try {
-      const normalizedProductCode = normalizeProductCode(form.product_code);
-      const syncedQuantity = normalizedProductCode
-        ? await syncStockFromProductCode(normalizedProductCode)
+      const normalizedProductCode = form.product_code.trim()
+        ? normalizeProductCode(form.product_code)
         : null;
 
-      if (syncedQuantity === null) {
-        setMessage(`Código ${normalizedProductCode} não encontrado na base de estoque. Importe a planilha ou cadastre este código em Estoque antes de salvar o produto.`);
-        return;
+      // Try to sync stock from import if a product code exists — but don't block save
+      let finalStock = Number(form.stock || 0);
+      if (normalizedProductCode) {
+        const syncedQuantity = await syncStockFromProductCode(normalizedProductCode);
+        if (syncedQuantity !== null) {
+          finalStock = syncedQuantity;
+        }
+        // If sync returns null, we keep the manually entered stock value
       }
 
       const payload = toPayload({
         ...form,
-        product_code: normalizedProductCode,
-        stock: syncedQuantity === null ? form.stock : String(syncedQuantity),
+        product_code: normalizedProductCode || '',
+        stock: String(finalStock),
       });
       const savedWine = editingWine
         ? await updateWine(editingWine.id, payload)
@@ -409,9 +426,10 @@ export default function AdminCatalogPage() {
         )}
       />
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <AdminStatCard label="Produtos" value={summary.total} icon="wine_bar" tone="dark" />
-        <AdminStatCard label="Com imagem" value={summary.withImage} icon="image" />
+        <AdminStatCard label="Publicados" value={summary.published} icon="visibility" tone="success" />
+        <AdminStatCard label="Rascunhos" value={summary.unpublished} icon="visibility_off" tone="warning" />
         <AdminStatCard label="Estoque baixo" value={summary.lowStock} icon="production_quantity_limits" tone="accent" />
       </div>
 
@@ -461,15 +479,27 @@ export default function AdminCatalogPage() {
               <span className="text-xs font-bold uppercase text-stone-400">Código estoque</span>
               <input
                 value={form.product_code}
-                onBlur={(event) => syncStockFromProductCode(event.target.value, { showMessage: true })}
                 onChange={(event) => setForm({ ...form, product_code: normalizeProductCode(event.target.value) })}
+                placeholder="Opcional"
                 className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold uppercase outline-none focus:border-black"
               />
+              <p className="text-[10px] font-bold text-stone-400">Opcional — vincule à base importada ou insira estoque manualmente</p>
             </label>
             <label className="space-y-1">
               <span className="text-xs font-bold uppercase text-stone-400">Estoque</span>
               <input type="number" min="0" value={form.stock} onChange={(event) => setForm({ ...form, stock: event.target.value })} className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black" />
-              {isSyncingStock && <p className="text-xs font-bold text-stone-400">Sincronizando estoque...</p>}
+              <div className="flex items-center gap-2">
+                {isSyncingStock && <p className="text-xs font-bold text-stone-400">Sincronizando...</p>}
+                {form.product_code.trim() && !isSyncingStock && (
+                  <button
+                    type="button"
+                    onClick={() => syncStockFromProductCode(form.product_code, { showMessage: true })}
+                    className="text-[10px] font-bold text-blue-600 hover:text-blue-800 underline"
+                  >
+                    Sincronizar com planilha
+                  </button>
+                )}
+              </div>
             </label>
             <label className="space-y-1">
               <span className="text-xs font-bold uppercase text-stone-400">Tipo</span>
@@ -529,6 +559,29 @@ export default function AdminCatalogPage() {
               <span className="text-xs font-bold uppercase text-stone-400">Descrição</span>
               <textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} rows={3} className="w-full resize-none rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black" />
             </label>
+            <div className="space-y-2 lg:col-span-4">
+              <span className="text-xs font-bold uppercase text-stone-400">Visibilidade</span>
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, published: !form.published })}
+                  className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    form.published ? 'bg-emerald-500' : 'bg-stone-300'
+                  }`}
+                  role="switch"
+                  aria-checked={form.published}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                      form.published ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+                <span className="text-sm font-bold text-black">
+                  {form.published ? 'Publicado — visível no catálogo' : 'Rascunho — oculto do catálogo'}
+                </span>
+              </div>
+            </div>
           </div>
 
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
@@ -563,14 +616,16 @@ export default function AdminCatalogPage() {
                 const stockStatus = getStockLinkStatus(wine, stockByCode);
 
                 return (
-                  <article key={wine.id} className="rounded-lg border border-stone-100 bg-white p-4">
+                  <article key={wine.id} className={`rounded-lg border bg-white p-4 transition-opacity ${wine.published ? 'border-stone-100' : 'border-stone-200 opacity-70'}`}>
                     <div className="flex gap-3">
                       <img src={wine.image_url || 'https://via.placeholder.com/50x150'} alt={wine.name} className="h-24 w-16 shrink-0 rounded bg-stone-50 object-contain" />
                       <div className="min-w-0 flex-1">
                         <p className="line-clamp-2 text-sm font-bold text-black">{wine.name}</p>
                         <p className="mt-1 text-xs font-bold text-stone-400">{wine.product_code || 'Sem código'}</p>
                         <div className="mt-2 flex flex-wrap gap-2">
-                          <AdminStatusBadge tone="neutral">{[wine.type, wine.category].filter(Boolean).join(' / ') || 'Vinho'}</AdminStatusBadge>
+                          <AdminStatusBadge tone={wine.published ? 'success' : 'neutral'}>
+                            {wine.published ? 'Publicado' : 'Rascunho'}
+                          </AdminStatusBadge>
                           <AdminStatusBadge tone={wine.stock > 10 ? 'success' : 'danger'}>{wine.stock} un.</AdminStatusBadge>
                         </div>
                       </div>
@@ -582,7 +637,11 @@ export default function AdminCatalogPage() {
                         <p className="opacity-70">{stockStatus.detail}</p>
                       </div>
                     </div>
-                    <div className="mt-3 grid grid-cols-2 gap-2">
+                    <div className="mt-3 grid grid-cols-3 gap-2">
+                      <button onClick={() => handleTogglePublished(wine)} className={`admin-button flex items-center justify-center gap-2 border text-sm ${wine.published ? 'border-amber-200 text-amber-700 hover:bg-amber-50' : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'}`} type="button">
+                        <span className="material-symbols-outlined text-[18px]">{wine.published ? 'visibility_off' : 'visibility'}</span>
+                        {wine.published ? 'Ocultar' : 'Publicar'}
+                      </button>
                       <button onClick={() => openEditForm(wine)} className="admin-button flex items-center justify-center gap-2 border border-stone-200 text-sm text-stone-700 hover:bg-stone-50" type="button">
                         <span className="material-symbols-outlined text-[18px]">edit</span>
                         Editar
@@ -598,68 +657,76 @@ export default function AdminCatalogPage() {
             </div>
 
             <div className="hidden overflow-x-auto lg:block">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-[#FDFBF7] text-stone-500 text-xs uppercase tracking-wider border-b border-stone-100">
-                <th className="p-4 font-bold">Produto</th>
-                <th className="p-4 font-bold">Tipo / País</th>
-                <th className="p-4 font-bold">Preco</th>
-                <th className="p-4 font-bold">Estoque</th>
-                <th className="p-4 font-bold">Vínculo estoque</th>
-                <th className="p-4 font-bold">Status</th>
-                <th className="p-4 font-bold text-center">Acoes</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-stone-100">
-              {filteredWines.map((wine) => {
-                const stockStatus = getStockLinkStatus(wine, stockByCode);
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-[#FDFBF7] text-stone-500 text-xs uppercase tracking-wider border-b border-stone-100">
+                    <th className="p-4 font-bold">Produto</th>
+                    <th className="p-4 font-bold">Tipo / País</th>
+                    <th className="p-4 font-bold">Preco</th>
+                    <th className="p-4 font-bold">Estoque</th>
+                    <th className="p-4 font-bold">Vínculo estoque</th>
+                    <th className="p-4 font-bold">Status</th>
+                    <th className="p-4 font-bold text-center">Acoes</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100">
+                  {filteredWines.map((wine) => {
+                    const stockStatus = getStockLinkStatus(wine, stockByCode);
 
-                return (
-                <tr key={wine.id} className="hover:bg-stone-50 transition-colors">
-                  <td className="p-4">
-                    <div className="flex items-center gap-4 min-w-72">
-                      <img src={wine.image_url || 'https://via.placeholder.com/50x150'} alt={wine.name} className="h-16 w-12 object-contain bg-stone-50 rounded" />
-                      <div>
-                        <p className="font-bold text-black">{wine.name}</p>
-                        <p className="text-xs text-stone-400 font-bold">{wine.product_code || 'Sem código'} | {wine.grape || 'Uva'} | {wine.category || 'País'} | {wine.region || 'Região'}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <AdminStatusBadge tone="neutral">{[wine.type, wine.category].filter(Boolean).join(' / ') || 'Vinho'}</AdminStatusBadge>
-                  </td>
-                  <td className="p-4 font-bold text-black">R$ {wine.price.toFixed(2).replace('.', ',')}</td>
-                  <td className="p-4">
-                    <AdminStatusBadge tone={wine.stock > 10 ? 'success' : 'danger'}>{wine.stock} un.</AdminStatusBadge>
-                  </td>
-                  <td className="p-4">
-                    <div className={`inline-flex min-w-36 items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold ${stockStatus.className}`}>
-                      <span className="material-symbols-outlined text-[16px]">{stockStatus.icon}</span>
-                      <div>
-                        <p>{stockStatus.label}</p>
-                        <p className="font-bold opacity-70">{stockStatus.detail}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <AdminStatusBadge icon="check_circle" tone="success">
-                      Ativo
-                    </AdminStatusBadge>
-                  </td>
-                  <td className="p-4">
-                    <div className="flex justify-center gap-2">
-                      <button onClick={() => openEditForm(wine)} className="admin-button flex h-10 w-10 items-center justify-center text-blue-500 hover:bg-blue-50 hover:text-blue-700" title="Editar" type="button">
-                        <span className="material-symbols-outlined">edit</span>
-                      </button>
-                      <button onClick={() => handleDelete(wine)} className="admin-button flex h-10 w-10 items-center justify-center text-red-500 hover:bg-red-50 hover:text-red-700" title="Excluir" type="button">
-                        <span className="material-symbols-outlined">delete</span>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              )})}
-            </tbody>
-          </table>
+                    return (
+                    <tr key={wine.id} className={`transition-colors ${wine.published ? 'hover:bg-stone-50' : 'bg-stone-50/50 opacity-70'}`}>
+                      <td className="p-4">
+                        <div className="flex items-center gap-4 min-w-72">
+                          <img src={wine.image_url || 'https://via.placeholder.com/50x150'} alt={wine.name} className="h-16 w-12 object-contain bg-stone-50 rounded" />
+                          <div>
+                            <p className="font-bold text-black">{wine.name}</p>
+                            <p className="text-xs text-stone-400 font-bold">{wine.product_code || 'Sem código'} | {wine.grape || 'Uva'} | {wine.category || 'País'} | {wine.region || 'Região'}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <AdminStatusBadge tone="neutral">{[wine.type, wine.category].filter(Boolean).join(' / ') || 'Vinho'}</AdminStatusBadge>
+                      </td>
+                      <td className="p-4 font-bold text-black">R$ {wine.price.toFixed(2).replace('.', ',')}</td>
+                      <td className="p-4">
+                        <AdminStatusBadge tone={wine.stock > 10 ? 'success' : 'danger'}>{wine.stock} un.</AdminStatusBadge>
+                      </td>
+                      <td className="p-4">
+                        <div className={`inline-flex min-w-36 items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold ${stockStatus.className}`}>
+                          <span className="material-symbols-outlined text-[16px]">{stockStatus.icon}</span>
+                          <div>
+                            <p>{stockStatus.label}</p>
+                            <p className="font-bold opacity-70">{stockStatus.detail}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <AdminStatusBadge icon={wine.published ? 'check_circle' : 'visibility_off'} tone={wine.published ? 'success' : 'neutral'}>
+                          {wine.published ? 'Publicado' : 'Rascunho'}
+                        </AdminStatusBadge>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex justify-center gap-2">
+                          <button
+                            onClick={() => handleTogglePublished(wine)}
+                            className={`admin-button flex h-10 w-10 items-center justify-center ${wine.published ? 'text-amber-500 hover:bg-amber-50 hover:text-amber-700' : 'text-emerald-500 hover:bg-emerald-50 hover:text-emerald-700'}`}
+                            title={wine.published ? 'Despublicar' : 'Publicar'}
+                            type="button"
+                          >
+                            <span className="material-symbols-outlined">{wine.published ? 'visibility_off' : 'visibility'}</span>
+                          </button>
+                          <button onClick={() => openEditForm(wine)} className="admin-button flex h-10 w-10 items-center justify-center text-blue-500 hover:bg-blue-50 hover:text-blue-700" title="Editar" type="button">
+                            <span className="material-symbols-outlined">edit</span>
+                          </button>
+                          <button onClick={() => handleDelete(wine)} className="admin-button flex h-10 w-10 items-center justify-center text-red-500 hover:bg-red-50 hover:text-red-700" title="Excluir" type="button">
+                            <span className="material-symbols-outlined">delete</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )})}
+                </tbody>
+              </table>
             </div>
           </>
         )}

@@ -12,6 +12,7 @@ export type LegacyProduct = {
   tipo: string | null;
   uva: string | null;
   estoque: number | null;
+  publicado: boolean | null;
   criado_em: string;
 };
 
@@ -28,6 +29,7 @@ export function mapProductToWine(product: LegacyProduct): Wine {
     category: product.pais,
     stock: Number(product.estoque ?? 0),
     product_code: product.sku_sankhya,
+    published: product.publicado !== false,
     created_at: product.criado_em,
   };
 }
@@ -44,5 +46,6 @@ export function mapWineToProduct(wineData: Partial<Wine>) {
     tipo: wineData.type,
     uva: wineData.grape,
     estoque: wineData.stock,
+    publicado: wineData.published ?? true,
   };
 }

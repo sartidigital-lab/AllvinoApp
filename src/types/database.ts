@@ -10,6 +10,7 @@ export type Wine = {
   category: string | null;
   stock: number;
   product_code: string | null;
+  published: boolean;
   created_at: string;
 };
 

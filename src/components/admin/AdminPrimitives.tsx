@@ -10,7 +10,7 @@ type AdminStatCardProps = {
   label: string;
   value: ReactNode;
   icon?: string;
-  tone?: 'dark' | 'default' | 'accent';
+  tone?: 'dark' | 'default' | 'accent' | 'success' | 'warning';
 };
 
 type AdminSectionProps = {
@@ -54,13 +54,15 @@ export function AdminPageHeader({ title, description, actions }: AdminPageHeader
 export function AdminStatCard({ label, value, icon, tone = 'default' }: AdminStatCardProps) {
   const isDark = tone === 'dark';
   const isAccent = tone === 'accent';
+  const isSuccess = tone === 'success';
+  const isWarning = tone === 'warning';
 
   return (
     <div className={`admin-surface relative overflow-hidden p-5 ${isDark ? 'border-black bg-black text-white' : ''}`}>
       {icon && (
         <span
           className={`material-symbols-outlined absolute -bottom-4 -right-3 text-[92px] ${
-            isDark ? 'text-white/10' : isAccent ? 'text-red-100' : 'text-stone-100'
+            isDark ? 'text-white/10' : isAccent ? 'text-red-100' : isSuccess ? 'text-emerald-100' : isWarning ? 'text-amber-100' : 'text-stone-100'
           }`}
         >
           {icon}
