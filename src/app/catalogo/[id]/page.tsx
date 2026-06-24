@@ -151,15 +151,18 @@ export default function WineDetailPage() {
                 disabled={wine.stock === 0}
                 className="flex-1 bg-[#B91C1C] text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-red-900/20 hover:scale-[1.02] active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
-                {wine.stock === 0 ? 'Indisponivel' : 'Adicionar ao Carrinho'}
+                {wine.stock === 0 ? 'Indisponivel' : 'Adicionar ao carrinho'}
               </button>
             </div>
+            <a href="/catalogo" className="block text-center text-sm font-bold text-stone-400 hover:text-[#B91C1C] transition">
+              Continuar comprando
+            </a>
           </div>
         </div>
 
         {relatedWines.length > 0 && (
           <div className="mt-12">
-            <h2 className="font-serif text-xl font-bold mb-4">Voce tambem pode gostar</h2>
+            <h2 className="font-serif text-xl font-bold mb-4">Você também pode gostar</h2>
             <div className="grid grid-cols-3 gap-4">
               {relatedWines.map((w) => (
                 <a key={w.id} href={`/catalogo/${w.id}`} className="bg-white rounded-2xl border border-stone-100 p-4 text-center active:scale-[0.98] transition-transform">

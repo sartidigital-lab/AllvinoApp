@@ -14,7 +14,7 @@ const checks = [
   },
   {
     file: 'src/components/layout/Navbar.tsx',
-    includes: ['href="/"', 'href="/catalogo"', 'href="/conta"', 'Início', 'Catálogo', 'Conta'],
+    includes: ["href: '/'", "href: '/catalogo'", "href: '/conta'", 'Início', 'Catálogo', 'Conta'],
   },
   {
     file: 'src/components/cart/CartOverlay.tsx',
@@ -26,7 +26,7 @@ const checks = [
   },
   {
     file: 'src/app/catalogo/[id]/page.tsx',
-    includes: ['Adicionar ao carrinho', 'Continuar comprando', 'Você também pode gostar', 'addManyToCart'],
+    includes: ['Adicionar ao carrinho', 'Continuar comprando', 'Você também pode gostar'],
   },
   {
     file: 'src/app/checkout/page.tsx',
@@ -34,7 +34,7 @@ const checks = [
   },
   {
     file: 'src/app/conta/page.tsx',
-    includes: ['Meus Pedidos', 'Repetir pedido', 'Salvar Alterações', 'getUserOrders'],
+    includes: ['Meus Pedidos', 'Repetir pedido', 'Salvar Alterações', 'getUserOrders', 'addManyToCart'],
   },
   {
     file: 'src/app/admin/layout.tsx',

@@ -110,7 +110,7 @@ export default function CatalogoPage() {
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-[18px]">search</span>
             <input
               type="text"
-              placeholder="Buscar vinho, uva, país..."
+              placeholder="Buscar por nome"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-9 pr-3 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#B91C1C] focus:border-transparent"
@@ -121,7 +121,7 @@ export default function CatalogoPage() {
             onChange={(e) => setSortBy(e.target.value)}
             className="px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#B91C1C]"
           >
-            <option value="recent">Recentes</option>
+            <option value="recent">Mais recentes</option>
             <option value="name">Nome</option>
             <option value="price-asc">Menor preço</option>
             <option value="price-desc">Maior preço</option>

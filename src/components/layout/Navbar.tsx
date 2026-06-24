@@ -7,8 +7,8 @@ export function Navbar() {
   const pathname = usePathname();
 
   const navItems = [
-    { href: '/', icon: 'home', label: 'Inicio', match: pathname === '/' },
-    { href: '/catalogo', icon: 'apps', label: 'Catalogo', match: pathname?.startsWith('/catalogo') },
+    { href: '/', icon: 'home', label: 'Início', match: pathname === '/' },
+    { href: '/catalogo', icon: 'apps', label: 'Catálogo', match: pathname?.startsWith('/catalogo') },
     { href: '/favoritos', icon: 'favorite', label: 'Favoritos', match: pathname?.startsWith('/favoritos') },
     { href: '/conta', icon: 'person', label: 'Conta', match: pathname?.startsWith('/conta') },
   ];
