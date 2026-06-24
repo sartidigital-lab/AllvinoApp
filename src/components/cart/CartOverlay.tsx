@@ -35,7 +35,7 @@ export function CartOverlay() {
         
         <div className="flex-1 overflow-y-auto p-6 space-y-4 no-scrollbar">
           {cart.length === 0 ? (
-            <EmptyState icon="shopping_cart" title="Seu carrinho está vazio" description='Explore nosso catálogo e adicione vinhos deliciosos.' action={{ label: 'Ver Catálogo', href: '/catalogo' }} />
+            <EmptyState icon="shopping_cart" title="Seu carrinho está vazio" description='Explore nosso catálogo e adicione vinhos deliciosos.' />
           ) : (
             cart.map((item) => (
               <div key={item.id} className="flex gap-4 items-center border-b pb-4">
