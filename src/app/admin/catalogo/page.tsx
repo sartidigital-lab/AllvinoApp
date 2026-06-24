@@ -486,21 +486,25 @@ export default function AdminCatalogPage() {
               <p className="text-[10px] font-bold text-stone-400">Opcional — vincule à base importada ou insira estoque manualmente</p>
             </label>
             <label className="space-y-1">
-              <span className="text-xs font-bold uppercase text-stone-400">Estoque</span>
-              <input type="number" min="0" value={form.stock} onChange={(event) => setForm({ ...form, stock: event.target.value })} className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black" />
-              <div className="flex items-center gap-2">
-                {isSyncingStock && <p className="text-xs font-bold text-stone-400">Sincronizando...</p>}
-                {form.product_code.trim() && !isSyncingStock && (
-                  <button
-                    type="button"
-                    onClick={() => syncStockFromProductCode(form.product_code, { showMessage: true })}
-                    className="text-[10px] font-bold text-blue-600 hover:text-blue-800 underline"
-                  >
-                    Sincronizar com planilha
-                  </button>
-                )}
-              </div>
+              <span className="text-xs font-bold uppercase text-stone-400">Estoque (unidades)</span>
+              <input type="number" min="0" value={form.stock} onChange={(event) => setForm({ ...form, stock: event.target.value })} placeholder="Digite a quantidade disponível" className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black" />
+              <p className="text-[10px] font-bold text-stone-400">Insira o estoque disponível manualmente</p>
             </label>
+            {form.product_code.trim() && (
+              <div className="space-y-1">
+                <span className="text-xs font-bold uppercase text-stone-400">Sincronizar com planilha</span>
+                <button
+                  type="button"
+                  disabled={isSyncingStock}
+                  onClick={() => syncStockFromProductCode(form.product_code, { showMessage: true })}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs font-bold text-blue-700 transition hover:bg-blue-100 disabled:opacity-60"
+                >
+                  <span className="material-symbols-outlined text-[16px]">sync</span>
+                  {isSyncingStock ? 'Sincronizando...' : 'Sincronizar estoque com a base importada'}
+                </button>
+                <p className="text-[10px] font-bold text-stone-400">Busca o saldo da planilha importada para este código</p>
+              </div>
+            )}
             <label className="space-y-1">
               <span className="text-xs font-bold uppercase text-stone-400">Tipo</span>
               <input value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })} className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black" />
