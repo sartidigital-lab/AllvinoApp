@@ -1,9 +1,10 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react';
+import * as XLSX from 'xlsx';
 import { AdminEmptyState, AdminNotice, AdminPageHeader, AdminSection, AdminStatCard, AdminStatusBadge } from '@/components/admin/AdminPrimitives';
 import { createWine, deleteWine, fetchWinesFromSupabase, toggleWinePublished, updateWine } from '@/lib/database/wines';
-import { fetchStockLevelByCode, fetchStockLevelsByCodes, normalizeProductCode } from '@/lib/database/stock';
+import { fetchStockLevelByCode, fetchStockLevelsByCodes, importStockLevels, normalizeProductCode, parseStockRows } from '@/lib/database/stock';
 import { createClient } from '@/utils/supabase/client';
 import { Wine } from '@/types/database';
 
@@ -148,6 +149,7 @@ export default function AdminCatalogPage() {
   const [editingWine, setEditingWine] = useState<Wine | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSyncingStock, setIsSyncingStock] = useState(false);
+  const [isImportingStock, setIsImportingStock] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -395,6 +397,50 @@ export default function AdminCatalogPage() {
     }
   };
 
+  const handleStockImport = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsImportingStock(true);
+    setMessage(null);
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: 'array', raw: true });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+
+      if (!sheet) {
+        setMessage('Não encontrei uma aba válida na planilha.');
+        return;
+      }
+
+      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' });
+      const parsedRows = parseStockRows(rows);
+
+      if (parsedRows.length === 0) {
+        setMessage('Não encontrei colunas de código e quantidade na planilha. Use colunas como "Código" e "Estoque" ou "Saldo".');
+        return;
+      }
+
+      const { count, error } = await importStockLevels(parsedRows, file.name);
+
+      if (error) {
+        const detail = getErrorMessage(error);
+        setMessage(`Não foi possível importar o estoque.${detail ? ` Detalhe: ${detail}` : ''}`);
+        return;
+      }
+
+      await loadWines();
+      setMessage(`${count} códigos de estoque importados com sucesso.`);
+    } catch (error) {
+      const detail = getErrorMessage(error);
+      setMessage(`Não foi possível ler o arquivo.${detail ? ` Detalhe: ${detail}` : ''}`);
+    } finally {
+      event.target.value = '';
+      setIsImportingStock(false);
+    }
+  };
+
   const handleDelete = async (wine: Wine) => {
     if (!confirm(`Excluir "${wine.name}" do catálogo?`)) return;
 
@@ -415,14 +461,27 @@ export default function AdminCatalogPage() {
         title="Catálogo de Vinhos"
         description="Gerencie produtos, imagens, estoque e informações comerciais."
         actions={(
-          <button
-            type="button"
-            onClick={openCreateForm}
-            className="admin-button flex items-center gap-2 bg-black px-5 text-sm text-white shadow-sm hover:bg-stone-800"
-          >
-            <span className="material-symbols-outlined text-[20px]">add</span>
-            Novo Vinho
-          </button>
+          <>
+            <label className="admin-button flex cursor-pointer items-center gap-2 border border-stone-200 bg-white px-4 text-sm text-stone-700 shadow-sm transition hover:bg-stone-50">
+              <span className="material-symbols-outlined text-[20px]">upload_file</span>
+              {isImportingStock ? 'Importando...' : 'Importar estoque'}
+              <input
+                type="file"
+                accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
+                disabled={isImportingStock}
+                onChange={handleStockImport}
+                className="hidden"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={openCreateForm}
+              className="admin-button flex items-center gap-2 bg-black px-5 text-sm text-white shadow-sm hover:bg-stone-800"
+            >
+              <span className="material-symbols-outlined text-[20px]">add</span>
+              Novo Vinho
+            </button>
+          </>
         )}
       />
 

@@ -17,6 +17,56 @@ export function normalizeProductCode(value: string) {
   return value.trim().toUpperCase();
 }
 
+function normalizeHeader(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+}
+
+function getCell(row: Record<string, unknown>, candidates: string[]) {
+  const entry = Object.entries(row).find(([key]) =>
+    candidates.includes(normalizeHeader(key))
+  );
+  return entry?.[1];
+}
+
+function parseQuantity(value: unknown) {
+  if (typeof value === 'number') return Math.trunc(value);
+  const normalized = String(value || '')
+    .trim()
+    .replace(/\./g, '')
+    .replace(',', '.');
+  return Math.trunc(Number(normalized || 0));
+}
+
+export function parseStockRows(rows: Record<string, unknown>[]): StockLevelInput[] {
+  const parsedRows = rows
+    .map((row) => {
+      const code = getCell(row, [
+        'codigo', 'cod', 'codigoproduto', 'codigodoproduto', 'codproduto',
+        'codprod', 'codigointerno', 'sku', 'skuproduto', 'produto',
+        'idproduto', 'referencia', 'ref', 'ean',
+      ]);
+      const quantity = getCell(row, [
+        'quantidade', 'quantidadeestoque', 'qtd', 'qtde', 'qtdestoque',
+        'estoque', 'estoqueatual', 'estoquedisponivel', 'saldo',
+        'saldoatual', 'saldoestoque', 'saldodisponivel', 'disponivel',
+      ]);
+
+      return {
+        product_code: normalizeProductCode(String(code || '')),
+        quantity: parseQuantity(quantity),
+      };
+    })
+    .filter((row) => row.product_code && Number.isFinite(row.quantity) && row.quantity >= 0);
+
+  const rowsByCode = new Map<string, StockLevelInput>();
+  parsedRows.forEach((row) => rowsByCode.set(row.product_code, row));
+  return [...rowsByCode.values()];
+}
+
 export async function fetchStockLevels(): Promise<{
   stockLevels: StockLevelWithProduct[];
   error: Error | null;
