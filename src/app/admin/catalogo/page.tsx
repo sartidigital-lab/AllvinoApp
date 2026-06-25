@@ -267,13 +267,18 @@ export default function AdminCatalogPage() {
   const handleTogglePublished = async (wine: Wine) => {
     setMessage(null);
     const newPublished = !wine.published;
-    const updated = await toggleWinePublished(wine.id, newPublished);
-    if (!updated) {
-      setMessage('Não foi possível alterar a visibilidade do produto.');
-      return;
+    try {
+      const updated = await toggleWinePublished(wine.id, newPublished);
+      if (!updated) {
+        setMessage('Não foi possível alterar a visibilidade do produto.');
+        return;
+      }
+      await loadWines();
+      setMessage(`"${wine.name}" ${newPublished ? 'publicado' : 'despublicado'} com sucesso.`);
+    } catch (error) {
+      const detail = getErrorMessage(error);
+      setMessage(`Não foi possível alterar a visibilidade.${detail ? ` Detalhe: ${detail}` : ''}`);
     }
-    await loadWines();
-    setMessage(`"${wine.name}" ${newPublished ? 'publicado' : 'despublicado'} com sucesso.`);
   };
 
   const handleImageUpload = async (file: File | undefined) => {

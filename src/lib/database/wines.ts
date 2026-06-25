@@ -142,23 +142,18 @@ export async function toggleWinePublished(id: string, published: boolean): Promi
       .select()
       .single();
 
-    if (!productError && product) {
-      return mapProductToWine(product as LegacyProduct);
+    if (productError) {
+      throw new Error(getDatabaseErrorMessage(productError) || 'Nao foi possivel alterar a visibilidade do produto.');
     }
 
-    // Fallback to wines table
-    const { data, error } = await supabase
-      .from('wines')
-      .update({ publicado: published })
-      .eq('id', id)
-      .select()
-      .single();
+    if (!product) {
+      throw new Error('Produto nao encontrado para atualizar visibilidade.');
+    }
 
-    if (error) throw error;
-    return data as Wine;
+    return mapProductToWine(product as LegacyProduct);
   } catch (error) {
     console.error('Error toggling wine published:', error);
-    return null;
+    throw error;
   }
 }
 
