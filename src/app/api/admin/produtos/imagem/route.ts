@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/utils/supabase/server';
+import { checkRateLimit, getClientKey, rateLimitResponse } from '@/lib/security/rateLimit';
+import { auditSecurityEvent } from '@/lib/security/audit';
 
 const allowedImageTypes = new Set(['image/png', 'image/jpeg', 'image/webp']);
+const maxImageBytes = 5 * 1024 * 1024;
 
 function slugify(value: string) {
   return value
@@ -20,6 +23,14 @@ function getExtension(file: File) {
   if (file.type === 'image/png') return 'png';
   if (file.type === 'image/webp') return 'webp';
   return 'jpg';
+}
+
+async function hasValidImageSignature(file: File) {
+  const bytes = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+  const png = bytes.length >= 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
+  const jpeg = bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  const webp = bytes.length >= 12 && String.fromCharCode(...bytes.slice(0, 4)) === 'RIFF' && String.fromCharCode(...bytes.slice(8, 12)) === 'WEBP';
+  return png || jpeg || webp;
 }
 
 function getBearerToken(request: Request) {
@@ -49,8 +60,7 @@ function createTokenClient(accessToken: string) {
 
 export async function POST(request: Request) {
   const formData = await request.formData();
-  const formAccessToken = formData.get('accessToken');
-  const accessToken = getBearerToken(request) || (typeof formAccessToken === 'string' ? formAccessToken : null);
+  const accessToken = getBearerToken(request);
   const supabase = accessToken ? createTokenClient(accessToken) : await createServerClient();
   const {
     data: { user },
@@ -65,6 +75,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Apenas administradores podem enviar imagens.' }, { status: 403 });
   }
 
+  const limit = checkRateLimit(getClientKey(request, 'admin-image', user.id), 20, 60_000);
+  if (!limit.allowed) return rateLimitResponse(limit.retryAfter);
+
   const file = formData.get('file');
   const productName = String(formData.get('productName') || 'produto');
 
@@ -72,8 +85,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Arquivo não enviado.' }, { status: 400 });
   }
 
+  if (file.size === 0 || file.size > maxImageBytes) {
+    return NextResponse.json({ error: 'A imagem deve ter entre 1 byte e 5 MB.' }, { status: 400 });
+  }
+
   if (!allowedImageTypes.has(file.type)) {
     return NextResponse.json({ error: 'Envie uma imagem PNG, JPG, JPEG ou WebP.' }, { status: 400 });
+  }
+
+  if (!(await hasValidImageSignature(file))) {
+    return NextResponse.json({ error: 'O conteudo do arquivo nao corresponde a uma imagem valida.' }, { status: 400 });
   }
 
   const filePath = `${Date.now()}-${slugify(productName)}.${getExtension(file)}`;
@@ -93,5 +114,6 @@ export async function POST(request: Request) {
   }
 
   const { data } = supabase.storage.from('produtos').getPublicUrl(filePath);
+  auditSecurityEvent('admin.product-image.uploaded', { userId: user.id, path: filePath });
   return NextResponse.json({ publicUrl: data.publicUrl, path: filePath });
 }

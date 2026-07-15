@@ -2,67 +2,36 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-05-17)
+See: .planning/PROJECT.md
 
-**Core value:** Proporcionar uma experiência de compra de vinhos fluida, rápida e elegante, que se comporte como um aplicativo nativo no celular, com máxima estabilidade e segurança.
-**Current focus:** Pre-v2.0 audit corrections and checkout hardening
+**Core value:** Proporcionar uma experiencia de compra de vinhos fluida, rapida e elegante, com maxima estabilidade e seguranca.
+**Current focus:** Auditoria de seguranca concluida; ajustes finais antes da producao estao adiados.
 
 ## Current Position
 
-Phase: 5 of 5 (Admin Dashboard)
-Plan: 2 of 2 in current phase
-Status: Completed
-Last activity: 2026-05-17 — Phase 5 UAT completed, project finished
+Phase: 5 of 5 plus production-readiness hardening
+Status: Audit and hardening completed; paused before production configuration
+Last activity: 2026-07-15 - Supabase hardening, live checkout/RLS verification, smoke and typecheck passed
 
-Progress: [▓▓▓▓▓▓▓▓▓▓] 100%
+Progress: [##########] 100% of planned audit work
 
-## Performance Metrics
+## Completed in this audit
 
-**Velocity:**
-- Total plans completed: 0
-- Average duration: 0 min
-- Total execution time: 0 hours
+- Product RLS and unpublished-product protection.
+- Removal of insecure legacy order creation path.
+- Checkout schema validation, safe redirects, upload hardening.
+- Security headers, rate limiting, structured audit logs.
+- Security tests, static security checks, image optimization, admin pagination.
+- Live Supabase migrations and checkout/RLS verification.
+- Encoding fixes required by smoke checks.
 
-**By Phase:**
+## Deferred before production
 
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 1 | 3 | 3 | 1 |
-
-**Recent Trend:**
-- Last 5 plans: N/A
-- Trend: Stable
-
-*Updated after each plan completion*
-
-## Accumulated Context
-
-### Decisions
-
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
-
-- [Project Setup]: Escolha de Next.js SPA com Supabase e Tailwind build.
-- [CI/CD & PWA]: Implementado PWA com next-pwa e CI/CD no GitHub Actions rodando Zod e linter.
-
-### Pending Todos
-
-None yet.
-
-### Blockers/Concerns
-
-None yet.
-
-## Deferred Items
-
-Items acknowledged and carried forward from previous milestone close:
-
-| Category | Item | Status | Deferred At |
-|----------|------|--------|-------------|
-| *(none)* | | | |
+- Upgrade Supabase from Free if leaked-password protection is required.
+- Enable Authentication > Attack Protection > Prevent use of leaked passwords.
+- Revisit legacy analytics and any remaining infrastructure warnings.
+- Run the complete pre-production verification checklist again.
 
 ## Session Continuity
 
-Last session: 2026-06-02
-Stopped at: Applying audit corrections before formal v2.0 planning
-Resume file: .planning/phases/05-admin-dashboard/05-SUMMARY.md
+Resume file: .continue-here.md

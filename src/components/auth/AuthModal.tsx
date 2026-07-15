@@ -3,6 +3,7 @@
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { useState } from 'react'
 import { createClient } from '../../utils/supabase/client'
+import { safeInternalRedirect } from '@/lib/auth/safeRedirect'
 import { Modal, ModalHeader, ModalBody, Input, Button, IconButton } from '@/components/ui'
 
 export function AuthModal() {
@@ -10,7 +11,7 @@ export function AuthModal() {
   const router = useRouter()
   const pathname = usePathname()
   const isLoginOpen = searchParams.get('login') === 'true'
-  const redirectTo = searchParams.get('redirectTo') || '/'
+  const redirectTo = safeInternalRedirect(searchParams.get('redirectTo'))
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')

@@ -8,22 +8,24 @@ import { useFavorites } from '@/context/FavoritesContext';
 import { useRecentlyViewed } from '@/context/RecentlyViewedContext';
 import { WineDetailSkeleton } from '@/components/ui';
 import { useParams } from 'next/navigation';
+import { ArrowLeft, Ban, CheckCircle, Grape, Heart, MapPin, TriangleAlert, Wine, type LucideIcon } from 'lucide-react';
+import Image from 'next/image';
 
 function formatMoney(value: number) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
 function getStockStatus(stock: number) {
-  if (stock === 0) return { label: 'Esgotado', desc: 'Este vinho esta fora de estoque.', color: 'text-red-600 bg-red-50 border-red-200', icon: 'block' };
-  if (stock <= 5) return { label: `Ultimas ${stock} unidades`, desc: 'Corra, estao quase esgotando!', color: 'text-amber-700 bg-amber-50 border-amber-200', icon: 'warning' };
-  return { label: `${stock} unidades disponiveis`, desc: 'Estoque disponivel para entrega.', color: 'text-emerald-700 bg-emerald-50 border-emerald-200', icon: 'check_circle' };
+  if (stock === 0) return { label: 'Esgotado', desc: 'Este vinho esta fora de estoque.', color: 'text-red-600 bg-red-50 border-red-200', icon: Ban };
+  if (stock <= 5) return { label: `Ultimas ${stock} unidades`, desc: 'Corra, estao quase esgotando!', color: 'text-amber-700 bg-amber-50 border-amber-200', icon: TriangleAlert };
+  return { label: `${stock} unidades disponiveis`, desc: 'Estoque disponivel para entrega.', color: 'text-emerald-700 bg-emerald-50 border-emerald-200', icon: CheckCircle };
 }
 
-function productAttribute(icon: string, label: string, value: string) {
+function productAttribute(Icon: LucideIcon, label: string, value: string) {
   return (
     <div className="bg-stone-50 border border-stone-100 rounded-xl p-3">
       <div className="flex items-center gap-2 mb-1">
-        <span className="material-symbols-outlined text-[14px] text-stone-400">{icon}</span>
+        <Icon className="h-3.5 w-3.5 text-stone-400" aria-hidden="true" />
         <span className="text-[10px] font-bold text-stone-400 uppercase">{label}</span>
       </div>
       <p className="font-bold text-sm">{value}</p>
@@ -65,7 +67,7 @@ export default function WineDetailPage() {
   if (error || !wine) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-4">
-        <span className="material-symbols-outlined text-[64px] text-stone-200">wine_bar</span>
+        <Wine className="h-16 w-16 text-stone-200" aria-hidden="true" />
         <p className="mt-4 text-lg font-bold">Vinho nao encontrado</p>
         <a href="/catalogo" className="mt-4 text-sm font-bold text-[#B91C1C]">
           Voltar ao catalogo
@@ -75,6 +77,7 @@ export default function WineDetailPage() {
   }
 
   const stock = getStockStatus(wine.stock);
+  const StockIcon = stock.icon;
 
   const relatedWines = wines
     .filter((w) => w.id !== wine.id && (w.type === wine.type || w.region === wine.region || w.category === wine.category || w.grape === wine.grape))
@@ -85,7 +88,7 @@ export default function WineDetailPage() {
       <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-stone-100">
         <div className="flex items-center px-4 py-3">
           <a href="/catalogo" className="p-2 hover:bg-stone-100 rounded-full transition">
-            <span className="material-symbols-outlined">arrow_back</span>
+            <ArrowLeft className="h-5 w-5" aria-hidden="true" />
           </a>
           <p className="ml-2 font-bold text-sm truncate">{wine.name}</p>
         </div>
@@ -94,7 +97,7 @@ export default function WineDetailPage() {
       <div className="max-w-6xl mx-auto px-4 py-6">
         <div className="grid lg:grid-cols-[minmax(0,1fr)_420px] gap-8">
           <div className="bg-white rounded-2xl border border-stone-100 p-8 flex items-center justify-center">
-            <img src={wine.image_url || 'https://via.placeholder.com/300x400'} alt={wine.name} className="w-full max-h-[500px] object-contain mix-blend-multiply" />
+            <Image src={wine.image_url || 'https://via.placeholder.com/300x400'} alt={wine.name} width={600} height={800} priority sizes="(max-width: 1024px) 100vw, 60vw" className="w-full max-h-[500px] object-contain mix-blend-multiply" />
           </div>
 
           <div className="space-y-6">
@@ -109,10 +112,10 @@ export default function WineDetailPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              {wine.type && productAttribute('wine_bar', 'Tipo', wine.type)}
-              {wine.grape && productAttribute('grass', 'Uva', wine.grape)}
-              {wine.region && productAttribute('public', 'Regiao', wine.region)}
-              {wine.region && productAttribute('location_on', 'Regiao', wine.region)}
+              {wine.type && productAttribute(Wine, 'Tipo', wine.type)}
+              {wine.grape && productAttribute(Grape, 'Uva', wine.grape)}
+              {wine.region && productAttribute(MapPin, 'Regiao', wine.region)}
+              {wine.category && productAttribute(MapPin, 'Pais', wine.category)}
             </div>
 
             <div className="border-t border-stone-100 pt-6">
@@ -121,7 +124,7 @@ export default function WineDetailPage() {
             </div>
 
             <div className={`flex items-center gap-3 p-4 rounded-xl border ${stock.color}`}>
-              <span className="material-symbols-outlined text-[20px]">{stock.icon}</span>
+              <StockIcon className="h-5 w-5" aria-hidden="true" />
               <div>
                 <p className="font-bold text-sm">{stock.label}</p>
                 <p className="text-xs opacity-70">{stock.desc}</p>
@@ -131,9 +134,11 @@ export default function WineDetailPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => { toggleFavorite(wine); showToast(isFavorite(wine.id) ? 'Removido dos favoritos' : 'Adicionado aos favoritos', 'info'); }}
+                type="button"
+                aria-label={isFavorite(wine.id) ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
                 className={`w-14 h-14 rounded-2xl border flex items-center justify-center transition ${isFavorite(wine.id) ? 'bg-red-50 border-red-200' : 'bg-white border-stone-200 hover:border-[#B91C1C]'}`}
               >
-                <span className={`material-symbols-outlined text-[24px] ${isFavorite(wine.id) ? 'text-[#B91C1C]' : 'text-stone-400'}`}>favorite</span>
+                <Heart className={`h-6 w-6 ${isFavorite(wine.id) ? 'fill-current text-[#B91C1C]' : 'text-stone-400'}`} aria-hidden="true" />
               </button>
               <a
                 href={getWhatsAppShareUrl(wine)}
@@ -148,6 +153,7 @@ export default function WineDetailPage() {
               </a>
               <button
                 onClick={() => { addToCart(wine); showToast('Vinho adicionado ao carrinho!', 'success'); }}
+                type="button"
                 disabled={wine.stock === 0}
                 className="flex-1 bg-[#B91C1C] text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-red-900/20 hover:scale-[1.02] active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
@@ -166,7 +172,7 @@ export default function WineDetailPage() {
             <div className="grid grid-cols-3 gap-4">
               {relatedWines.map((w) => (
                 <a key={w.id} href={`/catalogo/${w.id}`} className="bg-white rounded-2xl border border-stone-100 p-4 text-center active:scale-[0.98] transition-transform">
-                  <img src={w.image_url || 'https://via.placeholder.com/300x400'} alt={w.name} className="w-full h-28 object-contain mix-blend-multiply mb-2" />
+                  <Image src={w.image_url || 'https://via.placeholder.com/300x400'} alt={w.name} width={300} height={400} sizes="(max-width: 768px) 33vw, 220px" className="w-full h-28 object-contain mix-blend-multiply mb-2" />
                   <p className="font-bold text-xs line-clamp-2">{w.name}</p>
                   <p className="text-xs font-bold text-[#B91C1C] mt-1">{formatMoney(w.price)}</p>
                 </a>

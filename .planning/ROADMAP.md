@@ -2,7 +2,7 @@
 
 ## Active Milestone (v2.0)
 
-**Status:** In progress / needs formal planning sync.
+**Status:** Audit and hardening completed; production configuration deferred.
 
 Implemented or partially implemented work already present in the codebase:
 - Promotions and coupon management in the admin dashboard.
@@ -10,11 +10,15 @@ Implemented or partially implemented work already present in the codebase:
 - Stock imports, stock snapshots, and checkout stock reservation.
 - Admin views for orders, customers, logistics, stock, and promotions.
 
-Remaining planning work before v2.0 can be considered scoped:
+Remaining product roadmap work:
 - Payment provider integration (Stripe/Mercado Pago or equivalent).
 - External freight carrier integration, if Correios/API shipping is still required beyond local delivery zones.
-- Transactional checkout verification against the live Supabase project.
-- Automated tests for checkout, promotions, shipping, and inventory reservation.
+
+Production-readiness work deferred:
+- Upgrade Supabase plan if leaked-password protection is required.
+- Enable leaked-password protection in Authentication > Attack Protection.
+- Revisit legacy analytics and remaining infrastructure warnings.
+- Repeat the full production verification checklist before launch.
 
 ## Milestone History
 

@@ -160,6 +160,7 @@ export default function AdminPedidosPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
   const [sortOrder, setSortOrder] = useState<SortOrder>('recent');
+  const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -239,6 +240,14 @@ export default function AdminPedidosPage() {
     () => orders.find((order) => order.id === selectedOrderId) || filteredOrders[0] || null,
     [filteredOrders, orders, selectedOrderId]
   );
+
+  const pageSize = 25;
+  const pageCount = Math.max(1, Math.ceil(filteredOrders.length / pageSize));
+  const paginatedOrders = filteredOrders.slice((page - 1) * pageSize, page * pageSize);
+
+  useEffect(() => {
+    setPage(1);
+  }, [selectedStatus, searchTerm, dateFilter, sortOrder]);
 
   const summary = useMemo(() => {
     return orders.reduce(
@@ -426,7 +435,7 @@ export default function AdminPedidosPage() {
             <AdminEmptyState icon="search_off" title="Nenhum pedido neste filtro" description="Ajuste status, período, busca ou ordenação para ampliar a fila." />
           ) : (
             <div className="mt-4 divide-y divide-stone-100 overflow-hidden rounded-lg border border-stone-100">
-              {filteredOrders.map((order) => {
+              {paginatedOrders.map((order) => {
                 const itemCount = order.order_items?.reduce((total, item) => total + item.quantity, 0) || 0;
                 const isSelected = selectedOrder?.id === order.id;
 
@@ -456,6 +465,29 @@ export default function AdminPedidosPage() {
                   </button>
                 );
               })}
+            </div>
+          )}
+          {!isLoading && filteredOrders.length > 0 && (
+            <div className="mt-4 flex items-center justify-between gap-3 text-xs font-bold text-stone-500">
+              <span>Pagina {page} de {pageCount}</span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={page === 1}
+                  onClick={() => setPage((current) => Math.max(1, current - 1))}
+                  className="admin-button border border-stone-200 bg-white px-3 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Anterior
+                </button>
+                <button
+                  type="button"
+                  disabled={page === pageCount}
+                  onClick={() => setPage((current) => Math.min(pageCount, current + 1))}
+                  className="admin-button border border-stone-200 bg-white px-3 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Próxima
+                </button>
+              </div>
             </div>
           )}
         </AdminSection>

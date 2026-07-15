@@ -2,15 +2,22 @@
 
 import { useCart } from '@/context/CartContext';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { IconButton, Button, Checkbox, EmptyState } from '@/components/ui';
+import { usePathname } from 'next/navigation';
+import { X } from 'lucide-react';
 
 export function CartOverlay() {
   const { cart, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, cartTotal } = useCart();
   const [retirada, setRetirada] = useState(false);
+  const pathname = usePathname();
 
   const discount = retirada ? cartTotal * 0.10 : 0;
   const finalTotal = cartTotal - discount;
+
+  useEffect(() => {
+    setIsCartOpen(false);
+  }, [pathname, setIsCartOpen]);
 
   if (!isCartOpen) return null;
 
@@ -27,7 +34,7 @@ export function CartOverlay() {
         <div className="p-6 border-b flex justify-between items-center">
           <h2 className="text-xl font-bold">Sua Seleção</h2>
           <IconButton
-            icon={<span className="material-symbols-outlined">close</span>}
+            icon={<X className="h-5 w-5" aria-hidden="true" />}
             aria-label="Fechar carrinho"
             onClick={() => setIsCartOpen(false)}
           />
@@ -40,6 +47,8 @@ export function CartOverlay() {
             cart.map((item) => (
               <div key={item.id} className="flex gap-4 items-center border-b pb-4">
                 <img 
+                  loading="lazy"
+                  decoding="async"
                   src={item.image_url || 'https://via.placeholder.com/300x400'} 
                   alt={item.name}
                   className="w-16 h-20 object-contain mix-blend-multiply"
@@ -78,7 +87,7 @@ export function CartOverlay() {
         </div>
         
         {cart.length > 0 && (
-          <div className="p-6 bg-stone-50 border-t space-y-4">
+          <div className="space-y-4 border-t bg-stone-50 px-6 pb-28 pt-6">
             <Checkbox
               label="Retirada na Loja"
               description="Ganhe 10% de desconto"

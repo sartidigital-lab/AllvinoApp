@@ -10,11 +10,14 @@ export function useWines() {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    let isActive = true;
+
     async function loadWines() {
       setIsLoading(true);
       setError(null);
       try {
         const data = await fetchWinesFromSupabase();
+        if (!isActive) return;
         setWines(data);
         setIsOffline(false);
         // Cache data for offline use
@@ -24,6 +27,7 @@ export function useWines() {
         setIsOffline(true);
         try {
           const cachedData = await getCachedWines();
+          if (!isActive) return;
           setWines(cachedData);
         } catch (cacheErr) {
           setError(cacheErr as Error);
@@ -34,6 +38,10 @@ export function useWines() {
     }
 
     loadWines();
+
+    return () => {
+      isActive = false;
+    };
   }, []);
 
   return { wines, isLoading, isOffline, error };
@@ -47,12 +55,14 @@ export function useWine(id: string) {
 
   useEffect(() => {
     if (!id) return;
+    let isActive = true;
 
     async function loadWine() {
       setIsLoading(true);
       setError(null);
       try {
         const data = await fetchWineByIdFromSupabase(id);
+        if (!isActive) return;
         if (data) {
           setWine(data);
         } else {
@@ -64,6 +74,7 @@ export function useWine(id: string) {
         setIsOffline(true);
         try {
           const cachedData = await getCachedWineById(id);
+          if (!isActive) return;
           if (cachedData) {
             setWine(cachedData);
           } else {
@@ -78,6 +89,10 @@ export function useWine(id: string) {
     }
 
     loadWine();
+
+    return () => {
+      isActive = false;
+    };
   }, [id]);
 
   return { wine, isLoading, isOffline, error };

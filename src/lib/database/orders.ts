@@ -1,5 +1,5 @@
 import { createClient } from '@/utils/supabase/client';
-import { Order, OrderItem, OrderWithItems } from '@/types/database';
+import { Order, OrderWithItems } from '@/types/database';
 import { CartItem } from '@/context/CartContext';
 
 export async function createOrder(
@@ -12,71 +12,17 @@ export async function createOrder(
   promotionCode?: string,
   deliveryZipCode?: string
 ): Promise<{ order: Order | null; error: Error | null }> {
-  if (typeof window !== 'undefined') {
-    try {
-      const response = await fetch('/api/pedidos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, cartItems, deliveryMethod, paymentMethod, deliveryAddress, promotionCode, deliveryZipCode }),
-      });
-
-      const payload = await response.json();
-
-      if (!response.ok) {
-        throw new Error(payload.error || 'Erro ao criar pedido.');
-      }
-
-      return { order: payload.order as Order, error: null };
-    } catch (error) {
-      console.error('Error creating order through API:', error);
-      return { order: null, error: error as Error };
-    }
-  }
-
-  const supabase = createClient();
-
   try {
-    // 1. Insert into orders table
-    const { data: orderData, error: orderError } = await supabase
-      .from('orders')
-      .insert({
-        user_id: userId,
-        status: 'pending',
-        total_amount: total,
-        delivery_type: deliveryMethod,
-        payment_method: paymentMethod || null,
-        delivery_address: deliveryAddress || null,
-        discount_amount: 0,
-        subtotal_amount: total,
-        promotion_code: promotionCode || null,
-        delivery_zip_code: deliveryZipCode || null,
-        shipping_fee: 0,
-      })
-        .select('id,user_id,status,total_amount,created_at,delivery_type,payment_method,payment_provider,payment_status,payment_reference,payment_url,paid_at,payment_error,delivery_address,discount_amount,subtotal_amount,customer_name,customer_phone,promotion_code,delivery_zip_code,delivery_zone_name,delivery_estimate_days,shipping_fee,stock_reserved_at')
-      .single();
-
-    if (orderError) throw orderError;
-    const order = orderData as Order;
-
-    // 2. Insert order items
-    const itemsToInsert = cartItems.map((item) => ({
-      order_id: order.id,
-      wine_id: null,
-      product_id: item.id,
-      product_name: item.name,
-      quantity: item.quantity,
-      unit_price: item.price,
-    }));
-
-    const { error: itemsError } = await supabase
-      .from('order_items')
-      .insert(itemsToInsert);
-
-    if (itemsError) throw itemsError;
-
-    return { order, error: null };
+    const response = await fetch('/api/pedidos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, cartItems, deliveryMethod, paymentMethod, deliveryAddress, promotionCode, deliveryZipCode }),
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || 'Erro ao criar pedido.');
+    return { order: payload.order as Order, error: null };
   } catch (error) {
-    console.error('Error creating order:', error);
+    console.error('Error creating order through API:', error);
     return { order: null, error: error as Error };
   }
 }

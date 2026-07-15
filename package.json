@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "smoke": "node scripts/smoke-check.mjs && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/rules-check.mts",
+    "security": "node scripts/security-check.mjs",
     "verify:checkout-rpc": "node scripts/checkout-rpc-check.mjs",
     "db:push": "supabase db push",
     "db:status": "supabase migration list"

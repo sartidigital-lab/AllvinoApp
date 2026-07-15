@@ -6,7 +6,7 @@ const root = process.cwd();
 const checks = [
   {
     file: 'src/components/layout/Header.tsx',
-    includes: ['href="/catalogo"', 'logo-allvino-header.png', 'shopping_bag'],
+    includes: ['href="/catalogo"', 'logo-allvino-header.png', 'ShoppingBag'],
   },
   {
     file: 'src/components/layout/AppChrome.tsx',
@@ -94,7 +94,7 @@ const checks = [
   },
   {
     file: 'src/app/api/admin/produtos/imagem/route.ts',
-    includes: ['getBearerToken', "formData.get('accessToken')", 'Apenas administradores podem enviar imagens', "storage.from('produtos')", 'getPublicUrl', 'publicUrl'],
+    includes: ['getBearerToken', 'Authorization', 'Apenas administradores podem enviar imagens', "storage.from('produtos')", 'getPublicUrl', 'publicUrl'],
   },
   {
     file: 'src/app/api/pedidos/route.ts',

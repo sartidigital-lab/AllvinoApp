@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useDeferredValue } from 'react';
+import Link from 'next/link';
 import { useWines } from '@/hooks/useWines';
 import { useCart } from '@/context/CartContext';
 import { useToast } from '@/context/ToastContext';
 import { useFavorites } from '@/context/FavoritesContext';
 import { useRecentlyViewed } from '@/context/RecentlyViewedContext';
 import { WineCardSkeleton, EmptyState, PageTransition } from '@/components/ui';
+import { Ban, CheckCircle, Heart, Plus, Search, SlidersHorizontal, TriangleAlert, Wine, X } from 'lucide-react';
+import Image from 'next/image';
 
 const priceRanges = [
   { label: 'Até R$50', min: 0, max: 50 },
@@ -17,9 +20,9 @@ const priceRanges = [
 ];
 
 function getStockStatus(stock: number) {
-  if (stock === 0) return { label: 'Esgotado', color: 'bg-red-100 text-red-700', icon: 'block' };
-  if (stock <= 5) return { label: `Últimas ${stock} un.`, color: 'bg-amber-100 text-amber-700', icon: 'warning' };
-  return { label: `${stock} un.`, color: 'bg-emerald-100 text-emerald-700', icon: 'check_circle' };
+  if (stock === 0) return { label: 'Esgotado', color: 'bg-red-100 text-red-700', icon: Ban };
+  if (stock <= 5) return { label: `Últimas ${stock} un.`, color: 'bg-amber-100 text-amber-700', icon: TriangleAlert };
+  return { label: `${stock} un.`, color: 'bg-emerald-100 text-emerald-700', icon: CheckCircle };
 }
 
 export default function CatalogoPage() {
@@ -36,6 +39,7 @@ export default function CatalogoPage() {
   const [selectedGrape, setSelectedGrape] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const deferredSearch = useDeferredValue(search);
 
   const types = useMemo(() => [...new Set(wines.map((w) => w.type).filter(Boolean))], [wines]);
   const grapes = useMemo(() => [...new Set(wines.map((w) => w.grape).filter(Boolean))], [wines]);
@@ -44,8 +48,8 @@ export default function CatalogoPage() {
   const filteredWines = useMemo(() => {
     let result = [...wines];
 
-    if (search) {
-      const q = search.toLowerCase();
+    if (deferredSearch) {
+      const q = deferredSearch.toLowerCase();
       result = result.filter(
         (w) =>
           w.name.toLowerCase().includes(q) ||
@@ -70,7 +74,7 @@ export default function CatalogoPage() {
     else result.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
 
     return result;
-  }, [wines, search, sortBy, selectedPrice, selectedType, selectedGrape, selectedRegion]);
+  }, [wines, deferredSearch, sortBy, selectedPrice, selectedType, selectedGrape, selectedRegion]);
 
   const activeFilterCount = [selectedPrice !== null, selectedType, selectedGrape, selectedRegion, search].filter(Boolean).length;
 
@@ -89,13 +93,14 @@ export default function CatalogoPage() {
         <div className="flex items-center justify-between px-4 py-3">
           <h1 className="font-serif text-xl font-bold">Catálogo</h1>
           {isOffline && (
-            <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-1 rounded-full">Modo Offline</span>
+            <span role="status" aria-live="polite" className="text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-1 rounded-full">Modo Offline</span>
           )}
           <button
             onClick={() => setIsFilterOpen(true)}
             className="relative p-2 hover:bg-stone-100 rounded-full transition"
+            aria-label="Abrir filtros"
           >
-            <span className="material-symbols-outlined">tune</span>
+            <SlidersHorizontal className="h-5 w-5" aria-hidden="true" />
             {activeFilterCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-[#B91C1C] text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
                 {activeFilterCount}
@@ -107,7 +112,7 @@ export default function CatalogoPage() {
         {/* Search & Sort */}
         <div className="px-4 pb-3 flex gap-2">
           <div className="flex-1 relative">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-[18px]">search</span>
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" aria-hidden="true" />
             <input
               type="text"
               placeholder="Buscar por nome"
@@ -167,20 +172,23 @@ export default function CatalogoPage() {
         <div className="px-4 pt-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-serif text-lg font-bold">Vistos Recentemente</h2>
-            <a href="/favoritos" className="text-xs font-bold text-stone-400 hover:text-[#B91C1C]">
+            <Link href="/favoritos" className="text-xs font-bold text-stone-400 hover:text-[#B91C1C]">
               Ver todos
-            </a>
+            </Link>
           </div>
           <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
             {recentlyViewed.slice(0, 8).map((wine) => (
-              <a
+              <Link
                 key={wine.id}
                 href={`/catalogo/${wine.id}`}
                 className="shrink-0 w-[140px] bg-white rounded-2xl border border-stone-100 overflow-hidden active:scale-[0.98] transition-transform"
               >
-                <img
+                <Image
                   src={wine.image_url || 'https://via.placeholder.com/300x400'}
                   alt={wine.name}
+                  width={300}
+                  height={400}
+                  sizes="140px"
                   className="w-full h-28 object-contain mix-blend-multiply p-2"
                 />
                 <div className="p-2">
@@ -190,7 +198,7 @@ export default function CatalogoPage() {
                     R$ {wine.price.toFixed(2).replace('.', ',')}
                   </p>
                 </div>
-              </a>
+              </Link>
             ))}
           </div>
         </div>
@@ -206,7 +214,7 @@ export default function CatalogoPage() {
           </div>
         ) : filteredWines.length === 0 ? (
           <div className="text-center py-16">
-            <span className="material-symbols-outlined text-[48px] text-stone-200">wine_bar</span>
+            <Wine className="mx-auto h-12 w-12 text-stone-200" aria-hidden="true" />
             <p className="mt-4 font-bold text-stone-400">Nenhum vinho encontrado.</p>
             {activeFilterCount > 0 && (
               <button onClick={clearFilters} className="mt-2 text-sm font-bold text-[#B91C1C]">
@@ -218,20 +226,24 @@ export default function CatalogoPage() {
           <div className="grid grid-cols-2 gap-4">
             {filteredWines.map((wine) => {
               const stock = getStockStatus(wine.stock);
+              const StockIcon = stock.icon;
               return (
-                <a
+                <Link
                   key={wine.id}
                   href={`/catalogo/${wine.id}`}
                   className="bg-white rounded-2xl border border-stone-100 overflow-hidden active:scale-[0.98] transition-transform"
                 >
                   <div className="relative">
-                    <img
+                    <Image
                       src={wine.image_url || 'https://via.placeholder.com/300x400'}
                       alt={wine.name}
+                      width={300}
+                      height={400}
+                      sizes="(max-width: 768px) 50vw, 320px"
                       className="w-full h-48 object-contain mix-blend-multiply p-4"
                     />
                     <span className={`absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${stock.color}`}>
-                      <span className="material-symbols-outlined text-[12px] mr-0.5 align-middle">{stock.icon}</span>
+                      <StockIcon className="mr-0.5 inline h-3 w-3 align-[-2px]" aria-hidden="true" />
                       {stock.label}
                     </span>
                   </div>
@@ -246,27 +258,33 @@ export default function CatalogoPage() {
                         <button
                           onClick={(e) => {
                             e.preventDefault();
+                            e.stopPropagation();
                             toggleFavorite(wine);
                             showToast(isFavorite(wine.id) ? 'Removido dos favoritos' : 'Adicionado aos favoritos', 'info');
                           }}
+                          type="button"
+                          aria-label={isFavorite(wine.id) ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
                           className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center hover:bg-red-50 transition"
                         >
-                          <span className={`material-symbols-outlined text-[16px] ${isFavorite(wine.id) ? 'text-[#B91C1C]' : 'text-stone-300'}`}>favorite</span>
+                          <Heart className={`h-4 w-4 ${isFavorite(wine.id) ? 'fill-current text-[#B91C1C]' : 'text-stone-300'}`} aria-hidden="true" />
                         </button>
                         <button
                           onClick={(e) => {
                             e.preventDefault();
+                            e.stopPropagation();
                             if (wine.stock > 0) { addToCart(wine); showToast('Vinho adicionado ao carrinho!', 'success'); }
                           }}
+                        type="button"
+                        aria-label="Adicionar ao carrinho"
                         disabled={wine.stock === 0}
                         className="w-9 h-9 bg-[#B91C1C] text-white rounded-full flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#991B1B] transition"
                       >
-                        <span className="material-symbols-outlined text-[18px]">add</span>
+                        <Plus className="h-4 w-4" aria-hidden="true" />
                       </button>
                       </div>
                     </div>
                   </div>
-                </a>
+                </Link>
               );
             })}
           </div>
@@ -280,8 +298,8 @@ export default function CatalogoPage() {
           <div className="relative w-full max-w-sm h-full bg-white shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col">
             <div className="p-5 border-b flex justify-between items-center">
               <h2 className="font-bold text-lg">Filtros</h2>
-              <button onClick={() => setIsFilterOpen(false)} className="p-2 hover:bg-stone-100 rounded-full">
-                <span className="material-symbols-outlined">close</span>
+              <button onClick={() => setIsFilterOpen(false)} className="p-2 hover:bg-stone-100 rounded-full" aria-label="Fechar filtros">
+                <X className="h-5 w-5" aria-hidden="true" />
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-5 space-y-6">

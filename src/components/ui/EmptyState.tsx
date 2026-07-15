@@ -2,6 +2,7 @@
 
 import { ReactNode } from 'react';
 import Link from 'next/link';
+import { ArrowRight, CircleHelp, Heart, SearchX, ShoppingCart, Upload, Wine } from 'lucide-react';
 
 interface EmptyStateProps {
   icon: string;
@@ -14,11 +15,21 @@ interface EmptyStateProps {
   children?: ReactNode;
 }
 
+const iconMap = {
+  favorite: Heart,
+  search_off: SearchX,
+  shopping_cart: ShoppingCart,
+  upload_file: Upload,
+  wine_bar: Wine,
+};
+
 export function EmptyState({ icon, title, description, action, children }: EmptyStateProps) {
+  const Icon = iconMap[icon as keyof typeof iconMap] || CircleHelp;
+
   return (
     <div className="text-center py-16 px-4">
       <div className="w-20 h-20 bg-stone-100 rounded-full mx-auto flex items-center justify-center mb-6">
-        <span className="material-symbols-outlined text-[40px] text-stone-300">{icon}</span>
+        <Icon className="h-10 w-10 text-stone-300" aria-hidden="true" />
       </div>
       <h3 className="font-serif text-lg font-bold text-stone-600">{title}</h3>
       {description && (
@@ -29,7 +40,7 @@ export function EmptyState({ icon, title, description, action, children }: Empty
           href={action.href}
           className="mt-6 inline-flex items-center gap-2 bg-[#B91C1C] text-white px-6 py-3 rounded-2xl font-bold text-sm shadow-lg shadow-red-900/20 hover:bg-[#991B1B] active:scale-95 transition-transform"
         >
-          <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+          <ArrowRight className="h-4 w-4" aria-hidden="true" />
           {action.label}
         </Link>
       )}

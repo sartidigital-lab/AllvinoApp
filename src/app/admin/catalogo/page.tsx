@@ -4,7 +4,7 @@ import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { AdminEmptyState, AdminNotice, AdminPageHeader, AdminSection, AdminStatCard, AdminStatusBadge } from '@/components/admin/AdminPrimitives';
 import { createWine, deleteWine, fetchWinesFromSupabase, toggleWinePublished, updateWine } from '@/lib/database/wines';
-import { fetchStockLevelByCode, fetchStockLevelsByCodes, importStockLevels, normalizeProductCode, parseStockRows } from '@/lib/database/stock';
+import { fetchStockLevelByCode, fetchStockLevelsByCodes, importStockLevels, normalizeProductCode, parseStockRows, saveManualStockLevel } from '@/lib/database/stock';
 import { createClient } from '@/utils/supabase/client';
 import { Wine } from '@/types/database';
 
@@ -310,7 +310,6 @@ export default function AdminCatalogPage() {
       const uploadData = new FormData();
       uploadData.append('file', file);
       uploadData.append('productName', form.name || editingWine?.name || 'produto');
-      uploadData.append('accessToken', activeSession.access_token);
 
       const response = await fetch('/api/admin/produtos/imagem', {
         method: 'POST',
@@ -359,6 +358,12 @@ export default function AdminCatalogPage() {
       return;
     }
 
+    const manualStock = Number(form.stock || 0);
+    if (!Number.isFinite(manualStock) || manualStock < 0) {
+      setMessage('Informe um estoque valido.');
+      return;
+    }
+
     setIsSaving(true);
     setMessage(null);
 
@@ -367,16 +372,7 @@ export default function AdminCatalogPage() {
         ? normalizeProductCode(form.product_code)
         : null;
 
-      // Try to sync stock from import if a product code exists — but don't block save
-      let finalStock = Number(form.stock || 0);
-      if (normalizedProductCode) {
-        const syncedQuantity = await syncStockFromProductCode(normalizedProductCode);
-        if (syncedQuantity !== null) {
-          finalStock = syncedQuantity;
-        }
-        // If sync returns null, we keep the manually entered stock value
-      }
-
+      const finalStock = Math.trunc(manualStock);
       const payload = toPayload({
         ...form,
         product_code: normalizedProductCode || '',
@@ -389,6 +385,20 @@ export default function AdminCatalogPage() {
       if (!savedWine) {
         setMessage('Não foi possível salvar. Verifique sua permissão de admin.');
         return;
+      }
+
+      if (normalizedProductCode) {
+        const { error: manualStockError } = await saveManualStockLevel({
+          product_code: normalizedProductCode,
+          quantity: finalStock,
+        });
+
+        if (manualStockError) {
+          const detail = getErrorMessage(manualStockError);
+          setMessage(`Produto salvo, mas nao foi possivel atualizar a base de estoque manual.${detail ? ` Detalhe: ${detail}` : ''}`);
+          await loadWines();
+          return;
+        }
       }
 
       await loadWines();
@@ -552,7 +562,7 @@ export default function AdminCatalogPage() {
             <label className="space-y-1">
               <span className="text-xs font-bold uppercase text-stone-400">Estoque (unidades)</span>
               <input type="number" min="0" value={form.stock} onChange={(event) => setForm({ ...form, stock: event.target.value })} placeholder="Digite a quantidade disponível" className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black" />
-              <p className="text-[10px] font-bold text-stone-400">Insira o estoque disponível manualmente</p>
+              <p className="text-[10px] font-bold text-stone-400">Digite o saldo manual. Use a sincronizacao apenas quando quiser puxar a planilha.</p>
             </label>
             {form.product_code.trim() && (
               <div className="space-y-1">
@@ -591,7 +601,7 @@ export default function AdminCatalogPage() {
                 <div className="flex items-center gap-3">
                   <div className="flex h-24 w-20 shrink-0 items-center justify-center rounded bg-stone-50">
                     {form.image_url ? (
-                      <img src={form.image_url} alt="Preview do produto" className="h-full w-full object-contain rounded" />
+                      <img loading="lazy" decoding="async" src={form.image_url} alt="Preview do produto" className="h-full w-full object-contain rounded" />
                     ) : (
                       <span className="material-symbols-outlined text-stone-300">image</span>
                     )}
@@ -686,7 +696,7 @@ export default function AdminCatalogPage() {
                 return (
                   <article key={wine.id} className={`rounded-lg border bg-white p-4 transition-opacity ${wine.published ? 'border-stone-100' : 'border-stone-200 opacity-70'}`}>
                     <div className="flex gap-3">
-                      <img src={wine.image_url || 'https://via.placeholder.com/50x150'} alt={wine.name} className="h-24 w-16 shrink-0 rounded bg-stone-50 object-contain" />
+                      <img loading="lazy" decoding="async" src={wine.image_url || 'https://via.placeholder.com/50x150'} alt={wine.name} className="h-24 w-16 shrink-0 rounded bg-stone-50 object-contain" />
                       <div className="min-w-0 flex-1">
                         <p className="line-clamp-2 text-sm font-bold text-black">{wine.name}</p>
                         <p className="mt-1 text-xs font-bold text-stone-400">{wine.product_code || 'Sem código'}</p>
@@ -745,7 +755,7 @@ export default function AdminCatalogPage() {
                     <tr key={wine.id} className={`transition-colors ${wine.published ? 'hover:bg-stone-50' : 'bg-stone-50/50 opacity-70'}`}>
                       <td className="p-4">
                         <div className="flex items-center gap-4 min-w-72">
-                          <img src={wine.image_url || 'https://via.placeholder.com/50x150'} alt={wine.name} className="h-16 w-12 object-contain bg-stone-50 rounded" />
+                          <img loading="lazy" decoding="async" src={wine.image_url || 'https://via.placeholder.com/50x150'} alt={wine.name} className="h-16 w-12 object-contain bg-stone-50 rounded" />
                           <div>
                             <p className="font-bold text-black">{wine.name}</p>
                             <p className="text-xs text-stone-400 font-bold">{wine.product_code || 'Sem código'} | {wine.grape || 'Uva'} | {wine.category || 'País'} | {wine.region || 'Região'}</p>

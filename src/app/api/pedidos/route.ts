@@ -2,12 +2,9 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { normalizePromotionCode } from '@/lib/promotions/rules';
 import { normalizeZipCode } from '@/lib/delivery/rules';
-
-type OrderItemInput = {
-  id: string;
-  name: string;
-  quantity: number;
-};
+import { checkoutRequestSchema } from '@/lib/validation/checkout';
+import { checkRateLimit, getClientKey, rateLimitResponse } from '@/lib/security/rateLimit';
+import { auditSecurityEvent } from '@/lib/security/audit';
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -20,21 +17,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
   }
 
-  const body = (await request.json()) as {
-    cartItems?: OrderItemInput[];
-    deliveryMethod?: string;
-    paymentMethod?: string;
-    deliveryAddress?: string;
-    promotionCode?: string;
-    deliveryZipCode?: string;
-  };
+  const limit = checkRateLimit(getClientKey(request, 'checkout', user.id), 10, 60_000);
+  if (!limit.allowed) return rateLimitResponse(limit.retryAfter);
 
-  const cartItems = body.cartItems || [];
-  const deliveryMethod = body.deliveryMethod || 'delivery';
-  const paymentMethod = body.paymentMethod || null;
-  const deliveryAddress = body.deliveryAddress?.trim() || null;
-  const promotionCode = normalizePromotionCode(body.promotionCode || '');
-  const deliveryZipCode = normalizeZipCode(body.deliveryZipCode || '');
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Corpo da requisicao invalido.' }, { status: 400 });
+  }
+
+  const parsed = checkoutRequestSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Dados do pedido invalidos.' }, { status: 400 });
+  }
+
+  const cartItems = parsed.data.cartItems;
+  const deliveryMethod = parsed.data.deliveryMethod;
+  const paymentMethod = parsed.data.paymentMethod;
+  const deliveryAddress = parsed.data.deliveryAddress?.trim() || null;
+  const promotionCode = normalizePromotionCode(parsed.data.promotionCode || '');
+  const deliveryZipCode = normalizeZipCode(parsed.data.deliveryZipCode || '');
 
   if (cartItems.length === 0) {
     return NextResponse.json({ error: 'Pedido inválido.' }, { status: 400 });
@@ -69,6 +72,8 @@ export async function POST(request: Request) {
   if (orderError || !order) {
     return NextResponse.json({ error: 'Pedido criado, mas não foi possível carregar o resumo.' }, { status: 500 });
   }
+
+  auditSecurityEvent('order.created', { userId: user.id, orderId });
 
   return NextResponse.json({ order });
 }
