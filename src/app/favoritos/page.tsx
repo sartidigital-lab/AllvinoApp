@@ -1,10 +1,11 @@
 "use client";
 
 import { useFavorites } from '@/context/FavoritesContext';
-import { EmptyState, PageTransition, StaggerChildren, ListItem } from '@/components/ui';
+import { EmptyState, PageTransition } from '@/components/ui';
 import { useCart } from '@/context/CartContext';
 import { useToast } from '@/context/ToastContext';
 import { Heart, Plus } from 'lucide-react';
+import Link from 'next/link';
 
 function formatMoney(value: number) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -32,12 +33,12 @@ export default function FavoritosPage() {
             action={{ label: 'Ver Catalogo', href: '/catalogo' }}
           />
         ) : (
-          <StaggerChildren className="space-y-3">
+          <div className="space-y-3">
             {favorites.map((wine) => (
-              <ListItem key={wine.id}><div className="bg-white rounded-2xl border border-stone-100 p-4 flex gap-4 items-center">
-                <a href={`/catalogo/${wine.id}`} className="flex-shrink-0">
+              <div key={wine.id} className="bg-white rounded-2xl border border-stone-100 p-4 flex gap-4 items-center">
+                <Link href={`/catalogo/${wine.id}`} className="flex-shrink-0">
                   <img loading="lazy" decoding="async" src={wine.image_url || 'https://via.placeholder.com/300x400'} alt={wine.name} className="w-16 h-20 object-contain mix-blend-multiply" />
-                </a>
+                </Link>
                 <div className="flex-1 min-w-0">
                   <p className="text-[10px] font-bold text-stone-400 uppercase">{wine.type || wine.region}</p>
                   <p className="font-bold text-sm line-clamp-2">{wine.name}</p>
@@ -51,9 +52,9 @@ export default function FavoritosPage() {
                     <Plus className="h-5 w-5" aria-hidden="true" />
                   </button>
                 </div>
-              </div></ListItem>
+              </div>
             ))}
-          </StaggerChildren>
+          </div>
         )}
       </div>
     </main></PageTransition>
