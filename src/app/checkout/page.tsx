@@ -69,7 +69,7 @@ export default function CheckoutPage() {
   const discount = Math.min(cartTotal, pickupDiscount + promotionDiscount);
   const shippingFee = entrega === 'entrega' && deliveryZone ? calculateShippingFee(deliveryZone, cartTotal) : 0;
   const finalTotal = cartTotal - discount + shippingFee;
-  const salesPhone = '552723453060';
+  const salesPhone = '5527992770952';
   const cartItemsMessage = cart.map((item) => `${item.quantity}x ${item.name}`).join('\n');
   const unsupportedZipWhatsAppUrl = unsupportedZip
     ? `https://wa.me/${salesPhone}?text=${encodeURIComponent(
