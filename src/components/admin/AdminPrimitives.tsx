@@ -58,7 +58,7 @@ export function AdminStatCard({ label, value, icon, tone = 'default' }: AdminSta
   const isWarning = tone === 'warning';
 
   return (
-    <div className={`admin-surface relative overflow-hidden p-5 ${isDark ? 'border-black bg-black text-white' : ''}`}>
+    <div className={`admin-surface relative overflow-hidden p-5 ${isDark ? 'admin-surface-dark text-white' : ''}`}>
       {icon && (
         <span
           className={`material-symbols-outlined absolute -bottom-4 -right-3 text-[92px] ${

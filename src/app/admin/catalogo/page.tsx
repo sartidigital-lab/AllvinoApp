@@ -473,7 +473,7 @@ export default function AdminCatalogPage() {
               {isImportingStock ? 'Importando...' : 'Importar estoque'}
               <input
                 type="file"
-                accept=".csv,text/csv"
+                accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
                 disabled={isImportingStock}
                 onChange={handleStockImport}
                 className="hidden"

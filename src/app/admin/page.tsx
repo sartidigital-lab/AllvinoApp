@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { AdminEmptyState, AdminNotice, AdminPageHeader, AdminSection, AdminStatCard, AdminStatusBadge } from '@/components/admin/AdminPrimitives';
 import { createClient } from '@/utils/supabase/client';
+import { fetchStockLevels } from '@/lib/database/stock';
 
 type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'delivered' | 'cancelled';
 type PaymentStatus = 'pending' | 'authorized' | 'paid' | 'failed' | 'refunded' | 'cancelled';
@@ -12,7 +13,6 @@ type OrderItemWithWine = {
   quantity: number;
   unit_price: number;
   product_name: string | null;
-  wines: { name: string } | { name: string }[] | null;
 };
 
 type AdminOrder = {
@@ -43,11 +43,6 @@ type OperationalAction = {
   count: number;
 };
 
-type StockLevel = {
-  product_code: string;
-  quantity: number;
-};
-
 type CrmCard = {
   customer_key: string;
   priority: 'baixa' | 'normal' | 'alta';
@@ -76,12 +71,7 @@ const statusTones: Record<OrderStatus, 'neutral' | 'success' | 'warning' | 'dang
 };
 
 function getWineName(item: OrderItemWithWine) {
-  if (item.product_name) return item.product_name;
-
-  const wines = item.wines;
-  if (Array.isArray(wines)) return wines[0]?.name || 'Produto removido';
-
-  return wines?.name || 'Produto removido';
+  return item.product_name || 'Produto removido';
 }
 
 function formatMoney(value: number) {
@@ -94,6 +84,26 @@ function isDueTodayOrOverdue(value: string | null) {
   const endOfToday = new Date();
   endOfToday.setHours(23, 59, 59, 999);
   return actionDate.getTime() <= endOfToday.getTime();
+}
+
+async function fetchAllAdminOrders(supabase: ReturnType<typeof createClient>) {
+  const pageSize = 250;
+  const orders: AdminOrder[] = [];
+
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('id,status,total_amount,delivery_type,payment_provider,payment_status,customer_name,customer_phone,created_at,order_items(quantity,unit_price,product_name)')
+      .order('created_at', { ascending: false })
+      .range(offset, offset + pageSize - 1);
+
+    if (error) return { data: [], error };
+    const page = (data || []) as AdminOrder[];
+    orders.push(...page);
+    if (page.length < pageSize) break;
+  }
+
+  return { data: orders, error: null };
 }
 
 export default function AdminAnalyticsPage() {
@@ -113,15 +123,8 @@ export default function AdminAnalyticsPage() {
       const supabase = createClient();
 
       const [ordersResult, stockResult, crmResult, conversationsResult] = await Promise.all([
-        supabase
-          .from('orders')
-          .select('id,status,total_amount,delivery_type,payment_provider,payment_status,customer_name,customer_phone,created_at,order_items(quantity,unit_price,product_name,wines(name))')
-          .order('created_at', { ascending: false })
-          .limit(250),
-        supabase
-          .from('stock_levels')
-          .select('product_code,quantity')
-          .limit(500),
+        fetchAllAdminOrders(supabase),
+        fetchStockLevels(),
         supabase
           .from('customer_crm_cards')
           .select('customer_key,priority,next_action_at')
@@ -138,8 +141,8 @@ export default function AdminAnalyticsPage() {
         return;
       }
 
-      const orders = (ordersResult.data || []) as AdminOrder[];
-      const stockLevels = (stockResult.data || []) as StockLevel[];
+      const orders = ordersResult.data;
+      const stockLevels = stockResult.stockLevels;
       const crmCards = (crmResult.data || []) as CrmCard[];
       const conversations = (conversationsResult.data || []) as Conversation[];
       let totalFaturamento = 0;
@@ -160,7 +163,7 @@ export default function AdminAnalyticsPage() {
         });
       });
 
-      const lowStockCount = stockLevels.filter((stock) => stock.quantity <= 5).length;
+      const lowStockCount = stockLevels.filter((stock) => stock.product_name && stock.quantity <= 5).length;
       const openConversationCount = conversations.filter((conversation) => conversation.status !== 'closed').length;
       const paymentPendingCount = orders.filter((order) => (
         order.payment_provider === 'manual' &&

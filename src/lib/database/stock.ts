@@ -12,6 +12,8 @@ export type StockLevelWithProduct = StockLevel & {
 };
 
 const stockLevelSelect = 'product_code,quantity,updated_at,source,import_id';
+const STOCK_PAGE_SIZE = 500;
+const PRODUCT_LOOKUP_CHUNK_SIZE = 200;
 
 export function normalizeProductCode(value: string) {
   return value.trim().toUpperCase();
@@ -26,9 +28,13 @@ function normalizeHeader(value: string) {
 }
 
 function getCell(row: Record<string, unknown>, candidates: string[]) {
-  const entry = Object.entries(row).find(([key]) =>
-    candidates.includes(normalizeHeader(key))
-  );
+  const entry = Object.entries(row).find(([key]) => {
+    const normalizedKey = normalizeHeader(key);
+    return candidates.some((candidate) => (
+      normalizedKey === candidate ||
+      (candidate.length >= 8 && normalizedKey.startsWith(candidate))
+    ));
+  });
   return entry?.[1];
 }
 
@@ -50,7 +56,7 @@ export function parseStockRows(rows: Record<string, unknown>[]): StockLevelInput
         'idproduto', 'referencia', 'ref', 'ean',
       ]);
       const quantity = getCell(row, [
-        'quantidade', 'quantidadeestoque', 'qtd', 'qtde', 'qtdestoque',
+        'quantidade', 'quantidadeemestoque', 'quantidadeestoque', 'qtd', 'qtde', 'qtdestoque',
         'estoque', 'estoqueatual', 'estoquedisponivel', 'saldo',
         'saldoatual', 'saldoestoque', 'saldodisponivel', 'disponivel',
       ]);
@@ -74,25 +80,36 @@ export async function fetchStockLevels(): Promise<{
   const supabase = createClient();
 
   try {
-    const { data, error } = await supabase
-      .from('stock_levels')
-      .select(stockLevelSelect)
-      .order('updated_at', { ascending: false })
-      .limit(500);
+    const stockLevels: StockLevel[] = [];
+    for (let offset = 0; ; offset += STOCK_PAGE_SIZE) {
+      const { data, error } = await supabase
+        .from('stock_levels')
+        .select(stockLevelSelect)
+        .order('updated_at', { ascending: false })
+        .range(offset, offset + STOCK_PAGE_SIZE - 1);
 
-    if (error) throw error;
+      if (error) throw error;
+      const page = (data || []) as StockLevel[];
+      stockLevels.push(...page);
+      if (page.length < STOCK_PAGE_SIZE) break;
+    }
 
-    const stockLevels = (data || []) as StockLevel[];
     if (stockLevels.length === 0) {
       return { stockLevels: [], error: null };
     }
 
     const codes = stockLevels.map((stock) => stock.product_code);
-    const { data: products } = await supabase
-      .from('produtos')
-      .select('sku_sankhya,nome,imagem_url')
-      .in('sku_sankhya', codes);
-    const productsByCode = new Map((products || []).map((product) => [product.sku_sankhya, product]));
+    const products: { sku_sankhya: string | null; nome: string; imagem_url: string | null }[] = [];
+    for (let index = 0; index < codes.length; index += PRODUCT_LOOKUP_CHUNK_SIZE) {
+      const { data, error } = await supabase
+        .from('produtos')
+        .select('sku_sankhya,nome,imagem_url')
+        .in('sku_sankhya', codes.slice(index, index + PRODUCT_LOOKUP_CHUNK_SIZE));
+
+      if (error) throw error;
+      products.push(...(data || []));
+    }
+    const productsByCode = new Map(products.map((product) => [product.sku_sankhya, product]));
 
     return {
       stockLevels: stockLevels.map((stock) => {
@@ -210,26 +227,16 @@ export async function importStockLevels(
       throw new Error('Nenhuma linha valida para importar.');
     }
 
-    const { data: stockImport, error: importError } = await supabase
-      .from('stock_imports')
-      .insert({
-        file_name: fileName,
-        total_rows: rows.length,
-        source: 'excel',
-      })
-      .select('id')
-      .single();
-
-    if (importError) throw importError;
-
-    const { error } = await upsertStockRows(rows, {
-      source: 'excel',
-      importId: stockImport.id,
+    const source = fileName.toLowerCase().endsWith('.xlsx') ? 'xlsx' : 'csv';
+    const { data, error } = await supabase.rpc('import_stock_levels_atomic', {
+      p_file_name: fileName,
+      p_source: source,
+      p_rows: rows,
     });
 
     if (error) throw error;
 
-    return { count: rows.length, error: null };
+    return { count: Number(data || rows.length), error: null };
   } catch (error) {
     console.error('Error importing stock levels:', error);
     return { count: 0, error: error as Error };

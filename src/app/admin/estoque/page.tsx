@@ -20,6 +20,13 @@ type ManualForm = {
   quantity: string;
 };
 
+type PendingImport = {
+  fileName: string;
+  rows: StockLevelInput[];
+};
+
+const STOCK_PAGE_SIZE = 50;
+
 const emptyManualForm: ManualForm = {
   product_code: '',
   quantity: '0',
@@ -38,6 +45,8 @@ export default function AdminEstoquePage() {
   const [imports, setImports] = useState<StockImport[]>([]);
   const [manualForm, setManualForm] = useState<ManualForm>(emptyManualForm);
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pendingImport, setPendingImport] = useState<PendingImport | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isImporting, setIsImporting] = useState(false);
   const [isSavingManual, setIsSavingManual] = useState(false);
@@ -69,11 +78,16 @@ export default function AdminEstoquePage() {
     return stockLevels.reduce(
       (acc, stock) => {
         acc.codes += 1;
-        acc.units += stock.quantity;
-        if (stock.quantity <= 5) acc.low += 1;
+        if (stock.product_name) {
+          acc.linked += 1;
+          acc.linkedUnits += stock.quantity;
+          if (stock.quantity <= 5) acc.low += 1;
+        } else {
+          acc.unlinked += 1;
+        }
         return acc;
       },
-      { codes: 0, units: 0, low: 0 }
+      { codes: 0, linked: 0, unlinked: 0, linkedUnits: 0, low: 0 }
     );
   }, [stockLevels]);
 
@@ -87,6 +101,16 @@ export default function AdminEstoquePage() {
         .some((value) => value!.toLowerCase().includes(term))
     );
   }, [searchTerm, stockLevels]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredStock.length / STOCK_PAGE_SIZE));
+  const paginatedStock = filteredStock.slice(
+    (currentPage - 1) * STOCK_PAGE_SIZE,
+    currentPage * STOCK_PAGE_SIZE
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -104,16 +128,8 @@ export default function AdminEstoquePage() {
         return;
       }
 
-      const { count, error } = await importStockLevels(parsedRows, file.name);
-
-      if (error) {
-        const detail = getErrorMessage(error);
-        setMessage(`Não foi possível importar o estoque.${detail ? ` Detalhe: ${detail}` : ''}`);
-        return;
-      }
-
-      await loadStock();
-      setMessage(`${count} códigos de estoque importados.`);
+      setPendingImport({ fileName: file.name, rows: parsedRows });
+      setMessage(`Arquivo validado: ${parsedRows.length} códigos prontos para importar.`);
     } catch (error) {
       const detail = getErrorMessage(error);
       setMessage(`Não foi possível ler o arquivo.${detail ? ` Detalhe: ${detail}` : ''}`);
@@ -121,6 +137,26 @@ export default function AdminEstoquePage() {
       event.target.value = '';
       setIsImporting(false);
     }
+  };
+
+  const handleConfirmImport = async () => {
+    if (!pendingImport) return;
+
+    setIsImporting(true);
+    setMessage(null);
+    const { count, error } = await importStockLevels(pendingImport.rows, pendingImport.fileName);
+
+    if (error) {
+      const detail = getErrorMessage(error);
+      setMessage(`Não foi possível importar o estoque.${detail ? ` Detalhe: ${detail}` : ''}`);
+      setIsImporting(false);
+      return;
+    }
+
+    setPendingImport(null);
+    await loadStock();
+    setMessage(`${count} códigos de estoque importados.`);
+    setIsImporting(false);
   };
 
   const handleManualSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -158,14 +194,14 @@ export default function AdminEstoquePage() {
     <div className="space-y-6">
       <AdminPageHeader
         title="Estoque"
-        description="Atualize saldos por código de produto via CSV ou cadastro avulso."
+        description="Atualize saldos por código de produto via Excel, CSV ou cadastro avulso."
         actions={(
           <label className="admin-button flex cursor-pointer items-center gap-2 bg-black px-5 text-sm text-white shadow-sm transition hover:bg-stone-800">
             <span className="material-symbols-outlined text-[20px]">upload_file</span>
-            {isImporting ? 'Importando...' : 'Subir CSV'}
+            {isImporting ? 'Processando...' : 'Importar planilha'}
             <input
               type="file"
-              accept=".csv,text/csv"
+              accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
               disabled={isImporting}
               onChange={handleFileUpload}
               className="hidden"
@@ -174,14 +210,56 @@ export default function AdminEstoquePage() {
         )}
       />
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <AdminStatCard label="Códigos" value={summary.codes} icon="tag" tone="dark" />
-        <AdminStatCard label="Unidades" value={summary.units} icon="inventory_2" />
-        <AdminStatCard label="Baixo estoque" value={summary.low} icon="production_quantity_limits" tone="accent" />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <AdminStatCard label="Códigos vinculados" value={summary.linked} icon="link" tone="dark" />
+        <AdminStatCard label="Unidades vinculadas" value={summary.linkedUnits} icon="inventory_2" />
+        <AdminStatCard label="Sem produto" value={summary.unlinked} icon="link_off" tone="warning" />
+        <AdminStatCard label="Baixo estoque vinculado" value={summary.low} icon="production_quantity_limits" tone="accent" />
       </div>
 
       {message && (
         <AdminNotice>{message}</AdminNotice>
+      )}
+
+      {pendingImport && (
+        <AdminSection title="Pré-visualização da importação" icon="preview">
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-bold text-black">{pendingImport.fileName}</p>
+                <p className="mt-1 text-xs font-bold text-stone-400">
+                  {pendingImport.rows.length} códigos válidos; códigos repetidos usam o último saldo.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" onClick={() => setPendingImport(null)} className="admin-button border border-stone-200 px-4 text-sm text-stone-600 hover:bg-stone-50">
+                  Cancelar
+                </button>
+                <button type="button" onClick={handleConfirmImport} disabled={isImporting} className="admin-button bg-[#B91C1C] px-4 text-sm text-white hover:bg-red-800 disabled:opacity-60">
+                  {isImporting ? 'Importando...' : 'Confirmar importação'}
+                </button>
+              </div>
+            </div>
+            <div className="overflow-x-auto rounded-lg border border-stone-200">
+              <table className="w-full min-w-[420px] text-left text-sm">
+                <thead className="bg-stone-50 text-xs uppercase text-stone-400">
+                  <tr>
+                    <th className="px-4 py-3">Código</th>
+                    <th className="px-4 py-3">Quantidade</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100">
+                  {pendingImport.rows.slice(0, 5).map((row) => (
+                    <tr key={row.product_code}>
+                      <td className="px-4 py-3 font-bold">{row.product_code}</td>
+                      <td className="px-4 py-3">{row.quantity} un.</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </AdminSection>
       )}
 
       <form onSubmit={handleManualSubmit} className="admin-surface grid grid-cols-1 gap-4 p-5 md:grid-cols-[minmax(0,1fr)_180px_auto] md:items-end">
@@ -245,7 +323,7 @@ export default function AdminEstoquePage() {
             <AdminEmptyState icon="search_off" title="Nenhum saldo encontrado" description="Ajuste a busca ou importe uma planilha de estoque." />
           ) : (
             <div className="divide-y divide-stone-100">
-              {filteredStock.map((stock) => (
+              {paginatedStock.map((stock) => (
                 <div key={stock.product_code} className="grid grid-cols-1 gap-3 p-5 md:grid-cols-[minmax(0,1fr)_120px_160px] md:items-center">
                   <div className="min-w-0">
                     <p className="text-sm font-bold text-black">{stock.product_code}</p>
@@ -257,6 +335,31 @@ export default function AdminEstoquePage() {
                   <p className="text-xs font-bold text-stone-400">{new Date(stock.updated_at).toLocaleString('pt-BR')}</p>
                 </div>
               ))}
+              {totalPages > 1 && (
+                <div className="flex flex-wrap items-center justify-between gap-3 p-4">
+                  <p className="text-xs font-bold text-stone-400">
+                    Página {currentPage} de {totalPages} · {filteredStock.length} códigos
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                      disabled={currentPage === 1}
+                      className="admin-button border border-stone-200 px-4 text-xs disabled:opacity-40"
+                    >
+                      Anterior
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                      disabled={currentPage === totalPages}
+                      className="admin-button border border-stone-200 px-4 text-xs disabled:opacity-40"
+                    >
+                      Próxima
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </AdminSection>

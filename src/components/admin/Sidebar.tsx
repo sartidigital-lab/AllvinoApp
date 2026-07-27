@@ -86,7 +86,7 @@ export default function Sidebar() {
 
       <aside className={`fixed inset-y-0 left-0 z-50 flex h-full w-72 max-w-[86vw] transform flex-col border-r border-stone-800 bg-[#0a0a0a] shadow-2xl transition-transform duration-300 ease-in-out lg:w-64 lg:translate-x-0 lg:shadow-none ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex items-center justify-between border-b border-stone-800 bg-[#111111] px-5 py-5">
-          <img src="/LOGO-ALLVINO-BRANCO.png" alt="Allvino" className="h-7 object-contain" />
+          <img src="/LOGO-ALLVINO-PRETO.png" alt="Allvino" className="h-7 object-contain brightness-0 invert" />
           <button
             type="button"
             onClick={() => setIsOpen(false)}

@@ -13,7 +13,7 @@ export default function HomePage() {
         </div>
 
         <div className="relative z-10 flex max-w-lg flex-col items-center space-y-6">
-          <img src="/LOGO-ALLVINO-BRANCO.png" alt="Allvino" className="mb-4 h-16 w-auto object-contain" />
+          <img src="/LOGO-ALLVINO-PRETO.png" alt="Allvino" className="mb-4 h-16 w-auto object-contain brightness-0 invert" />
 
           <h1 className="font-serif text-4xl font-bold leading-tight text-white md:text-5xl">
             A sua adega digital de vinhos premium.
