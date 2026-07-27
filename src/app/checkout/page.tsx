@@ -14,6 +14,8 @@ import { fetchDeliveryQuote } from '@/lib/database/delivery';
 import { calculateShippingFee, formatZipCode, normalizeZipCode } from '@/lib/delivery/rules';
 import { DeliveryZone, Promotion } from '@/types/database';
 
+const SALES_WHATSAPP_NUMBER = '5527992770952';
+
 export default function CheckoutPage() {
   const { cart, cartTotal, clearCart } = useCart();
   const [user, setUser] = useState<CurrentUser | null>(null);
@@ -69,10 +71,9 @@ export default function CheckoutPage() {
   const discount = Math.min(cartTotal, pickupDiscount + promotionDiscount);
   const shippingFee = entrega === 'entrega' && deliveryZone ? calculateShippingFee(deliveryZone, cartTotal) : 0;
   const finalTotal = cartTotal - discount + shippingFee;
-  const salesPhone = '5527992770952';
   const cartItemsMessage = cart.map((item) => `${item.quantity}x ${item.name}`).join('\n');
   const unsupportedZipWhatsAppUrl = unsupportedZip
-    ? `https://wa.me/${salesPhone}?text=${encodeURIComponent(
+    ? `https://wa.me/${SALES_WHATSAPP_NUMBER}?text=${encodeURIComponent(
         `Olá, Allvino! Quero consultar entrega para o CEP ${formatZipCode(unsupportedZip)}.\n\nItens no carrinho:\n${cartItemsMessage || 'Carrinho ainda sem itens'}\n\nSubtotal: R$ ${cartTotal.toFixed(2).replace('.', ',')}`
       )}`
     : null;
@@ -218,7 +219,7 @@ export default function CheckoutPage() {
 
     msg += `\n*VALOR TOTAL: R$ ${order.total_amount.toFixed(2).replace('.', ',')}*`;
 
-    const link = `https://wa.me/${salesPhone}?text=${encodeURIComponent(msg)}`;
+    const link = `https://wa.me/${SALES_WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
 
     window.open(link, '_blank', 'noopener,noreferrer');
     clearCart();
