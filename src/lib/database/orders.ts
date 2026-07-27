@@ -1,4 +1,3 @@
-import { createClient } from '@/utils/supabase/client';
 import { Order, OrderWithItems } from '@/types/database';
 import { CartItem } from '@/context/CartContext';
 
@@ -28,19 +27,19 @@ export async function createOrder(
 }
 
 export async function getUserOrders(userId: string, limit = 10): Promise<{ orders: OrderWithItems[]; error: Error | null }> {
-  const supabase = createClient();
-  
   try {
-    const { data, error } = await supabase
-      .from('orders')
-      .select('id,user_id,status,total_amount,created_at,delivery_type,payment_method,payment_provider,payment_status,payment_reference,payment_url,paid_at,payment_error,delivery_address,discount_amount,subtotal_amount,customer_name,customer_phone,promotion_code,delivery_zip_code,delivery_zone_name,delivery_estimate_days,shipping_fee,stock_reserved_at,order_items(id,order_id,wine_id,product_id,product_name,quantity,unit_price)')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(limit);
+    const params = new URLSearchParams({ limit: String(limit) });
+    const response = await fetch(`/api/cliente/pedidos?${params.toString()}`, {
+      cache: 'no-store',
+      headers: { Accept: 'application/json' },
+    });
+    const payload = await response.json();
 
-    if (error) throw error;
+    if (!response.ok) {
+      throw new Error(payload.error || 'Erro ao carregar pedidos.');
+    }
     
-    return { orders: data as OrderWithItems[], error: null };
+    return { orders: payload.orders as OrderWithItems[], error: null };
   } catch (error) {
     console.error('Error fetching user orders:', error);
     return { orders: [], error: error as Error };

@@ -18,8 +18,6 @@ function slugify(value: string) {
 }
 
 function getExtension(file: File) {
-  const fromName = file.name.split('.').pop()?.toLowerCase();
-  if (fromName && ['png', 'jpg', 'jpeg', 'webp'].includes(fromName)) return fromName;
   if (file.type === 'image/png') return 'png';
   if (file.type === 'image/webp') return 'webp';
   return 'jpg';
@@ -30,7 +28,11 @@ async function hasValidImageSignature(file: File) {
   const png = bytes.length >= 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
   const jpeg = bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
   const webp = bytes.length >= 12 && String.fromCharCode(...bytes.slice(0, 4)) === 'RIFF' && String.fromCharCode(...bytes.slice(8, 12)) === 'WEBP';
-  return png || jpeg || webp;
+  return (
+    (file.type === 'image/png' && png) ||
+    (file.type === 'image/jpeg' && jpeg) ||
+    (file.type === 'image/webp' && webp)
+  );
 }
 
 function getBearerToken(request: Request) {
@@ -59,7 +61,6 @@ function createTokenClient(accessToken: string) {
 }
 
 export async function POST(request: Request) {
-  const formData = await request.formData();
   const accessToken = getBearerToken(request);
   const supabase = accessToken ? createTokenClient(accessToken) : await createServerClient();
   const {
@@ -77,6 +78,13 @@ export async function POST(request: Request) {
 
   const limit = checkRateLimit(getClientKey(request, 'admin-image', user.id), 20, 60_000);
   if (!limit.allowed) return rateLimitResponse(limit.retryAfter);
+
+  let formData: FormData;
+  try {
+    formData = await request.formData();
+  } catch {
+    return NextResponse.json({ error: 'Requisicao de upload invalida.' }, { status: 400 });
+  }
 
   const file = formData.get('file');
   const productName = String(formData.get('productName') || 'produto');

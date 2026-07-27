@@ -78,7 +78,7 @@ const checks = [
   },
   {
     file: 'src/app/admin/estoque/page.tsx',
-    includes: ['Estoque', 'Subir Excel', 'Código avulso', 'parseStockRows', 'importStockLevels'],
+    includes: ['Estoque', 'Subir CSV', 'Código avulso', 'parseStockRows', 'importStockLevels'],
   },
   {
     file: 'src/app/admin/logistica/page.tsx',

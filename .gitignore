@@ -33,3 +33,5 @@ supabase/.temp/
 .supabase-db-password.local
 
 .vercel
+.codex-remote-attachments/
+tsconfig.tsbuildinfo

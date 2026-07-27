@@ -13,14 +13,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     const checkAuth = async () => {
       const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { user } } = await supabase.auth.getUser();
 
-      if (!session) {
+      if (!user) {
         router.replace('/?login=true&redirectTo=/admin');
         return;
       }
 
-      if (session.user.app_metadata?.role !== 'admin') {
+      if (user.app_metadata?.role !== 'admin') {
         setIsDenied(true);
         return;
       }

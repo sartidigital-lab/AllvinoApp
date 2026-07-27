@@ -1,10 +1,10 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react';
-import * as XLSX from 'xlsx';
 import { AdminEmptyState, AdminNotice, AdminPageHeader, AdminSection, AdminStatCard, AdminStatusBadge } from '@/components/admin/AdminPrimitives';
 import { createWine, deleteWine, fetchWinesFromSupabase, toggleWinePublished, updateWine } from '@/lib/database/wines';
 import { fetchStockLevelByCode, fetchStockLevelsByCodes, importStockLevels, normalizeProductCode, parseStockRows, saveManualStockLevel } from '@/lib/database/stock';
+import { readStockImportRows } from '@/lib/stock/importFile';
 import { createClient } from '@/utils/supabase/client';
 import { Wine } from '@/types/database';
 
@@ -185,7 +185,7 @@ export default function AdminCatalogPage() {
     setIsLoading(true);
     setMessage(null);
     try {
-      const data = await fetchWinesFromSupabase({ usePublicCache: false });
+      const data = await fetchWinesFromSupabase({ usePublicCache: false, includeUnpublished: true });
       const productCodes = data
         .map((wine) => wine.product_code || '')
         .filter(Boolean);
@@ -420,16 +420,7 @@ export default function AdminCatalogPage() {
     setMessage(null);
 
     try {
-      const buffer = await file.arrayBuffer();
-      const workbook = XLSX.read(buffer, { type: 'array', raw: true });
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-
-      if (!sheet) {
-        setMessage('Não encontrei uma aba válida na planilha.');
-        return;
-      }
-
-      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' });
+      const rows = await readStockImportRows(file);
       const parsedRows = parseStockRows(rows);
 
       if (parsedRows.length === 0) {
@@ -482,7 +473,7 @@ export default function AdminCatalogPage() {
               {isImportingStock ? 'Importando...' : 'Importar estoque'}
               <input
                 type="file"
-                accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
+                accept=".csv,text/csv"
                 disabled={isImportingStock}
                 onChange={handleStockImport}
                 className="hidden"

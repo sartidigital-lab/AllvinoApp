@@ -24,7 +24,7 @@ async function fetchCachedPublicCatalog(): Promise<Wine[] | null> {
   return (await response.json()) as Wine[];
 }
 
-export async function fetchWinesFromSupabase(options: { usePublicCache?: boolean } = {}): Promise<Wine[]> {
+export async function fetchWinesFromSupabase(options: { usePublicCache?: boolean; includeUnpublished?: boolean } = {}): Promise<Wine[]> {
   if (options.usePublicCache !== false) {
     const cachedCatalog = await fetchCachedPublicCatalog();
     if (cachedCatalog) {
@@ -34,10 +34,16 @@ export async function fetchWinesFromSupabase(options: { usePublicCache?: boolean
 
   const supabase = createClient();
 
-  const { data: products, error: productsError } = await supabase
+  let productsQuery = supabase
     .from('produtos')
     .select('*')
     .order('criado_em', { ascending: false });
+
+  if (!options.includeUnpublished) {
+    productsQuery = productsQuery.eq('publicado', true);
+  }
+
+  const { data: products, error: productsError } = await productsQuery;
 
   if (!productsError) {
     return (products as LegacyProduct[]).map(mapProductToWine);
@@ -63,6 +69,7 @@ export async function fetchWineByIdFromSupabase(id: string): Promise<Wine | unde
     .from('produtos')
     .select('*')
     .eq('id', id)
+    .eq('publicado', true)
     .single();
 
   if (!productError && product) {

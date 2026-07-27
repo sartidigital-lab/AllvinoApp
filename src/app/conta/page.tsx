@@ -7,7 +7,8 @@ import { CurrentUser, getCurrentUserFast } from '@/lib/auth/currentUser';
 import { getUserOrders } from '@/lib/database/orders';
 import { CartItem, useCart } from '@/context/CartContext';
 import { OrderWithItems } from '@/types/database';
-import { EmptyState, PageTransition } from '@/components/ui';
+import { fetchWinesFromSupabase } from '@/lib/database/wines';
+import { PageTransition } from '@/components/ui';
 
 const statusLabels: Record<string, string> = {
   pending: 'Pendente',
@@ -73,25 +74,30 @@ export default function ContaPage() {
     [orders, openOrderId]
   );
 
-  const repetirPedido = (order: OrderWithItems) => {
-    const items = order.order_items.map((item): CartItem => ({
-      id: item.product_id || item.wine_id || item.id,
-      name: getItemName(item),
-      description: null,
-      price: item.unit_price,
-      image_url: null,
-      type: null,
-      region: null,
-      grape: null,
-      category: 'Vinho',
-      product_code: null,
-      stock: 0,
-      published: true,
-      created_at: order.created_at,
-      quantity: item.quantity,
-    }));
+  const repetirPedido = async (order: OrderWithItems) => {
+    setProfileMessage(null);
 
-    addManyToCart(items);
+    try {
+      const catalog = await fetchWinesFromSupabase();
+      const catalogById = new Map(catalog.map((wine) => [wine.id, wine]));
+      const items = order.order_items.flatMap((item): CartItem[] => {
+        const productId = item.product_id || item.wine_id;
+        const wine = productId ? catalogById.get(productId) : null;
+        return wine ? [{ ...wine, quantity: item.quantity }] : [];
+      });
+
+      if (items.length === 0) {
+        setProfileMessage({ tone: 'danger', text: 'Nenhum item deste pedido está disponível no catálogo atual.' });
+        return;
+      }
+
+      addManyToCart(items);
+      if (items.length < order.order_items.length) {
+        setProfileMessage({ tone: 'success', text: 'Itens disponíveis adicionados ao carrinho. Alguns produtos antigos não estão mais no catálogo.' });
+      }
+    } catch {
+      setProfileMessage({ tone: 'danger', text: 'Não foi possível consultar o catálogo atual para repetir o pedido.' });
+    }
   };
 
   const salvarPerfil = async (event: React.FormEvent) => {
@@ -99,22 +105,25 @@ export default function ContaPage() {
     setIsSaving(true);
     setProfileMessage(null);
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.updateUser({
-      data: {
-        nome_completo: nome,
-        telefone: whatsapp,
-        data_nascimento: nascimento,
-      },
-    });
+    try {
+      const response = await fetch('/api/cliente/perfil', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ nome, whatsapp, nascimento }),
+      });
+      const payload = await response.json();
 
-    if (error) {
-      setProfileMessage({ tone: 'danger', text: `Erro ao atualizar dados: ${error.message}` });
-    } else {
+      if (!response.ok) {
+        throw new Error(payload.error || 'Erro ao atualizar dados.');
+      }
+
+      setUser(payload.user as CurrentUser);
       setProfileMessage({ tone: 'success', text: 'Perfil atualizado com sucesso.' });
+    } catch (error) {
+      setProfileMessage({ tone: 'danger', text: error instanceof Error ? error.message : 'Erro ao atualizar dados.' });
+    } finally {
+      setIsSaving(false);
     }
-
-    setIsSaving(false);
   };
 
   const fazerLogout = async () => {
@@ -214,7 +223,7 @@ export default function ContaPage() {
 
                       <button
                         type="button"
-                        onClick={() => repetirPedido(order)}
+                        onClick={() => void repetirPedido(order)}
                         className="flex w-full items-center justify-center gap-2 rounded-2xl bg-black py-3 text-sm font-bold text-white transition active:scale-95"
                       >
                         <span className="material-symbols-outlined text-[18px]">repeat</span>

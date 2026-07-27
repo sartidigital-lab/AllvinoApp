@@ -220,7 +220,7 @@ export default function CheckoutPage() {
 
     const link = `https://wa.me/${salesPhone}?text=${encodeURIComponent(msg)}`;
 
-    window.open(link, '_blank');
+    window.open(link, '_blank', 'noopener,noreferrer');
     clearCart();
     setSuccessOrderId(order.id);
     setSuccessSummary({

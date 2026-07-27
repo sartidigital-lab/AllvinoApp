@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect, useCallback, ReactNode,
 import { Wine } from '@/types/database';
 import { createClient } from '@/utils/supabase/client';
 import { fetchWinesFromSupabase } from '@/lib/database/wines';
+import { sanitizeStoredWineIds, sanitizeWine } from '@/lib/catalog/sanitizeWine';
 
 interface FavoritesContextType {
   favorites: Wine[];
@@ -30,21 +31,44 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
   const favoritesRef = useRef<Wine[]>([]);
   const syncVersion = useRef(0);
 
-  const readLocalFavorites = useCallback((): Wine[] => {
+  const readLocalFavoriteIds = useCallback((): string[] => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (!saved) return [];
       const parsed = JSON.parse(saved);
-      return Array.isArray(parsed) ? (parsed as Wine[]) : [];
+      return sanitizeStoredWineIds(parsed);
     } catch {
       return [];
     }
   }, []);
 
   useEffect(() => {
-    setFavorites(readLocalFavorites());
-    setIsInitialized(true);
-  }, [readLocalFavorites]);
+    let active = true;
+
+    async function loadLocalFavorites() {
+      const localIds = readLocalFavoriteIds();
+      if (localIds.length === 0) {
+        if (active) setIsInitialized(true);
+        return;
+      }
+
+      try {
+        const catalog = await fetchWinesFromSupabase();
+        const idSet = new Set(localIds);
+        if (active) setFavorites(catalog.filter((wine) => idSet.has(wine.id)));
+      } catch (error) {
+        console.error('Nao foi possivel carregar favoritos locais pelo catalogo:', error);
+      } finally {
+        if (active) setIsInitialized(true);
+      }
+    }
+
+    void loadLocalFavorites();
+
+    return () => {
+      active = false;
+    };
+  }, [readLocalFavoriteIds]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -71,7 +95,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (isInitialized) {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(favorites));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(favorites.map((wine) => wine.id)));
       } catch {
         // Keep the in-memory state usable when browser storage is unavailable.
       }
@@ -85,7 +109,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     const supabase = createClient();
 
     async function syncRemoteFavorites() {
-      const localFavorites = readLocalFavorites();
+    const localFavoriteIds = readLocalFavoriteIds();
       const { data: rows, error: rowsError } = await supabase
         .from('user_favorites')
         .select('product_id')
@@ -96,11 +120,11 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      if (localFavorites.length > 0) {
+      if (localFavoriteIds.length > 0) {
         const { error: migrationError } = await supabase
           .from('user_favorites')
           .upsert(
-            localFavorites.map((wine) => ({ user_id: userId, product_id: wine.id })),
+            localFavoriteIds.map((productId) => ({ user_id: userId, product_id: productId })),
             { onConflict: 'user_id,product_id', ignoreDuplicates: true }
           );
 
@@ -110,7 +134,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
       }
 
       const remoteIds = new Set((rows || []).map((row) => row.product_id as string));
-      localFavorites.forEach((wine) => remoteIds.add(wine.id));
+      localFavoriteIds.forEach((productId) => remoteIds.add(productId));
 
       if (remoteIds.size === 0) {
         if (version === syncVersion.current) setFavorites([]);
@@ -120,11 +144,9 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
       try {
         const catalog = await fetchWinesFromSupabase();
         const synced = catalog.filter((wine) => remoteIds.has(wine.id));
-        const syncedIds = new Set(synced.map((wine) => wine.id));
-        const unavailableLocal = localFavorites.filter((wine) => !syncedIds.has(wine.id));
 
         if (version === syncVersion.current) {
-          setFavorites([...synced, ...unavailableLocal]);
+          setFavorites(synced);
         }
       } catch (catalogError) {
         console.error('Nao foi possivel atualizar dados dos favoritos:', catalogError);
@@ -132,22 +154,25 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     }
 
     void syncRemoteFavorites();
-  }, [isInitialized, readLocalFavorites, userId]);
+  }, [isInitialized, readLocalFavoriteIds, userId]);
 
   const toggleFavorite = useCallback((wine: Wine) => {
+    const safeWine = sanitizeWine(wine);
+    if (!safeWine) return;
+
     const supabase = createClient();
-    const exists = favoritesRef.current.some((w) => w.id === wine.id);
+    const exists = favoritesRef.current.some((w) => w.id === safeWine.id);
     const next = exists
-      ? favoritesRef.current.filter((w) => w.id !== wine.id)
-      : [...favoritesRef.current, wine];
+      ? favoritesRef.current.filter((w) => w.id !== safeWine.id)
+      : [...favoritesRef.current, safeWine];
     favoritesRef.current = next;
     setFavorites(next);
 
     if (userId) {
       void (exists
-        ? supabase.from('user_favorites').delete().eq('user_id', userId).eq('product_id', wine.id)
+        ? supabase.from('user_favorites').delete().eq('user_id', userId).eq('product_id', safeWine.id)
         : supabase.from('user_favorites').upsert(
-            { user_id: userId, product_id: wine.id },
+            { user_id: userId, product_id: safeWine.id },
             { onConflict: 'user_id,product_id', ignoreDuplicates: true }
           )
       ).then(({ error }) => {

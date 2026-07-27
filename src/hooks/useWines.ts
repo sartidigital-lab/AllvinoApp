@@ -33,7 +33,9 @@ export function useWines() {
           setError(cacheErr as Error);
         }
       } finally {
-        setIsLoading(false);
+        if (isActive) {
+          setIsLoading(false);
+        }
       }
     }
 
@@ -84,7 +86,9 @@ export function useWine(id: string) {
           setError(cacheErr as Error);
         }
       } finally {
-        setIsLoading(false);
+        if (isActive) {
+          setIsLoading(false);
+        }
       }
     }
 

@@ -1,47 +1,20 @@
-import { createClient } from '@/utils/supabase/client';
-
-export type CurrentUser = {
-  id: string;
-  email?: string;
-  name: string;
-  phone: string;
-  birthDate: string;
-};
-
-function toCurrentUser(user: {
-  id: string;
-  email?: string;
-  user_metadata?: Record<string, string | undefined>;
-}): CurrentUser {
-  const metadata = user.user_metadata || {};
-
-  return {
-    id: user.id,
-    email: user.email,
-    name: metadata.nome_completo || user.email?.split('@')[0] || '',
-    phone: metadata.telefone || '',
-    birthDate: metadata.data_nascimento || '',
-  };
-}
+import { CurrentUser } from '@/lib/auth/userProfile';
+export type { CurrentUser } from '@/lib/auth/userProfile';
 
 export async function getCurrentUserFast(): Promise<CurrentUser | null> {
-  const supabase = createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const response = await fetch('/api/cliente/perfil', {
+    cache: 'no-store',
+    headers: { Accept: 'application/json' },
+  });
 
-  if (session?.user) {
-    return toCurrentUser(session.user);
-  }
-
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  if (error || !user) {
+  if (response.status === 401) {
     return null;
   }
 
-  return toCurrentUser(user);
+  if (!response.ok) {
+    throw new Error('Nao foi possivel carregar o perfil.');
+  }
+
+  const payload = await response.json() as { user?: CurrentUser };
+  return payload.user || null;
 }

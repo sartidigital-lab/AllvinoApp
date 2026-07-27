@@ -1,7 +1,6 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react';
-import * as XLSX from 'xlsx';
 import { AdminEmptyState, AdminNotice, AdminPageHeader, AdminSection, AdminStatCard, AdminStatusBadge } from '@/components/admin/AdminPrimitives';
 import {
   fetchStockImports,
@@ -13,6 +12,7 @@ import {
   StockLevelInput,
   StockLevelWithProduct,
 } from '@/lib/database/stock';
+import { readStockImportRows } from '@/lib/stock/importFile';
 import { StockImport } from '@/types/database';
 
 type ManualForm = {
@@ -96,16 +96,7 @@ export default function AdminEstoquePage() {
     setMessage(null);
 
     try {
-      const buffer = await file.arrayBuffer();
-      const workbook = XLSX.read(buffer, { type: 'array', raw: true });
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-
-      if (!sheet) {
-        setMessage('Não encontrei uma aba válida na planilha.');
-        return;
-      }
-
-      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' });
+      const rows = await readStockImportRows(file);
       const parsedRows = parseStockRows(rows);
 
       if (parsedRows.length === 0) {
@@ -167,14 +158,14 @@ export default function AdminEstoquePage() {
     <div className="space-y-6">
       <AdminPageHeader
         title="Estoque"
-        description="Atualize saldos por código de produto via Excel, CSV ou cadastro avulso."
+        description="Atualize saldos por código de produto via CSV ou cadastro avulso."
         actions={(
           <label className="admin-button flex cursor-pointer items-center gap-2 bg-black px-5 text-sm text-white shadow-sm transition hover:bg-stone-800">
             <span className="material-symbols-outlined text-[20px]">upload_file</span>
-            {isImporting ? 'Importando...' : 'Subir Excel'}
+            {isImporting ? 'Importando...' : 'Subir CSV'}
             <input
               type="file"
-              accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
+              accept=".csv,text/csv"
               disabled={isImporting}
               onChange={handleFileUpload}
               className="hidden"

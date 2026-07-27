@@ -2,6 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Wine } from '@/types/database';
+import { fetchWinesFromSupabase } from '@/lib/database/wines';
+import { getMaxCartQuantity, sanitizeCartItems, sanitizeStoredCartItems, sanitizeWine, StoredCartItem } from '@/lib/catalog/sanitizeWine';
 
 export type CartItem = Wine & { quantity: number };
 
@@ -18,41 +20,84 @@ type CartContextType = {
 };
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
+const STORAGE_KEY = 'allvino_cart';
+
+function toStoredCartItems(cart: CartItem[]): StoredCartItem[] {
+  return cart.map((item) => ({
+    id: item.id,
+    quantity: item.quantity,
+  }));
+}
+
+function hydrateCartItems(storedItems: StoredCartItem[], catalog: Wine[]): CartItem[] {
+  const catalogById = new Map(catalog.map((wine) => [wine.id, wine]));
+
+  return storedItems.flatMap((storedItem) => {
+    const wine = catalogById.get(storedItem.id);
+    if (!wine) return [];
+
+    const maxQuantity = wine.stock > 0 ? Math.min(wine.stock, getMaxCartQuantity()) : getMaxCartQuantity();
+    return [{ ...wine, quantity: Math.min(maxQuantity, storedItem.quantity) }];
+  });
+}
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Load from localStorage on mount
   useEffect(() => {
-    const saved = localStorage.getItem('allvino_cart');
-    if (saved) {
+    let active = true;
+
+    async function loadCart() {
       try {
-        setCart(JSON.parse(saved));
+        const saved = localStorage.getItem(STORAGE_KEY);
+        const storedItems = saved ? sanitizeStoredCartItems(JSON.parse(saved)) : [];
+
+        if (storedItems.length === 0) {
+          return;
+        }
+
+        const catalog = await fetchWinesFromSupabase();
+        if (active) setCart(hydrateCartItems(storedItems, catalog));
       } catch (e) {
-        console.error('Failed to parse cart from localStorage', e);
+        console.error('Failed to load cart from localStorage', e);
+      } finally {
+        if (active) setIsInitialized(true);
       }
     }
-    setIsInitialized(true);
+
+    void loadCart();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   // Save to localStorage when cart changes
   useEffect(() => {
     if (isInitialized) {
-      localStorage.setItem('allvino_cart', JSON.stringify(cart));
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(toStoredCartItems(cart)));
+      } catch {
+        // Keep the in-memory cart usable when browser storage is unavailable.
+      }
     }
   }, [cart, isInitialized]);
 
   const addToCart = (wine: Wine) => {
+    const safeWine = sanitizeWine(wine);
+    if (!safeWine) return;
+
     setCart((prev) => {
-      const existing = prev.find((item) => item.id === wine.id);
+      const existing = prev.find((item) => item.id === safeWine.id);
       if (existing) {
+        const maxQuantity = safeWine.stock > 0 ? Math.min(safeWine.stock, getMaxCartQuantity()) : getMaxCartQuantity();
         return prev.map((item) =>
-          item.id === wine.id ? { ...item, quantity: item.quantity + 1 } : item
+          item.id === safeWine.id ? { ...item, quantity: Math.min(maxQuantity, item.quantity + 1) } : item
         );
       }
-      return [...prev, { ...wine, quantity: 1 }];
+      return [...prev, { ...safeWine, quantity: 1 }];
     });
     setIsCartOpen(true);
   };
@@ -61,18 +106,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setCart((prev) => {
       const next = [...prev];
 
-      items.forEach((item) => {
+      sanitizeCartItems(items).forEach((item) => {
         const existingIndex = next.findIndex((cartItem) => cartItem.id === item.id);
+        const maxQuantity = item.stock > 0 ? Math.min(item.stock, getMaxCartQuantity()) : getMaxCartQuantity();
 
         if (existingIndex >= 0) {
           next[existingIndex] = {
             ...next[existingIndex],
-            quantity: next[existingIndex].quantity + item.quantity,
+            quantity: Math.min(maxQuantity, next[existingIndex].quantity + item.quantity),
           };
           return;
         }
 
-        next.push(item);
+        next.push({ ...item, quantity: Math.min(maxQuantity, item.quantity) });
       });
 
       return next;
@@ -88,7 +134,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setCart((prev) =>
       prev.map((item) => {
         if (item.id === id) {
-          const newQuantity = Math.max(0, item.quantity + delta);
+          const maxQuantity = item.stock > 0 ? Math.min(item.stock, getMaxCartQuantity()) : getMaxCartQuantity();
+          const newQuantity = Math.min(maxQuantity, Math.max(0, item.quantity + delta));
           return { ...item, quantity: newQuantity };
         }
         return item;
