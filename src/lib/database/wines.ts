@@ -172,16 +172,7 @@ export async function deleteWine(id: string): Promise<boolean> {
       .delete()
       .eq('id', id);
 
-    if (!productError) {
-      return true;
-    }
-
-    const { error } = await supabase
-      .from('wines')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
+    if (productError) throw productError;
     return true;
   } catch (error) {
     console.error('Error deleting wine:', error);

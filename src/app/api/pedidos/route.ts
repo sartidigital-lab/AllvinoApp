@@ -6,6 +6,28 @@ import { checkoutRequestSchema } from '@/lib/validation/checkout';
 import { checkRateLimit, getClientKey, rateLimitResponse } from '@/lib/security/rateLimit';
 import { auditSecurityEvent } from '@/lib/security/audit';
 
+const checkoutMessages = [
+  'Pedido invalido.',
+  'Nao foi possivel validar os produtos.',
+  'Produto sem codigo de estoque.',
+  'Produto indisponivel para compra.',
+  'Quantidade de produto invalida.',
+  'Estoque insuficiente para concluir o pedido.',
+  'Cupom invalido ou expirado.',
+  'Cupom nao atende ao valor minimo do pedido.',
+  'Informe um CEP valido para entrega.',
+  'Ainda nao entregamos neste CEP.',
+  'Modalidade de entrega invalida.',
+  'Forma de pagamento invalida.',
+  'Informe o endereco de entrega.',
+] as const;
+
+function getSafeCheckoutError(error: { message?: string } | null) {
+  const message = error?.message || '';
+  return checkoutMessages.find((candidate) => message.includes(candidate))
+    || 'Nao foi possivel criar o pedido.';
+}
+
 export async function POST(request: Request) {
   const supabase = await createClient();
   const {
@@ -58,8 +80,11 @@ export async function POST(request: Request) {
   );
 
   if (checkoutError || !orderId) {
-    const message = checkoutError?.message || 'Não foi possível criar o pedido.';
+    const message = getSafeCheckoutError(checkoutError);
     const status = /estoque/i.test(message) ? 409 : 400;
+    if (checkoutError) {
+      auditSecurityEvent('order.create_failed', { userId: user.id, code: checkoutError.code });
+    }
     return NextResponse.json({ error: message }, { status });
   }
 

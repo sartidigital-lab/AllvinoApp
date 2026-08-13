@@ -122,7 +122,7 @@ const checks = [
   },
   {
     file: 'src/lib/database/stock.ts',
-    includes: ['stock_levels', 'stock_imports', 'upsertStockRows', 'sku_sankhya', 'fetchStockLevelsByCodes'],
+    includes: ['stock_levels', 'stock_imports', 'set_manual_stock_level', 'sku_sankhya', 'fetchStockLevelsByCodes'],
   },
   {
     file: 'supabase/migrations/20260531000033_add_promotions.sql',

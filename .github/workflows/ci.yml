@@ -27,6 +27,12 @@ jobs:
       - name: Smoke checks
         run: npm run smoke
 
+      - name: Unit tests
+        run: npm test
+
+      - name: Security checks
+        run: npm run security
+
       - name: Build
         run: npm run build
         env:
@@ -49,7 +55,7 @@ jobs:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v2
         with:
-          version: latest
+          version: 2.114.0
 
       - name: Link Supabase project
         run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
@@ -82,7 +88,7 @@ jobs:
         run: npm ci
 
       - name: Install Vercel CLI
-        run: npm install --global vercel@latest
+        run: npm install --global vercel@58.11.0
 
       - name: Link Vercel project
         run: |

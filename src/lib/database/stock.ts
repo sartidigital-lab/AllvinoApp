@@ -213,7 +213,27 @@ export async function saveManualStockLevel(input: StockLevelInput): Promise<{
   stockLevel: StockLevel | null;
   error: Error | null;
 }> {
-  return upsertStockLevels([input], { source: 'manual' });
+  const supabase = createClient();
+  const productCode = normalizeProductCode(input.product_code);
+  const quantity = Math.trunc(Number(input.quantity));
+
+  try {
+    if (!productCode || !Number.isFinite(quantity) || quantity < 0) {
+      throw new Error('Codigo ou quantidade de estoque invalida.');
+    }
+
+    const { data, error } = await supabase.rpc('set_manual_stock_level', {
+      p_product_code: productCode,
+      p_quantity: quantity,
+    });
+
+    if (error) throw error;
+
+    return { stockLevel: data as StockLevel, error: null };
+  } catch (error) {
+    console.error('Error saving manual stock level:', error);
+    return { stockLevel: null, error: error as Error };
+  }
 }
 
 export async function importStockLevels(
@@ -240,57 +260,5 @@ export async function importStockLevels(
   } catch (error) {
     console.error('Error importing stock levels:', error);
     return { count: 0, error: error as Error };
-  }
-}
-
-async function upsertStockLevels(
-  rows: StockLevelInput[],
-  options: { source: string; importId?: string | null }
-): Promise<{ stockLevel: StockLevel | null; error: Error | null }> {
-  const { data, error } = await upsertStockRows(rows, options);
-  return {
-    stockLevel: data?.[0] || null,
-    error,
-  };
-}
-
-async function upsertStockRows(
-  rows: StockLevelInput[],
-  options: { source: string; importId?: string | null }
-): Promise<{ data: StockLevel[] | null; error: Error | null }> {
-  const supabase = createClient();
-  const normalizedRows = rows
-    .map((row) => ({
-      product_code: normalizeProductCode(row.product_code),
-      quantity: Math.max(0, Math.trunc(Number(row.quantity || 0))),
-      source: options.source,
-      import_id: options.importId || null,
-      updated_at: new Date().toISOString(),
-    }))
-    .filter((row) => row.product_code);
-
-  try {
-    if (normalizedRows.length === 0) {
-      throw new Error('Nenhuma linha valida para salvar.');
-    }
-
-    const { data, error } = await supabase
-      .from('stock_levels')
-      .upsert(normalizedRows, { onConflict: 'product_code' })
-      .select(stockLevelSelect);
-
-    if (error) throw error;
-
-    for (const row of normalizedRows) {
-      await supabase
-        .from('produtos')
-        .update({ estoque: row.quantity })
-        .eq('sku_sankhya', row.product_code);
-    }
-
-    return { data: (data || []) as StockLevel[], error: null };
-  } catch (error) {
-    console.error('Error upserting stock levels:', error);
-    return { data: null, error: error as Error };
   }
 }

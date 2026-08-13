@@ -47,6 +47,8 @@ export default function CheckoutPage() {
     paymentProvider: string;
     paymentStatus: string;
     paymentUrl: string | null;
+    whatsappUrl: string;
+    whatsappOpened: boolean;
     delivery: string;
     address: string | null;
   } | null>(null);
@@ -221,7 +223,11 @@ export default function CheckoutPage() {
 
     const link = `https://wa.me/${SALES_WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
 
-    window.open(link, '_blank', 'noopener,noreferrer');
+    const whatsappWindow = window.open('', '_blank');
+    if (whatsappWindow) {
+      whatsappWindow.opener = null;
+      whatsappWindow.location.href = link;
+    }
     clearCart();
     setSuccessOrderId(order.id);
     setSuccessSummary({
@@ -237,6 +243,8 @@ export default function CheckoutPage() {
       paymentProvider: order.payment_provider,
       paymentStatus: order.payment_status,
       paymentUrl: order.payment_url,
+      whatsappUrl: link,
+      whatsappOpened: whatsappWindow !== null,
       delivery: order.delivery_type,
       address: order.delivery_address,
     });
@@ -257,7 +265,9 @@ export default function CheckoutPage() {
           <div>
             <h1 className="text-3xl font-bold font-serif text-black">Pedido realizado</h1>
             <p className="mt-2 text-sm font-bold text-stone-500">
-              Enviamos o pedido para o WhatsApp da Allvino. Agora é só acompanhar o status na sua conta.
+              {successSummary.whatsappOpened
+                ? 'Abrimos o pedido no WhatsApp da Allvino. Agora é só enviar a mensagem e acompanhar o status na sua conta.'
+                : 'O navegador bloqueou a abertura do WhatsApp. Use o botão abaixo para enviar o pedido.'}
             </p>
           </div>
           <p className="rounded-2xl bg-stone-50 px-4 py-3 text-xs font-bold uppercase tracking-widest text-stone-500">
@@ -329,6 +339,14 @@ export default function CheckoutPage() {
             </div>
           </div>
           <div className="grid grid-cols-1 gap-3">
+            <a
+              href={successSummary.whatsappUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-2xl bg-emerald-600 py-4 text-sm font-bold text-white"
+            >
+              Enviar pedido pelo WhatsApp
+            </a>
             <Link href="/conta" className="rounded-2xl bg-[#B91C1C] py-4 text-sm font-bold text-white">
               Ver meus pedidos
             </Link>
