@@ -69,8 +69,8 @@ jobs:
     needs: [validate, supabase]
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     env:
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_ORG_ID: team_Z8bH30Qj5RYLDIZ8LuySrVbN
+      VERCEL_PROJECT_ID: prj_wu7rxQXyZPQp05sPOb6YA2DjgoOR
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
