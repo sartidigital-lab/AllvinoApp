@@ -142,7 +142,7 @@ const checks = [
   },
   {
     file: '.github/workflows/ci.yml',
-    includes: ['npm run build', 'supabase db push', 'vercel deploy --prod'],
+    includes: ['npm run build', 'npm test', 'npm run security', 'supabase db push'],
   },
 ];
 
