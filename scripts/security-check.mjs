@@ -24,5 +24,6 @@ assert.match(checkoutHardening, /set_manual_stock_level/);
 assert.match(stock, /rpc\(['"]set_manual_stock_level['"]/);
 assert.match(headers, /Content-Security-Policy/);
 assert.match(headers, /Strict-Transport-Security/);
+assert.doesNotMatch(headers, /'unsafe-eval'/, 'production CSP must block eval-like script execution');
 
 console.log('Security checks passed.');
