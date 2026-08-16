@@ -216,6 +216,24 @@ export function CatalogBannerManager() {
             <label className="space-y-1 sm:col-span-2"><span className="text-xs font-bold uppercase text-stone-500">Subtítulo</span><textarea rows={2} value={form.subtitle} onChange={(event) => setForm({ ...form, subtitle: event.target.value })} className="w-full resize-none rounded-lg border border-stone-200 bg-white p-3 font-bold" /></label>
             <label className="space-y-1"><span className="text-xs font-bold uppercase text-stone-500">Texto do botão</span><input value={form.cta_label} onChange={(event) => setForm({ ...form, cta_label: event.target.value })} className="w-full rounded-lg border border-stone-200 bg-white p-3 font-bold" /></label>
             <label className="space-y-1"><span className="text-xs font-bold uppercase text-stone-500">Tema</span><select value={form.theme} onChange={(event) => setForm({ ...form, theme: event.target.value as CatalogBannerTheme })} className="w-full rounded-lg border border-stone-200 bg-white p-3 font-bold"><option value="wine">Vinho</option><option value="gold">Dourado</option><option value="forest">Floresta</option></select></label>
+            <aside aria-label="Padrão recomendado para imagens" className="rounded-xl border border-amber-200 bg-amber-50/70 p-4 sm:col-span-2">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-900">Padrão recomendado da arte</p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                <div className="rounded-lg border border-amber-200/80 bg-white/80 px-3 py-2.5">
+                  <p className="text-[10px] font-black uppercase text-stone-400">Desktop</p>
+                  <p className="mt-0.5 font-black text-stone-900">1920 × 600 px</p>
+                  <p className="text-xs font-bold text-stone-500">Proporção aproximada 3,2:1</p>
+                </div>
+                <div className="rounded-lg border border-amber-200/80 bg-white/80 px-3 py-2.5">
+                  <p className="text-[10px] font-black uppercase text-stone-400">Mobile</p>
+                  <p className="mt-0.5 font-black text-stone-900">1080 × 900 px</p>
+                  <p className="text-xs font-bold text-stone-500">Proporção 1,2:1</p>
+                </div>
+              </div>
+              <p className="mt-3 text-xs font-semibold leading-5 text-amber-950/75">
+                Use WebP ou JPG, com até 5 MB. Mantenha o elemento principal à direita e evite textos na imagem: o sistema adiciona título, desconto e botão. A imagem pode ser recortada para preencher o banner.
+              </p>
+            </aside>
             <label className="space-y-1"><span className="text-xs font-bold uppercase text-stone-500">Imagem desktop</span><input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => void handleUpload(event.target.files?.[0], 'image_url')} className="w-full text-xs font-bold" /><span className="block truncate text-[10px] text-stone-400">{uploadingField === 'image_url' ? 'Enviando...' : form.image_url || 'Opcional'}</span></label>
             <label className="space-y-1"><span className="text-xs font-bold uppercase text-stone-500">Imagem mobile</span><input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => void handleUpload(event.target.files?.[0], 'mobile_image_url')} className="w-full text-xs font-bold" /><span className="block truncate text-[10px] text-stone-400">{uploadingField === 'mobile_image_url' ? 'Enviando...' : form.mobile_image_url || 'Usa a imagem desktop'}</span></label>
             <label className="space-y-1 sm:col-span-2"><span className="text-xs font-bold uppercase text-stone-500">Texto alternativo da imagem</span><input value={form.image_alt} onChange={(event) => setForm({ ...form, image_alt: event.target.value })} className="w-full rounded-lg border border-stone-200 bg-white p-3 font-bold" /></label>
