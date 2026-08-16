@@ -9,6 +9,7 @@ import {
   savePromotion,
 } from '@/lib/database/promotions';
 import { Promotion } from '@/types/database';
+import { AdminNotice, AdminPageHeader, AdminStatCard } from '@/components/admin/AdminPrimitives';
 
 type PromotionForm = {
   code: string;
@@ -206,34 +207,21 @@ export default function AdminPromotionsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 pb-6">
-        <div>
-          <h1 className="text-3xl font-bold font-serif text-black">Promoções & Cupons</h1>
-          <p className="mt-1 text-sm font-bold text-stone-500">Gerencie cupons aplicados no checkout.</p>
-        </div>
-        <button
-          type="button"
-          onClick={openCreateForm}
-          className="flex items-center gap-2 rounded-lg bg-black px-5 py-2.5 text-sm font-bold text-white shadow-lg transition hover:bg-stone-800"
-        >
-          <span className="material-symbols-outlined text-[20px]">add</span>
-          Novo Cupom
-        </button>
-      </div>
+      <AdminPageHeader
+        title="Promoções & Cupons"
+        description="Gerencie campanhas e cupons aplicados no checkout."
+        actions={(
+          <button type="button" onClick={openCreateForm} className="admin-button flex items-center gap-2 bg-black px-5 text-sm text-white hover:bg-stone-800">
+            <span className="material-symbols-outlined text-[20px]">add</span>
+            Novo Cupom
+          </button>
+        )}
+      />
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div className="rounded-lg bg-black p-5 text-white">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-white/60">Total</p>
-          <p className="mt-2 text-3xl font-bold">{stats.total}</p>
-        </div>
-        <div className="rounded-lg border border-stone-100 bg-white p-5">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Ativos agora</p>
-          <p className="mt-2 text-3xl font-bold text-black">{stats.active}</p>
-        </div>
-        <div className="rounded-lg border border-stone-100 bg-white p-5">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Pausados</p>
-          <p className="mt-2 text-3xl font-bold text-black">{stats.paused}</p>
-        </div>
+      <div className="admin-stats-grid grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
+        <AdminStatCard label="Total" value={stats.total} icon="campaign" tone="dark" />
+        <AdminStatCard label="Ativos agora" value={stats.active} icon="verified" tone="success" />
+        <AdminStatCard label="Pausados" value={stats.paused} icon="pause_circle" tone="warning" />
       </div>
 
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -259,13 +247,11 @@ export default function AdminPromotionsPage() {
       </div>
 
       {message && (
-        <div className="rounded-lg border border-stone-200 bg-white px-4 py-3 text-sm font-bold text-stone-700">
-          {message}
-        </div>
+        <AdminNotice>{message}</AdminNotice>
       )}
 
       {isFormOpen && (
-        <form onSubmit={handleSubmit} className="space-y-5 rounded-lg border border-stone-100 bg-white p-5 shadow-sm">
+        <form onSubmit={handleSubmit} className="admin-surface space-y-5 p-5 sm:p-6">
           <div className="flex items-center justify-between gap-4">
             <h2 className="text-lg font-bold text-black">{editingPromotion ? 'Editar cupom' : 'Novo cupom'}</h2>
             <button type="button" onClick={closeForm} className="text-stone-500 hover:text-black">

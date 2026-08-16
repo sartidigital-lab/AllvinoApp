@@ -18,12 +18,16 @@ body:has(.admin-shell) {
 }
 
 :root {
-  --admin-bg: #F7F4EE;
-  --admin-surface: #FFFFFF;
-  --admin-border: #E7E1D8;
-  --admin-muted: #756F66;
-  --admin-ink: #111111;
-  --admin-accent: var(--color-primary);
+  --admin-bg: #F3EFE8;
+  --admin-surface: rgba(255, 255, 255, 0.88);
+  --admin-surface-solid: #FFFEFC;
+  --admin-border: #DED6CA;
+  --admin-border-strong: #CFC3B4;
+  --admin-muted: #746D64;
+  --admin-ink: #1B1917;
+  --admin-accent: #8F1D2C;
+  --admin-accent-dark: #68131F;
+  --admin-gold: #B78742;
 }
 
 .material-symbols-outlined { 
@@ -45,7 +49,9 @@ body:has(.admin-shell) {
 .admin-shell {
   min-height: 100vh;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.64), rgba(255, 255, 255, 0) 240px),
+    radial-gradient(circle at 78% -10%, rgba(183, 135, 66, 0.13), transparent 30rem),
+    radial-gradient(circle at 20% 24%, rgba(143, 29, 44, 0.06), transparent 24rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0) 320px),
     var(--admin-bg);
   color: var(--admin-ink);
 }
@@ -53,21 +59,86 @@ body:has(.admin-shell) {
 .admin-surface {
   border: 1px solid var(--admin-border);
   background: var(--admin-surface);
-  border-radius: 8px;
-  box-shadow: 0 1px 2px rgba(17, 17, 17, 0.04);
+  border-radius: 20px;
+  box-shadow: 0 12px 40px rgba(52, 42, 31, 0.055), 0 1px 2px rgba(52, 42, 31, 0.04);
+  backdrop-filter: blur(18px);
 }
 
 .admin-surface.admin-surface-dark {
-  border-color: #111111;
-  background: #111111;
+  border-color: rgba(255, 255, 255, 0.08);
+  background:
+    radial-gradient(circle at 85% 5%, rgba(183, 135, 66, 0.22), transparent 42%),
+    linear-gradient(145deg, #26211D, #151311 72%);
   color: #FFFFFF;
+  box-shadow: 0 18px 44px rgba(24, 20, 17, 0.2);
 }
 
 .admin-button {
   min-height: 44px;
-  border-radius: 8px;
+  border-radius: 12px;
   font-weight: 700;
-  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, opacity 160ms ease;
+  transition: transform 180ms ease, background-color 180ms ease, border-color 180ms ease, color 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
+}
+
+.admin-button:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+.admin-page-enter {
+  animation: admin-page-enter 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes admin-page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.admin-shell input:not([type='checkbox']):not([type='radio']),
+.admin-shell select,
+.admin-shell textarea {
+  border-radius: 12px;
+  border-color: var(--admin-border);
+  background-color: rgba(255, 255, 255, 0.9);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.admin-shell input:not([type='checkbox']):not([type='radio']):focus,
+.admin-shell select:focus,
+.admin-shell textarea:focus {
+  border-color: rgba(143, 29, 44, 0.55) !important;
+  box-shadow: 0 0 0 3px rgba(143, 29, 44, 0.09);
+}
+
+.admin-shell table thead {
+  background: #F6F1EA;
+}
+
+.admin-shell table tbody tr {
+  transition: background-color 160ms ease;
+}
+
+.admin-shell table tbody tr:hover {
+  background: rgba(249, 246, 241, 0.9);
+}
+
+.admin-action-card {
+  border: 1px solid rgba(222, 214, 202, 0.78);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 4px 18px rgba(52, 42, 31, 0.035);
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+.admin-action-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--admin-border-strong);
+  background: var(--admin-surface-solid);
+  box-shadow: 0 14px 30px rgba(52, 42, 31, 0.08);
 }
 
 .admin-scrollbar {
@@ -93,4 +164,28 @@ body:has(.admin-shell) {
 .admin-shell textarea:focus-visible {
   outline: 2px solid var(--admin-accent);
   outline-offset: 2px;
+}
+
+@media (max-width: 639px) {
+  .admin-surface {
+    border-radius: 16px;
+  }
+
+  .admin-shell main {
+    padding-bottom: 7.5rem;
+  }
+
+  .admin-stats-grid:has(> :nth-child(5):last-child) > :last-child {
+    grid-column: span 2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-page-enter {
+    animation: none;
+  }
+
+  .admin-button {
+    transition: none;
+  }
 }
