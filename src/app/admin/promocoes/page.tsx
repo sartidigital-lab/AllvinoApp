@@ -10,6 +10,8 @@ import {
 } from '@/lib/database/promotions';
 import { Promotion } from '@/types/database';
 import { AdminNotice, AdminPageHeader, AdminStatCard } from '@/components/admin/AdminPrimitives';
+import { ProductCampaignManager } from '@/components/admin/ProductCampaignManager';
+import { CatalogBannerManager } from '@/components/admin/CatalogBannerManager';
 
 type PromotionForm = {
   code: string;
@@ -209,7 +211,7 @@ export default function AdminPromotionsPage() {
     <div className="space-y-6">
       <AdminPageHeader
         title="Promoções & Cupons"
-        description="Gerencie campanhas e cupons aplicados no checkout."
+        description="Controle preços promocionais, vitrines rotativas e cupons do checkout."
         actions={(
           <button type="button" onClick={openCreateForm} className="admin-button flex items-center gap-2 bg-black px-5 text-sm text-white hover:bg-stone-800">
             <span className="material-symbols-outlined text-[20px]">add</span>
@@ -217,6 +219,21 @@ export default function AdminPromotionsPage() {
           </button>
         )}
       />
+
+      <nav className="flex gap-2 overflow-x-auto rounded-2xl border border-stone-200 bg-white p-2" aria-label="Seções de promoções">
+        <a href="#campanhas" className="shrink-0 rounded-xl px-4 py-2 text-sm font-bold text-stone-600 transition hover:bg-stone-100 hover:text-black">Campanhas</a>
+        <a href="#banners" className="shrink-0 rounded-xl px-4 py-2 text-sm font-bold text-stone-600 transition hover:bg-stone-100 hover:text-black">Banners</a>
+        <a href="#cupons" className="shrink-0 rounded-xl px-4 py-2 text-sm font-bold text-stone-600 transition hover:bg-stone-100 hover:text-black">Cupons</a>
+      </nav>
+
+      <ProductCampaignManager />
+      <CatalogBannerManager />
+
+      <div id="cupons" className="scroll-mt-24">
+        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#B91C1C]">Checkout</p>
+        <h2 className="mt-1 text-xl font-bold text-black">Cupons de pedido</h2>
+        <p className="mt-1 text-sm font-medium text-stone-500">Descontos adicionais aplicados após os preços promocionais dos itens.</p>
+      </div>
 
       <div className="admin-stats-grid grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
         <AdminStatCard label="Total" value={stats.total} icon="campaign" tone="dark" />

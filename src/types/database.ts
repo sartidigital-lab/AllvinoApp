@@ -3,6 +3,11 @@ export type Wine = {
   name: string;
   description: string | null;
   price: number;
+  original_price: number;
+  discount_percent: number | null;
+  promotion_id: string | null;
+  promotion_title: string | null;
+  promotion_slug: string | null;
   image_url: string | null;
   type: string | null;
   region: string | null;
@@ -49,6 +54,9 @@ export type OrderItem = {
   product_name: string | null;
   quantity: number;
   unit_price: number;
+  base_unit_price: number;
+  discount_percent: number | null;
+  product_promotion_id: string | null;
 };
 
 export type OrderWithItems = Order & {
@@ -66,6 +74,44 @@ export type Promotion = {
   discount_value: number;
   min_subtotal: number;
   max_discount: number | null;
+  starts_at: string | null;
+  ends_at: string | null;
+  is_active: boolean;
+};
+
+export type ProductPromotionCampaign = {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  discount_percent: number;
+  starts_at: string | null;
+  ends_at: string | null;
+  is_active: boolean;
+  product_ids: string[];
+};
+
+export type CatalogBannerTheme = 'wine' | 'gold' | 'forest';
+
+export type CatalogBanner = {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  promotion_id: string;
+  promotion_title: string;
+  promotion_slug: string;
+  discount_percent: number;
+  eyebrow: string | null;
+  title: string;
+  subtitle: string | null;
+  cta_label: string;
+  image_url: string | null;
+  mobile_image_url: string | null;
+  image_alt: string | null;
+  theme: CatalogBannerTheme;
+  sort_order: number;
   starts_at: string | null;
   ends_at: string | null;
   is_active: boolean;

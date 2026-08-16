@@ -6,6 +6,11 @@ const wine = {
   name: 'Vinho Seguro',
   description: null,
   price: 99.9,
+  original_price: 129.9,
+  discount_percent: 23,
+  promotion_id: '33333333-3333-4333-8333-333333333333',
+  promotion_title: 'Selecao de inverno',
+  promotion_slug: 'selecao-de-inverno',
   image_url: null,
   type: 'Tinto',
   region: 'Serra',
@@ -20,6 +25,7 @@ const wine = {
 describe('catalog storage sanitizers', () => {
   it('keeps valid wines and removes invalid localStorage records', () => {
     expect(sanitizeWine(wine)?.name).toBe('Vinho Seguro');
+    expect(sanitizeWine(wine)?.original_price).toBe(129.9);
     expect(sanitizeWine({ ...wine, id: 'not-a-uuid' })).toBeNull();
     expect(sanitizeWineList([wine, { ...wine, name: '' }, null])).toHaveLength(1);
   });

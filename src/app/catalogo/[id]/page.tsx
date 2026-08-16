@@ -10,6 +10,7 @@ import { WineDetailSkeleton } from '@/components/ui';
 import { useParams } from 'next/navigation';
 import { ArrowLeft, Ban, CheckCircle, Grape, Heart, MapPin, TriangleAlert, Wine, type LucideIcon } from 'lucide-react';
 import Image from 'next/image';
+import { WinePrice } from '@/components/catalog/WinePrice';
 
 function formatMoney(value: number) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -96,7 +97,12 @@ export default function WineDetailPage() {
 
       <div className="max-w-6xl mx-auto px-4 py-6">
         <div className="grid lg:grid-cols-[minmax(0,1fr)_420px] gap-8">
-          <div className="bg-white rounded-2xl border border-stone-100 p-8 flex items-center justify-center">
+          <div className="relative bg-white rounded-2xl border border-stone-100 p-8 flex items-center justify-center">
+            {wine.discount_percent && (
+              <span className="absolute left-6 top-6 rounded-full bg-[#B91C1C] px-3 py-1.5 text-xs font-black text-white">
+                -{wine.discount_percent}%
+              </span>
+            )}
             <Image src={wine.image_url || 'https://via.placeholder.com/300x400'} alt={wine.name} width={600} height={800} priority sizes="(max-width: 1024px) 100vw, 60vw" className="w-full max-h-[500px] object-contain mix-blend-multiply" />
           </div>
 
@@ -119,8 +125,11 @@ export default function WineDetailPage() {
             </div>
 
             <div className="border-t border-stone-100 pt-6">
-              <p className="text-3xl font-bold text-[#B91C1C]">{formatMoney(wine.price)}</p>
-              <p className="text-xs text-stone-400 mt-1">Preco para pedidos online</p>
+              {wine.promotion_title && (
+                <p className="mb-2 text-xs font-black uppercase tracking-wider text-[#B91C1C]">{wine.promotion_title}</p>
+              )}
+              <span className="text-3xl"><WinePrice wine={wine} /></span>
+              <p className="text-xs text-stone-400 mt-1">Preço promocional validado no checkout</p>
             </div>
 
             <div className={`flex items-center gap-3 p-4 rounded-xl border ${stock.color}`}>
@@ -174,7 +183,7 @@ export default function WineDetailPage() {
                 <a key={w.id} href={`/catalogo/${w.id}`} className="bg-white rounded-2xl border border-stone-100 p-4 text-center active:scale-[0.98] transition-transform">
                   <Image src={w.image_url || 'https://via.placeholder.com/300x400'} alt={w.name} width={300} height={400} sizes="(max-width: 768px) 33vw, 220px" className="w-full h-28 object-contain mix-blend-multiply mb-2" />
                   <p className="font-bold text-xs line-clamp-2">{w.name}</p>
-                  <p className="text-xs font-bold text-[#B91C1C] mt-1">{formatMoney(w.price)}</p>
+                  <span className="mt-1 block text-xs"><WinePrice wine={w} compact /></span>
                 </a>
               ))}
             </div>

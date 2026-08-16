@@ -66,10 +66,9 @@ export async function fetchWineByIdFromSupabase(id: string): Promise<Wine | unde
   const supabase = createClient();
 
   const { data: product, error: productError } = await supabase
-    .from('produtos')
-    .select('*')
+    .from('catalog_products')
+    .select('id,nome,descricao,base_price,effective_price,sku_sankhya,imagem_url,pais,regiao,tipo,uva,estoque,publicado,criado_em,promotion_id,promotion_title,promotion_slug,discount_percent')
     .eq('id', id)
-    .eq('publicado', true)
     .single();
 
   if (!productError && product) {

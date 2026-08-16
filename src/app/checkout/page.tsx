@@ -378,7 +378,13 @@ export default function CheckoutPage() {
                   <span className="font-bold text-stone-400">{item.quantity}x</span>
                   <span className="font-bold text-black">{item.name}</span>
                 </div>
-                <span className="font-bold">R$ {(item.price * item.quantity).toFixed(2).replace('.', ',')}</span>
+                <div className="text-right">
+                  {item.discount_percent && item.original_price > item.price && (
+                    <p className="text-[10px] text-stone-400 line-through">R$ {(item.original_price * item.quantity).toFixed(2).replace('.', ',')}</p>
+                  )}
+                  <span className="font-bold">R$ {(item.price * item.quantity).toFixed(2).replace('.', ',')}</span>
+                  {item.discount_percent && <p className="text-[10px] font-black text-[#B91C1C]">-{item.discount_percent}% aplicado</p>}
+                </div>
               </div>
             ))
           )}

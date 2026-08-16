@@ -55,7 +55,13 @@ export function CartOverlay() {
                 />
                 <div className="flex-1">
                   <p className="font-bold text-sm line-clamp-2">{item.name}</p>
-                  <p className="text-xs text-stone-400">R$ {item.price.toFixed(2).replace('.', ',')}</p>
+                  <div className="flex items-center gap-2 text-xs">
+                    {item.discount_percent && item.original_price > item.price && (
+                      <span className="text-stone-400 line-through">R$ {item.original_price.toFixed(2).replace('.', ',')}</span>
+                    )}
+                    <span className="font-bold text-[#B91C1C]">R$ {item.price.toFixed(2).replace('.', ',')}</span>
+                    {item.discount_percent && <span className="rounded bg-red-50 px-1.5 py-0.5 font-black text-[#B91C1C]">-{item.discount_percent}%</span>}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <button 

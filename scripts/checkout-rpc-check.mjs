@@ -118,9 +118,14 @@ const product =
             p.id,
             p.nome,
             p.preco,
+            cp.base_price,
+            cp.effective_price,
+            cp.discount_percent,
+            cp.promotion_id,
             p.sku_sankhya,
             coalesce(s.quantity, -1) as stock_quantity
           from public.produtos p
+          join public.catalog_products cp on cp.id = p.id
           left join public.stock_levels s on s.product_code = trim(p.sku_sankhya)
           where p.id = ${sqlString(process.env.CHECKOUT_TEST_PRODUCT_ID)}
           limit 1;
@@ -133,9 +138,14 @@ const product =
             p.id,
             p.nome,
             p.preco,
+            cp.base_price,
+            cp.effective_price,
+            cp.discount_percent,
+            cp.promotion_id,
             p.sku_sankhya,
             coalesce(s.quantity, -1) as stock_quantity
           from public.produtos p
+          join public.catalog_products cp on cp.id = p.id
           join public.stock_levels s on s.product_code = trim(p.sku_sankhya)
           where nullif(trim(p.sku_sankhya), '') is not null
             and s.quantity > 0
@@ -198,7 +208,10 @@ try {
         o.stock_reserved_at is not null as stock_reserved,
         oi.product_id,
         oi.quantity,
-        oi.unit_price
+        oi.unit_price,
+        oi.base_unit_price,
+        oi.discount_percent as item_discount_percent,
+        oi.product_promotion_id
       from public.orders o
       join public.order_items oi on oi.order_id = o.id
       where o.id = ${sqlString(orderId)};
@@ -206,7 +219,7 @@ try {
     'Checkout test order details'
   );
 
-  const expectedSubtotal = Number(product.preco) * quantity;
+  const expectedSubtotal = Number(product.effective_price) * quantity;
   const expectedDiscount = Number((expectedSubtotal * 0.1).toFixed(2));
   const expectedTotal = Number((expectedSubtotal - expectedDiscount).toFixed(2));
   const actualTotal = Number(details.total_amount);
@@ -221,6 +234,10 @@ try {
   if (!details.stock_reserved) failures.push('stock_reserved=false');
   if (details.product_id !== product.id) failures.push(`product_id=${details.product_id}`);
   if (Number(details.quantity) !== quantity) failures.push(`quantity=${details.quantity}`);
+  if (Math.abs(Number(details.unit_price) - Number(product.effective_price)) > 0.001) failures.push(`unit_price=${details.unit_price}`);
+  if (Math.abs(Number(details.base_unit_price) - Number(product.base_price)) > 0.001) failures.push(`base_unit_price=${details.base_unit_price}`);
+  if (Number(details.item_discount_percent || 0) !== Number(product.discount_percent || 0)) failures.push(`item_discount_percent=${details.item_discount_percent}`);
+  if ((details.product_promotion_id || null) !== (product.promotion_id || null)) failures.push(`product_promotion_id=${details.product_promotion_id}`);
   if (Math.abs(actualSubtotal - expectedSubtotal) > 0.001) failures.push(`subtotal=${details.subtotal_amount}`);
   if (Math.abs(actualDiscount - expectedDiscount) > 0.001) failures.push(`discount=${details.discount_amount}`);
   if (Math.abs(actualTotal - expectedTotal) > 0.001) failures.push(`total=${details.total_amount}`);
