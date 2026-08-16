@@ -35,6 +35,7 @@ export function CatalogBannerCarousel({
   if (banners.length === 0) return null;
   const safeIndex = Math.min(activeIndex, banners.length - 1);
   const activeBanner = banners[safeIndex];
+  const fallbackImageUrl = activeBanner.image_url || activeBanner.mobile_image_url;
 
   return (
     <section
@@ -47,11 +48,11 @@ export function CatalogBannerCarousel({
       onBlurCapture={() => setIsPaused(false)}
     >
       <div className={`relative min-h-[300px] overflow-hidden bg-gradient-to-br ${themes[activeBanner.theme]} md:min-h-[360px]`}>
-        {activeBanner.image_url && (
+        {fallbackImageUrl && (
           <picture>
             {activeBanner.mobile_image_url && <source media="(max-width: 639px)" srcSet={activeBanner.mobile_image_url} />}
             <img
-              src={activeBanner.image_url}
+              src={fallbackImageUrl}
               alt={activeBanner.image_alt || ''}
               className="absolute inset-0 h-full w-full object-cover opacity-55 mix-blend-luminosity"
             />

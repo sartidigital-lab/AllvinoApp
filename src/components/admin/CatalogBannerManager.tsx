@@ -70,6 +70,7 @@ export function CatalogBannerManager() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingField, setUploadingField] = useState<'image_url' | 'mobile_image_url' | null>(null);
+  const previewImageUrl = form.image_url || form.mobile_image_url;
   const [message, setMessage] = useState<string | null>(null);
 
   const loadData = async () => {
@@ -246,7 +247,7 @@ export function CatalogBannerManager() {
           <div className="flex flex-col">
             <p className="mb-2 text-xs font-bold uppercase text-stone-500">Prévia</p>
             <div className={`relative min-h-72 flex-1 overflow-hidden rounded-2xl bg-gradient-to-br ${previewThemes[form.theme]} p-6 text-white`}>
-              {form.image_url && <img src={form.image_url} alt="" className="absolute inset-0 h-full w-full object-cover opacity-45 mix-blend-luminosity" />}
+              {previewImageUrl && <img src={previewImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover opacity-45 mix-blend-luminosity" />}
               <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent" />
               <div className="relative flex h-full min-h-60 flex-col justify-end"><p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70">{form.eyebrow || 'Curadoria Allvino'}</p><h3 className="mt-2 font-serif text-3xl font-bold leading-none">{form.title || 'Título do banner'}</h3><p className="mt-3 text-sm text-white/75">{form.subtitle || 'A mensagem da campanha aparece aqui.'}</p><span className="mt-5 w-fit rounded-full bg-white px-4 py-2 text-xs font-black text-black">{form.cta_label || 'Ver seleção'}</span></div>
             </div>
@@ -258,7 +259,7 @@ export function CatalogBannerManager() {
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {isLoading ? <p className="text-sm font-bold text-stone-400">Carregando banners...</p> : banners.map((banner) => (
           <article key={banner.id} className="overflow-hidden rounded-2xl border border-stone-200 bg-white">
-            <div className={`relative h-32 bg-gradient-to-br ${previewThemes[banner.theme]}`}>{banner.image_url && <img src={banner.image_url} alt="" className="h-full w-full object-cover opacity-55 mix-blend-luminosity" />}<span className="absolute left-3 top-3 rounded-full bg-black/35 px-2.5 py-1 text-[10px] font-black text-white backdrop-blur">Ordem {banner.sort_order}</span></div>
+            <div className={`relative h-32 bg-gradient-to-br ${previewThemes[banner.theme]}`}>{(banner.image_url || banner.mobile_image_url) && <img src={banner.image_url || banner.mobile_image_url || ''} alt="" className="h-full w-full object-cover opacity-55 mix-blend-luminosity" />}<span className="absolute left-3 top-3 rounded-full bg-black/35 px-2.5 py-1 text-[10px] font-black text-white backdrop-blur">Ordem {banner.sort_order}</span></div>
             <div className="p-4"><div className="flex items-start justify-between gap-3"><div><h3 className="font-bold text-black">{banner.title}</h3><p className="mt-1 text-xs font-bold text-stone-400">{banner.promotion_title} · -{banner.discount_percent}%</p></div><span className={`rounded-full px-2 py-1 text-[10px] font-black uppercase ${banner.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-stone-100 text-stone-500'}`}>{banner.is_active ? 'Ativo' : 'Pausado'}</span></div><div className="mt-4 flex gap-2"><button type="button" onClick={() => openEdit(banner)} className="flex-1 rounded-lg border border-stone-200 py-2 text-xs font-bold">Editar</button><button type="button" onClick={() => handleDelete(banner)} className="rounded-lg border border-red-100 px-3 py-2 text-xs font-bold text-red-700">Excluir</button></div></div>
           </article>
         ))}
