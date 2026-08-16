@@ -6,7 +6,10 @@ const orders = read('src/lib/database/orders.ts');
 const upload = read('src/app/api/admin/produtos/imagem/route.ts');
 const migration = read('supabase/migrations/20260714120000_harden_product_visibility_and_checkout.sql');
 const checkoutHardening = read('supabase/migrations/20260813213000_harden_checkout_and_stock_consistency.sql');
+const adminHardening = read('supabase/migrations/20260816131908_harden_admin_authorization.sql');
 const stock = read('src/lib/database/stock.ts');
+const proxy = read('src/proxy.ts');
+const adminLayout = read('src/app/admin/layout.tsx');
 const headers = read('next.config.mjs');
 
 assert.doesNotMatch(orders, /\.from\(['"]orders['"]\)\.insert/);
@@ -14,6 +17,10 @@ assert.match(orders, /fetch\(['"]\/api\/pedidos['"]/, 'order creation must use t
 assert.match(upload, /getBearerToken/);
 assert.match(upload, /maxImageBytes/);
 assert.match(upload, /hasValidImageSignature/);
+assert.match(upload, /rpc\(['"]is_admin['"]\)/, 'admin uploads must use live database authorization');
+assert.doesNotMatch(upload, /createServerClient/, 'admin uploads must require an explicit bearer token');
+assert.match(proxy, /rpc\(['"]is_admin['"]\)/, 'admin routes must use live database authorization');
+assert.match(adminLayout, /rpc\(['"]is_admin['"]\)/, 'admin layout must use live database authorization');
 assert.match(migration, /publicado = true or public\.is_admin\(\)/);
 assert.match(migration, /enforce_published_order_item/);
 assert.match(checkoutHardening, /revoke insert on public\.orders from authenticated/);
@@ -21,6 +28,10 @@ assert.match(checkoutHardening, /revoke insert on public\.order_items from authe
 assert.match(checkoutHardening, /Modalidade de entrega invalida/);
 assert.match(checkoutHardening, /new\.product_name := v_product_name/);
 assert.match(checkoutHardening, /set_manual_stock_level/);
+assert.match(adminHardening, /security definer[\s\S]*set search_path = ''/i);
+assert.match(adminHardening, /revoke truncate, references, trigger[\s\S]*from authenticated/i);
+assert.match(adminHardening, /revoke all on table public\.admin_users from anon, authenticated/i);
+assert.match(adminHardening, /users\.raw_app_meta_data ->> 'role' = 'admin'/);
 assert.match(stock, /rpc\(['"]set_manual_stock_level['"]/);
 assert.match(headers, /Content-Security-Policy/);
 assert.match(headers, /Strict-Transport-Security/);

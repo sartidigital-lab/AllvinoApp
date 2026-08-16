@@ -20,7 +20,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         return;
       }
 
-      if (user.app_metadata?.role !== 'admin') {
+      const { data: isAdmin, error: adminError } = await supabase.rpc('is_admin');
+
+      if (adminError || isAdmin !== true) {
         setIsDenied(true);
         return;
       }

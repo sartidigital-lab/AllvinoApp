@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
-import { createClient as createServerClient } from '@/utils/supabase/server';
 import { checkRateLimit, getClientKey, rateLimitResponse } from '@/lib/security/rateLimit';
 import { auditSecurityEvent } from '@/lib/security/audit';
 
@@ -62,17 +61,24 @@ function createTokenClient(accessToken: string) {
 
 export async function POST(request: Request) {
   const accessToken = getBearerToken(request);
-  const supabase = accessToken ? createTokenClient(accessToken) : await createServerClient();
+
+  if (!accessToken) {
+    return NextResponse.json({ error: 'Token de acesso ausente. Entre novamente e tente subir a imagem outra vez.' }, { status: 401 });
+  }
+
+  const supabase = createTokenClient(accessToken);
   const {
     data: { user },
     error: userError,
-  } = accessToken ? await supabase.auth.getUser(accessToken) : await supabase.auth.getUser();
+  } = await supabase.auth.getUser(accessToken);
 
   if (userError || !user) {
     return NextResponse.json({ error: 'Não autenticado. Entre novamente e tente subir a imagem outra vez.' }, { status: 401 });
   }
 
-  if (user.app_metadata?.role !== 'admin') {
+  const { data: isAdmin, error: adminError } = await supabase.rpc('is_admin');
+
+  if (adminError || isAdmin !== true) {
     return NextResponse.json({ error: 'Apenas administradores podem enviar imagens.' }, { status: 403 });
   }
 
@@ -87,7 +93,7 @@ export async function POST(request: Request) {
   }
 
   const file = formData.get('file');
-  const productName = String(formData.get('productName') || 'produto');
+  const productName = String(formData.get('productName') || 'produto').slice(0, 120);
 
   if (!(file instanceof File)) {
     return NextResponse.json({ error: 'Arquivo não enviado.' }, { status: 400 });
