@@ -12,7 +12,7 @@ export async function GET() {
   );
   const { data, error } = await supabase
     .from('catalog_banners')
-    .select('id,created_at,updated_at,promotion_id,eyebrow,title,subtitle,cta_label,image_url,mobile_image_url,image_alt,theme,sort_order,starts_at,ends_at,is_active,product_promotions!inner(title,slug,discount_percent)')
+    .select('id,created_at,updated_at,promotion_id,eyebrow,title,subtitle,cta_label,image_url,mobile_image_url,image_alt,theme,show_text,show_cta,show_discount_badge,sort_order,starts_at,ends_at,is_active,product_promotions!inner(title,slug,discount_percent)')
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: false });
 

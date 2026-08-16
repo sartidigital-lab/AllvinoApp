@@ -36,6 +36,8 @@ export function CatalogBannerCarousel({
   const safeIndex = Math.min(activeIndex, banners.length - 1);
   const activeBanner = banners[safeIndex];
   const fallbackImageUrl = activeBanner.image_url || activeBanner.mobile_image_url;
+  const hasArtwork = Boolean(fallbackImageUrl);
+  const hasOverlayContent = activeBanner.show_text || activeBanner.show_cta;
 
   return (
     <section
@@ -47,42 +49,44 @@ export function CatalogBannerCarousel({
       onFocusCapture={() => setIsPaused(true)}
       onBlurCapture={() => setIsPaused(false)}
     >
-      <div className={`relative min-h-[300px] overflow-hidden bg-gradient-to-br ${themes[activeBanner.theme]} md:min-h-[360px]`}>
+      <div className={`relative min-h-[300px] overflow-hidden ${hasArtwork ? 'bg-stone-950' : `bg-gradient-to-br ${themes[activeBanner.theme]}`} md:min-h-[360px]`}>
         {fallbackImageUrl && (
           <picture>
             {activeBanner.mobile_image_url && <source media="(max-width: 639px)" srcSet={activeBanner.mobile_image_url} />}
             <img
               src={fallbackImageUrl}
               alt={activeBanner.image_alt || ''}
-              className="absolute inset-0 h-full w-full object-cover opacity-55 mix-blend-luminosity"
+              className="absolute inset-0 h-full w-full object-cover"
             />
           </picture>
         )}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.2),transparent_34%),linear-gradient(90deg,rgba(0,0,0,0.52),transparent_75%)]" />
-        <div className="relative z-10 flex min-h-[300px] max-w-2xl flex-col justify-end p-6 text-white sm:p-9 md:min-h-[360px] md:justify-center md:p-12">
-          <p className="mb-3 text-[11px] font-black uppercase tracking-[0.28em] text-white/70">
-            {activeBanner.eyebrow || 'Curadoria Allvino'}
-          </p>
-          <h2 className="max-w-xl font-serif text-3xl font-bold leading-[0.98] sm:text-4xl md:text-5xl">
-            {activeBanner.title}
-          </h2>
-          {activeBanner.subtitle && (
-            <p className="mt-4 max-w-lg text-sm font-medium leading-6 text-white/80 sm:text-base">
-              {activeBanner.subtitle}
-            </p>
-          )}
-          <button
-            type="button"
-            onClick={() => onSelectPromotion(activeBanner.promotion_slug)}
-            className="mt-6 inline-flex w-fit items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-black text-[#2A090D] transition hover:translate-x-1"
-          >
-            {activeBanner.cta_label}
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </button>
-        </div>
-        <div className="absolute right-5 top-5 z-10 rounded-full border border-white/20 bg-black/20 px-3 py-1.5 text-xs font-black text-white backdrop-blur-md">
-          -{activeBanner.discount_percent}%
-        </div>
+        {hasOverlayContent && <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/15 to-transparent" />}
+        {hasOverlayContent && (
+          <div className="relative z-10 flex min-h-[300px] max-w-2xl flex-col justify-end p-6 text-white sm:p-9 md:min-h-[360px] md:justify-center md:p-12">
+            {activeBanner.show_text && (
+              <>
+                {activeBanner.eyebrow && <p className="mb-3 text-[11px] font-black uppercase tracking-[0.28em] text-white/70">{activeBanner.eyebrow}</p>}
+                <h2 className="max-w-xl font-serif text-3xl font-bold leading-[0.98] sm:text-4xl md:text-5xl">{activeBanner.title}</h2>
+                {activeBanner.subtitle && <p className="mt-4 max-w-lg text-sm font-medium leading-6 text-white/80 sm:text-base">{activeBanner.subtitle}</p>}
+              </>
+            )}
+            {activeBanner.show_cta && (
+              <button
+                type="button"
+                onClick={() => onSelectPromotion(activeBanner.promotion_slug)}
+                className="mt-6 inline-flex w-fit items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-black text-[#2A090D] transition hover:translate-x-1"
+              >
+                {activeBanner.cta_label}
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </button>
+            )}
+          </div>
+        )}
+        {activeBanner.show_discount_badge && (
+          <div className="absolute right-5 top-5 z-10 rounded-full border border-white/20 bg-black/30 px-3 py-1.5 text-xs font-black text-white backdrop-blur-md">
+            -{activeBanner.discount_percent}%
+          </div>
+        )}
       </div>
 
       {banners.length > 1 && (

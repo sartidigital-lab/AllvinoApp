@@ -19,6 +19,9 @@ const mobileOnlyBanner: CatalogBanner = {
   mobile_image_url: 'https://example.com/banner-mobile.webp',
   image_alt: 'Arte da indicação da semana',
   theme: 'wine',
+  show_text: false,
+  show_cta: false,
+  show_discount_badge: false,
   sort_order: 0,
   starts_at: null,
   ends_at: null,
@@ -33,5 +36,8 @@ describe('CatalogBannerCarousel', () => {
       'src',
       mobileOnlyBanner.mobile_image_url,
     );
+    expect(screen.queryByRole('heading', { name: mobileOnlyBanner.title })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: mobileOnlyBanner.cta_label })).not.toBeInTheDocument();
+    expect(screen.queryByText(`-${mobileOnlyBanner.discount_percent}%`)).not.toBeInTheDocument();
   });
 });

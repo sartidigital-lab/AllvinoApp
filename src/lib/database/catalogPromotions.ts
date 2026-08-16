@@ -2,7 +2,7 @@ import { createClient } from '@/utils/supabase/client';
 import type { CatalogBanner, ProductPromotionCampaign } from '@/types/database';
 
 const campaignSelect = 'id,created_at,updated_at,title,slug,description,discount_percent,starts_at,ends_at,is_active,product_promotion_items(product_id)';
-const bannerSelect = 'id,created_at,updated_at,promotion_id,eyebrow,title,subtitle,cta_label,image_url,mobile_image_url,image_alt,theme,sort_order,starts_at,ends_at,is_active,product_promotions(title,slug,discount_percent)';
+const bannerSelect = 'id,created_at,updated_at,promotion_id,eyebrow,title,subtitle,cta_label,image_url,mobile_image_url,image_alt,theme,show_text,show_cta,show_discount_badge,sort_order,starts_at,ends_at,is_active,product_promotions(title,slug,discount_percent)';
 
 type CampaignRow = Omit<ProductPromotionCampaign, 'product_ids'> & {
   product_promotion_items?: Array<{ product_id: string }>;
@@ -103,7 +103,7 @@ export async function saveCatalogBanner(payload: CatalogBannerPayload, id?: stri
     eyebrow: payload.eyebrow?.trim() || null,
     title: payload.title.trim(),
     subtitle: payload.subtitle?.trim() || null,
-    cta_label: payload.cta_label.trim(),
+    cta_label: payload.cta_label.trim() || 'Ver seleção',
     image_url: payload.image_url?.trim() || null,
     mobile_image_url: payload.mobile_image_url?.trim() || null,
     image_alt: payload.image_alt?.trim() || null,

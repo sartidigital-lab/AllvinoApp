@@ -111,6 +111,9 @@ export type CatalogBanner = {
   mobile_image_url: string | null;
   image_alt: string | null;
   theme: CatalogBannerTheme;
+  show_text: boolean;
+  show_cta: boolean;
+  show_discount_badge: boolean;
   sort_order: number;
   starts_at: string | null;
   ends_at: string | null;
