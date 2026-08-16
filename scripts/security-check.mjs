@@ -10,6 +10,7 @@ const adminHardening = read('supabase/migrations/20260816131908_harden_admin_aut
 const stock = read('src/lib/database/stock.ts');
 const proxy = read('src/proxy.ts');
 const adminLayout = read('src/app/admin/layout.tsx');
+const adminOrders = read('src/app/admin/pedidos/page.tsx');
 const headers = read('next.config.mjs');
 
 assert.doesNotMatch(orders, /\.from\(['"]orders['"]\)\.insert/);
@@ -21,6 +22,8 @@ assert.match(upload, /rpc\(['"]is_admin['"]\)/, 'admin uploads must use live dat
 assert.doesNotMatch(upload, /createServerClient/, 'admin uploads must require an explicit bearer token');
 assert.match(proxy, /rpc\(['"]is_admin['"]\)/, 'admin routes must use live database authorization');
 assert.match(adminLayout, /rpc\(['"]is_admin['"]\)/, 'admin layout must use live database authorization');
+assert.match(adminOrders, /order_items\(quantity,unit_price,product_name\)/);
+assert.doesNotMatch(adminOrders, /wines\(name\)/, 'admin orders must not depend on a missing legacy foreign key');
 assert.match(migration, /publicado = true or public\.is_admin\(\)/);
 assert.match(migration, /enforce_published_order_item/);
 assert.match(checkoutHardening, /revoke insert on public\.orders from authenticated/);

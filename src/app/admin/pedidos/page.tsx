@@ -12,7 +12,6 @@ type AdminOrderItem = {
   quantity: number;
   unit_price: number;
   product_name: string | null;
-  wines: { name: string } | { name: string }[] | null;
 };
 
 type AdminOrder = {
@@ -86,9 +85,7 @@ const dateFilterLabels: Record<DateFilter, string> = {
 };
 
 function getItemName(item: AdminOrderItem) {
-  if (item.product_name) return item.product_name;
-  if (Array.isArray(item.wines)) return item.wines[0]?.name || 'Produto removido';
-  return item.wines?.name || 'Produto removido';
+  return item.product_name || 'Produto removido';
 }
 
 function formatMoney(value: number) {
@@ -172,7 +169,7 @@ export default function AdminPedidosPage() {
     const supabase = createClient();
     const { data, error } = await supabase
       .from('orders')
-      .select('id,status,total_amount,delivery_type,payment_method,payment_provider,payment_status,payment_reference,payment_url,paid_at,payment_error,delivery_address,discount_amount,subtotal_amount,promotion_code,delivery_zip_code,delivery_zone_name,delivery_estimate_days,shipping_fee,created_at,customer_name,customer_phone,order_items(quantity,unit_price,product_name,wines(name))')
+      .select('id,status,total_amount,delivery_type,payment_method,payment_provider,payment_status,payment_reference,payment_url,paid_at,payment_error,delivery_address,discount_amount,subtotal_amount,promotion_code,delivery_zip_code,delivery_zone_name,delivery_estimate_days,shipping_fee,created_at,customer_name,customer_phone,order_items(quantity,unit_price,product_name)')
       .order('created_at', { ascending: false })
       .limit(100);
 
