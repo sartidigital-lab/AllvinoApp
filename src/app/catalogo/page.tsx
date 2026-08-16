@@ -83,6 +83,10 @@ export default function CatalogoPage() {
     });
     return [...selections.values()].sort((a, b) => b.discount - a.discount);
   }, [wines]);
+  const standalonePromotionSelections = useMemo(() => {
+    const bannerSlugs = new Set(banners.map((banner) => banner.promotion_slug));
+    return promotionSelections.filter((selection) => !bannerSlugs.has(selection.slug));
+  }, [banners, promotionSelections]);
 
   const filteredWines = useMemo(() => {
     let result = [...wines];
@@ -189,7 +193,7 @@ export default function CatalogoPage() {
         <CatalogBannerCarousel banners={banners} onSelectPromotion={handleSelectPromotion} />
       </div>
 
-      {promotionSelections.length > 0 && (
+      {standalonePromotionSelections.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 pt-6 lg:px-8" aria-label="Seleções em promoção">
           <div className="flex items-end justify-between gap-4">
             <div>
@@ -203,7 +207,7 @@ export default function CatalogoPage() {
             )}
           </div>
           <div className="mt-4 flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-            {promotionSelections.map((selection) => (
+            {standalonePromotionSelections.map((selection) => (
               <button
                 key={selection.slug}
                 type="button"

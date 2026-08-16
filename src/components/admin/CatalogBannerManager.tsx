@@ -10,6 +10,7 @@ import {
 } from '@/lib/database/catalogPromotions';
 import type { CatalogBanner, CatalogBannerTheme, ProductPromotionCampaign } from '@/types/database';
 import { AdminNotice } from '@/components/admin/AdminPrimitives';
+import { toDatetimeLocalValue } from '@/lib/datetimeLocal';
 
 type BannerForm = {
   promotion_id: string;
@@ -43,10 +44,6 @@ const previewThemes: Record<CatalogBannerTheme, string> = {
   forest: 'from-[#102D24] via-[#225E49] to-[#75A987]',
 };
 
-function toLocalDate(value: string | null) {
-  return value ? new Date(value).toISOString().slice(0, 16) : '';
-}
-
 function toForm(banner: CatalogBanner): BannerForm {
   return {
     promotion_id: banner.promotion_id,
@@ -62,8 +59,8 @@ function toForm(banner: CatalogBanner): BannerForm {
     show_cta: banner.show_cta,
     show_discount_badge: banner.show_discount_badge,
     sort_order: String(banner.sort_order),
-    starts_at: toLocalDate(banner.starts_at),
-    ends_at: toLocalDate(banner.ends_at),
+    starts_at: toDatetimeLocalValue(banner.starts_at),
+    ends_at: toDatetimeLocalValue(banner.ends_at),
     is_active: banner.is_active,
   };
 }

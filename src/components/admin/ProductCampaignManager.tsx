@@ -8,6 +8,7 @@ import {
   saveProductPromotionCampaign,
 } from '@/lib/database/catalogPromotions';
 import type { ProductPromotionCampaign, Wine } from '@/types/database';
+import { toDatetimeLocalValue } from '@/lib/datetimeLocal';
 import { AdminNotice } from '@/components/admin/AdminPrimitives';
 
 type CampaignForm = {
@@ -29,10 +30,6 @@ const emptyForm: CampaignForm = {
 function slugify(value: string) {
   return value.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-}
-
-function toLocalDate(value: string | null) {
-  return value ? new Date(value).toISOString().slice(0, 16) : '';
 }
 
 function campaignIsLive(campaign: ProductPromotionCampaign) {
@@ -88,8 +85,8 @@ export function ProductCampaignManager() {
       slug: campaign.slug,
       description: campaign.description || '',
       discount_percent: String(campaign.discount_percent),
-      starts_at: toLocalDate(campaign.starts_at),
-      ends_at: toLocalDate(campaign.ends_at),
+      starts_at: toDatetimeLocalValue(campaign.starts_at),
+      ends_at: toDatetimeLocalValue(campaign.ends_at),
       is_active: campaign.is_active,
       product_ids: campaign.product_ids,
     });

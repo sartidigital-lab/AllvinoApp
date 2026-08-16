@@ -61,8 +61,14 @@ export function CatalogBannerCarousel({
           </picture>
         )}
         {hasOverlayContent && <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/15 to-transparent" />}
+        <button
+          type="button"
+          onClick={() => onSelectPromotion(activeBanner.promotion_slug)}
+          className="absolute inset-0 z-[5] cursor-pointer focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-[-4px] focus-visible:outline-white"
+          aria-label={`Abrir promoção ${activeBanner.promotion_title}`}
+        />
         {hasOverlayContent && (
-          <div className="relative z-10 flex min-h-[300px] max-w-2xl flex-col justify-end p-6 text-white sm:p-9 md:min-h-[360px] md:justify-center md:p-12">
+          <div className="pointer-events-none relative z-10 flex min-h-[300px] max-w-2xl flex-col justify-end p-6 text-white sm:p-9 md:min-h-[360px] md:justify-center md:p-12">
             {activeBanner.show_text && (
               <>
                 {activeBanner.eyebrow && <p className="mb-3 text-[11px] font-black uppercase tracking-[0.28em] text-white/70">{activeBanner.eyebrow}</p>}
@@ -74,7 +80,7 @@ export function CatalogBannerCarousel({
               <button
                 type="button"
                 onClick={() => onSelectPromotion(activeBanner.promotion_slug)}
-                className="mt-6 inline-flex w-fit items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-black text-[#2A090D] transition hover:translate-x-1"
+                className="pointer-events-auto mt-6 inline-flex w-fit items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-black text-[#2A090D] transition hover:translate-x-1"
               >
                 {activeBanner.cta_label}
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
