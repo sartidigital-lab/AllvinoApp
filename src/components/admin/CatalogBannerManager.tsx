@@ -38,6 +38,16 @@ const emptyForm: BannerForm = {
   sort_order: '0', starts_at: '', ends_at: '', is_active: true,
 };
 
+export function createBannerForm(campaign?: ProductPromotionCampaign): BannerForm {
+  return {
+    ...emptyForm,
+    promotion_id: campaign?.id || '',
+    title: campaign?.title || '',
+    starts_at: toDatetimeLocalValue(campaign?.starts_at || null),
+    ends_at: toDatetimeLocalValue(campaign?.ends_at || null),
+  };
+}
+
 const previewThemes: Record<CatalogBannerTheme, string> = {
   wine: 'from-[#2A090D] via-[#701824] to-[#C14B3D]',
   gold: 'from-[#4A2D0B] via-[#A86F20] to-[#E8B95F]',
@@ -98,9 +108,25 @@ export function CatalogBannerManager() {
 
   const openCreate = () => {
     setEditing(null);
-    setForm({ ...emptyForm, promotion_id: campaigns[0]?.id || '' });
+    setForm(createBannerForm(campaigns[0]));
     setIsFormOpen(true);
     setMessage(null);
+  };
+
+  const handleCampaignChange = (promotionId: string) => {
+    const campaign = campaigns.find((item) => item.id === promotionId);
+    setForm((current) => {
+      const previousCampaign = campaigns.find((item) => item.id === current.promotion_id);
+      const previousStart = toDatetimeLocalValue(previousCampaign?.starts_at || null);
+      const previousEnd = toDatetimeLocalValue(previousCampaign?.ends_at || null);
+      return {
+        ...current,
+        promotion_id: promotionId,
+        title: !current.title.trim() || current.title === previousCampaign?.title ? campaign?.title || '' : current.title,
+        starts_at: !current.starts_at || current.starts_at === previousStart ? toDatetimeLocalValue(campaign?.starts_at || null) : current.starts_at,
+        ends_at: !current.ends_at || current.ends_at === previousEnd ? toDatetimeLocalValue(campaign?.ends_at || null) : current.ends_at,
+      };
+    });
   };
 
   const openEdit = (banner: CatalogBanner) => {
@@ -143,7 +169,9 @@ export function CatalogBannerManager() {
         return;
       }
       setForm((current) => ({ ...current, [field]: payload.publicUrl! }));
-      setMessage('Imagem enviada com sucesso.');
+      setMessage(`${field === 'image_url' ? 'Imagem desktop' : 'Imagem mobile'} pronta. Clique em “Salvar banner” para concluir.`);
+    } catch {
+      setMessage('Não foi possível concluir o upload. Verifique sua conexão e tente novamente.');
     } finally {
       setUploadingField(null);
     }
@@ -184,8 +212,8 @@ export function CatalogBannerManager() {
       ends_at: form.ends_at ? new Date(form.ends_at).toISOString() : null,
       is_active: form.is_active,
     }, editing?.id);
-    if (result.error) {
-      setMessage(`Não foi possível salvar o banner: ${result.error.message}`);
+    if (result.error || !result.banner) {
+      setMessage(`Não foi possível salvar o banner: ${result.error?.message || 'o banco não confirmou a gravação.'}`);
       setIsSaving(false);
       return;
     }
@@ -218,9 +246,9 @@ export function CatalogBannerManager() {
       {isFormOpen && (
         <form onSubmit={handleSubmit} className="grid gap-5 rounded-2xl border border-stone-200 bg-[#FDFBF7] p-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(300px,0.7fr)] lg:p-5">
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="space-y-1"><span className="text-xs font-bold uppercase text-stone-500">Campanha</span><select value={form.promotion_id} onChange={(event) => setForm({ ...form, promotion_id: event.target.value })} className="w-full rounded-lg border border-stone-200 bg-white p-3 text-sm font-bold"><option value="">Selecione</option>{campaigns.map((campaign) => <option key={campaign.id} value={campaign.id}>{campaign.title} · -{campaign.discount_percent}%</option>)}</select></label>
+            <label className="space-y-1"><span className="text-xs font-bold uppercase text-stone-500">Campanha</span><select value={form.promotion_id} onChange={(event) => handleCampaignChange(event.target.value)} className="w-full rounded-lg border border-stone-200 bg-white p-3 text-sm font-bold"><option value="">Selecione</option>{campaigns.map((campaign) => <option key={campaign.id} value={campaign.id}>{campaign.title} · -{campaign.discount_percent}%</option>)}</select></label>
             <label className="space-y-1"><span className="text-xs font-bold uppercase text-stone-500">Chamada curta (opcional)</span><input value={form.eyebrow} onChange={(event) => setForm({ ...form, eyebrow: event.target.value })} className="w-full rounded-lg border border-stone-200 bg-white p-3 font-bold" /></label>
-            <label className="space-y-1 sm:col-span-2"><span className="text-xs font-bold uppercase text-stone-500">Nome do banner</span><input required value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} className="w-full rounded-lg border border-stone-200 bg-white p-3 font-bold" /><span className="block text-[10px] font-semibold text-stone-400">Identifica o banner no Admin. Só aparece na arte quando “Exibir textos” está ativo.</span></label>
+            <label className="space-y-1 sm:col-span-2"><span className="text-xs font-bold uppercase text-stone-500">Nome interno do banner (obrigatório)</span><input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} aria-required="true" className="w-full rounded-lg border border-stone-200 bg-white p-3 font-bold" /><span className="block text-[10px] font-semibold text-stone-400">Preenchido automaticamente pela campanha. Só aparece na arte quando “Exibir textos” está ativo.</span></label>
             <label className="space-y-1 sm:col-span-2"><span className="text-xs font-bold uppercase text-stone-500">Subtítulo (opcional)</span><textarea rows={2} value={form.subtitle} onChange={(event) => setForm({ ...form, subtitle: event.target.value })} className="w-full resize-none rounded-lg border border-stone-200 bg-white p-3 font-bold" /></label>
             <label className="space-y-1"><span className="text-xs font-bold uppercase text-stone-500">Texto do botão (opcional)</span><input value={form.cta_label} onChange={(event) => setForm({ ...form, cta_label: event.target.value })} className="w-full rounded-lg border border-stone-200 bg-white p-3 font-bold" /></label>
             <label className="space-y-1"><span className="text-xs font-bold uppercase text-stone-500">Fundo sem imagem</span><select value={form.theme} onChange={(event) => setForm({ ...form, theme: event.target.value as CatalogBannerTheme })} className="w-full rounded-lg border border-stone-200 bg-white p-3 font-bold"><option value="wine">Vinho</option><option value="gold">Dourado</option><option value="forest">Floresta</option></select></label>
@@ -250,8 +278,8 @@ export function CatalogBannerManager() {
                 Use WebP ou JPG, com até 5 MB. A arte é exibida sem filtro ou fundo padrão e pode ser recortada para preencher o banner. Textos, botão e desconto só aparecem quando ativados acima.
               </p>
             </aside>
-            <label className="space-y-1"><span className="text-xs font-bold uppercase text-stone-500">Imagem desktop</span><input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => void handleUpload(event.target.files?.[0], 'image_url')} className="w-full text-xs font-bold" /><span className="block truncate text-[10px] text-stone-400">{uploadingField === 'image_url' ? 'Enviando...' : form.image_url || 'Opcional'}</span></label>
-            <label className="space-y-1"><span className="text-xs font-bold uppercase text-stone-500">Imagem mobile</span><input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => void handleUpload(event.target.files?.[0], 'mobile_image_url')} className="w-full text-xs font-bold" /><span className="block truncate text-[10px] text-stone-400">{uploadingField === 'mobile_image_url' ? 'Enviando...' : form.mobile_image_url || 'Usa a imagem desktop'}</span></label>
+            <label className="space-y-2"><span className="text-xs font-bold uppercase text-stone-500">Imagem desktop</span><input type="file" accept="image/png,image/jpeg,image/webp" disabled={Boolean(uploadingField)} onChange={(event) => void handleUpload(event.target.files?.[0], 'image_url')} className="w-full text-xs font-bold disabled:opacity-50" />{form.image_url ? <span className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-2 text-[10px] font-black text-emerald-800"><img src={form.image_url} alt="Prévia desktop" className="h-10 w-16 rounded object-cover" />Desktop pronta para salvar</span> : <span className="block text-[10px] text-stone-400">{uploadingField === 'image_url' ? 'Enviando...' : 'Opcional'}</span>}</label>
+            <label className="space-y-2"><span className="text-xs font-bold uppercase text-stone-500">Imagem mobile</span><input type="file" accept="image/png,image/jpeg,image/webp" disabled={Boolean(uploadingField)} onChange={(event) => void handleUpload(event.target.files?.[0], 'mobile_image_url')} className="w-full text-xs font-bold disabled:opacity-50" />{form.mobile_image_url ? <span className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-2 text-[10px] font-black text-emerald-800"><img src={form.mobile_image_url} alt="Prévia mobile" className="h-10 w-12 rounded object-cover" />Mobile pronta para salvar</span> : <span className="block text-[10px] text-stone-400">{uploadingField === 'mobile_image_url' ? 'Enviando...' : 'Usa a imagem desktop'}</span>}</label>
             <label className="space-y-1 sm:col-span-2"><span className="text-xs font-bold uppercase text-stone-500">Texto alternativo da imagem</span><input value={form.image_alt} onChange={(event) => setForm({ ...form, image_alt: event.target.value })} className="w-full rounded-lg border border-stone-200 bg-white p-3 font-bold" /></label>
             <label className="space-y-1"><span className="text-xs font-bold uppercase text-stone-500">Início</span><input type="datetime-local" value={form.starts_at} onChange={(event) => setForm({ ...form, starts_at: event.target.value })} className="w-full rounded-lg border border-stone-200 bg-white p-3 text-sm font-bold" /></label>
             <label className="space-y-1"><span className="text-xs font-bold uppercase text-stone-500">Fim</span><input type="datetime-local" value={form.ends_at} onChange={(event) => setForm({ ...form, ends_at: event.target.value })} className="w-full rounded-lg border border-stone-200 bg-white p-3 text-sm font-bold" /></label>
