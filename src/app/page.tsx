@@ -7,7 +7,7 @@ export default function HomePage() {
       <main className="relative flex h-[80vh] w-full flex-col items-center justify-center overflow-hidden px-6 text-center">
         <div className="absolute inset-0 z-0 bg-stone-950">
           <Image
-            src="https://media.vrbo.com/lodging/27000000/26970000/26966300/26966297/7c8c5a3d.jpg?impolicy=resizecrop&ra=fill&rh=575&rw=575"
+            src="/hero-vinho-praia.webp"
             fill
             priority
             sizes="100vw"
