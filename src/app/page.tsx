@@ -7,12 +7,16 @@ export default function HomePage() {
       <main className="relative flex h-[80vh] w-full flex-col items-center justify-center overflow-hidden px-6 text-center">
         <div className="absolute inset-0 z-0 bg-stone-950">
           <Image
-            src="/banner-promo.jpg"
+            src="https://media.vrbo.com/lodging/27000000/26970000/26966300/26966297/7c8c5a3d.jpg?impolicy=resizecrop&ra=fill&rh=575&rw=575"
             fill
             priority
             sizes="100vw"
-            className="object-cover opacity-30"
-            alt="Seleção de vinhos Allvino à beira-mar"
+            className="object-cover opacity-75"
+            alt="Pessoas brindando com vinho à beira da piscina"
+          />
+          <div
+            className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/45 to-black/80"
+            aria-hidden="true"
           />
         </div>
 
