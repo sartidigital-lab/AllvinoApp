@@ -1,9 +1,6 @@
 import { createClient } from '@/utils/supabase/client';
-import { CatalogProduct, LegacyProduct, mapCatalogProductToWine, mapProductToWine, mapWineToProduct } from '@/lib/catalog/products';
+import { LegacyProduct, mapProductToWine, mapWineToProduct } from '@/lib/catalog/products';
 import { Wine } from '@/types/database';
-
-const productSelect = 'id,nome,descricao,preco,sku_sankhya,imagem_url,pais,regiao,tipo,uva,estoque,publicado,criado_em';
-const catalogProductSelect = 'id,nome,descricao,base_price,effective_price,sku_sankhya,imagem_url,pais,regiao,tipo,uva,estoque,publicado,criado_em,promotion_id,promotion_title,promotion_slug,discount_percent';
 
 function getDatabaseErrorMessage(error: unknown) {
   if (!error) return '';
@@ -37,33 +34,32 @@ export async function fetchWinesFromSupabase(options: { usePublicCache?: boolean
 
   const supabase = createClient();
 
-  if (!options.includeUnpublished) {
-    const { data, error } = await supabase
-      .from('catalog_products')
-      .select(catalogProductSelect)
-      .order('criado_em', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching promoted catalog from Supabase:', error);
-      throw error;
-    }
-
-    return (data || []).map((product) => mapCatalogProductToWine(product as CatalogProduct));
-  }
-
   let productsQuery = supabase
     .from('produtos')
-    .select(productSelect)
+    .select('*')
     .order('criado_em', { ascending: false });
+
+  if (!options.includeUnpublished) {
+    productsQuery = productsQuery.eq('publicado', true);
+  }
 
   const { data: products, error: productsError } = await productsQuery;
 
-  if (productsError) {
-    console.error('Error fetching products from Supabase:', productsError);
-    throw productsError;
+  if (!productsError) {
+    return (products as LegacyProduct[]).map(mapProductToWine);
   }
 
-  return (products || []).map((product) => mapProductToWine(product as LegacyProduct));
+  const { data, error } = await supabase
+    .from('wines')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching wines from Supabase:', error);
+    throw error;
+  }
+
+  return data as Wine[];
 }
 
 export async function fetchWineByIdFromSupabase(id: string): Promise<Wine | undefined> {
@@ -71,19 +67,26 @@ export async function fetchWineByIdFromSupabase(id: string): Promise<Wine | unde
 
   const { data: product, error: productError } = await supabase
     .from('catalog_products')
-    .select(catalogProductSelect)
+    .select('id,nome,descricao,base_price,effective_price,sku_sankhya,imagem_url,pais,regiao,tipo,uva,estoque,publicado,criado_em,promotion_id,promotion_title,promotion_slug,discount_percent')
     .eq('id', id)
     .single();
 
   if (!productError && product) {
-    return mapCatalogProductToWine(product as CatalogProduct);
+    return mapProductToWine(product as LegacyProduct);
   }
 
-  if (productError?.code !== 'PGRST116') {
-    console.error(`Error fetching product ${id} from Supabase:`, productError);
+  const { data, error } = await supabase
+    .from('wines')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    console.error(`Error fetching wine ${id} from Supabase:`, error);
+    return undefined; // Or throw depending on your error handling strategy
   }
 
-  return undefined;
+  return data as Wine;
 }
 
 export async function createWine(wineData: Partial<Wine>): Promise<Wine | null> {

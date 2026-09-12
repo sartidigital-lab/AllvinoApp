@@ -327,7 +327,7 @@ export default function AdminCrmPage() {
         <AdminNotice>{message}</AdminNotice>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="admin-stats-grid grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <AdminStatCard label="Clientes no CRM" value={isLoading ? '...' : summary.total} icon="groups" tone="dark" />
         <AdminStatCard label="Alta prioridade" value={isLoading ? '...' : summary.highPriority} icon="priority_high" tone="accent" />
         <AdminStatCard label="Ações até hoje" value={isLoading ? '...' : summary.due} icon="event_upcoming" />

@@ -4,13 +4,14 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import {
   deletePromotion,
   fetchPromotions,
-  isPromotionCurrentlyActive,
   normalizePromotionCode,
   PromotionPayload,
   savePromotion,
 } from '@/lib/database/promotions';
 import { Promotion } from '@/types/database';
-import BannerManager from '@/components/admin/BannerManager';
+import { AdminNotice, AdminPageHeader, AdminStatCard } from '@/components/admin/AdminPrimitives';
+import { ProductCampaignManager } from '@/components/admin/ProductCampaignManager';
+import { CatalogBannerManager } from '@/components/admin/CatalogBannerManager';
 
 type PromotionForm = {
   code: string;
@@ -44,20 +45,7 @@ function formatMoney(value: number) {
 
 function formatDateTime(value: string | null) {
   if (!value) return '';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  const pad = (part: number) => String(part).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
-function parseDateTime(value: string) {
-  if (!value) return null;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function toIsoDateTime(value: string) {
-  return parseDateTime(value)?.toISOString() ?? null;
+  return new Date(value).toISOString().slice(0, 16);
 }
 
 function toForm(promotion: Promotion): PromotionForm {
@@ -84,10 +72,18 @@ function toPayload(form: PromotionForm): PromotionPayload {
     discount_value: Number(form.discount_value),
     min_subtotal: Number(form.min_subtotal || 0),
     max_discount: form.max_discount ? Number(form.max_discount) : null,
-    starts_at: toIsoDateTime(form.starts_at),
-    ends_at: toIsoDateTime(form.ends_at),
+    starts_at: form.starts_at ? new Date(form.starts_at).toISOString() : null,
+    ends_at: form.ends_at ? new Date(form.ends_at).toISOString() : null,
     is_active: form.is_active,
   };
+}
+
+function isActiveNow(promotion: Promotion) {
+  const now = Date.now();
+  const startsAt = promotion.starts_at ? new Date(promotion.starts_at).getTime() : null;
+  const endsAt = promotion.ends_at ? new Date(promotion.ends_at).getTime() : null;
+
+  return promotion.is_active && (!startsAt || startsAt <= now) && (!endsAt || endsAt >= now);
 }
 
 export default function AdminPromotionsPage() {
@@ -133,7 +129,7 @@ export default function AdminPromotionsPage() {
     return promotions.reduce(
       (acc, promotion) => {
         acc.total += 1;
-        if (isPromotionCurrentlyActive(promotion)) acc.active += 1;
+        if (isActiveNow(promotion)) acc.active += 1;
         if (!promotion.is_active) acc.paused += 1;
         return acc;
       },
@@ -176,31 +172,8 @@ export default function AdminPromotionsPage() {
       return;
     }
 
-    if (!Number.isFinite(payload.discount_value) || !Number.isFinite(payload.min_subtotal)) {
-      setMessage('Informe números válidos para desconto e pedido mínimo.');
-      return;
-    }
-
     if (payload.discount_type === 'percent' && payload.discount_value > 100) {
       setMessage('O desconto percentual não pode passar de 100%.');
-      return;
-    }
-
-    if (payload.max_discount !== null && (!Number.isFinite(payload.max_discount) || payload.max_discount <= 0)) {
-      setMessage('O teto do desconto deve ser maior que zero.');
-      return;
-    }
-
-    const startsAt = parseDateTime(form.starts_at);
-    const endsAt = parseDateTime(form.ends_at);
-
-    if ((form.starts_at && !startsAt) || (form.ends_at && !endsAt)) {
-      setMessage('Informe datas válidas para início e fim.');
-      return;
-    }
-
-    if (startsAt && endsAt && endsAt < startsAt) {
-      setMessage('A data final deve ser posterior ao início.');
       return;
     }
 
@@ -236,34 +209,36 @@ export default function AdminPromotionsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 pb-6">
-        <div>
-          <h1 className="text-3xl font-bold font-serif text-black">Promoções & Cupons</h1>
-          <p className="mt-1 text-sm font-bold text-stone-500">Gerencie cupons aplicados no checkout.</p>
-        </div>
-        <button
-          type="button"
-          onClick={openCreateForm}
-          className="flex items-center gap-2 rounded-lg bg-black px-5 py-2.5 text-sm font-bold text-white shadow-lg transition hover:bg-stone-800"
-        >
-          <span className="material-symbols-outlined text-[20px]">add</span>
-          Novo Cupom
-        </button>
+      <AdminPageHeader
+        title="Promoções & Cupons"
+        description="Controle preços promocionais, vitrines rotativas e cupons do checkout."
+        actions={(
+          <button type="button" onClick={openCreateForm} className="admin-button flex items-center gap-2 bg-black px-5 text-sm text-white hover:bg-stone-800">
+            <span className="material-symbols-outlined text-[20px]">add</span>
+            Novo Cupom
+          </button>
+        )}
+      />
+
+      <nav className="flex gap-2 overflow-x-auto rounded-2xl border border-stone-200 bg-white p-2" aria-label="Seções de promoções">
+        <a href="#campanhas" className="shrink-0 rounded-xl px-4 py-2 text-sm font-bold text-stone-600 transition hover:bg-stone-100 hover:text-black">Campanhas</a>
+        <a href="#banners" className="shrink-0 rounded-xl px-4 py-2 text-sm font-bold text-stone-600 transition hover:bg-stone-100 hover:text-black">Banners</a>
+        <a href="#cupons" className="shrink-0 rounded-xl px-4 py-2 text-sm font-bold text-stone-600 transition hover:bg-stone-100 hover:text-black">Cupons</a>
+      </nav>
+
+      <ProductCampaignManager />
+      <CatalogBannerManager />
+
+      <div id="cupons" className="scroll-mt-24">
+        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#B91C1C]">Checkout</p>
+        <h2 className="mt-1 text-xl font-bold text-black">Cupons de pedido</h2>
+        <p className="mt-1 text-sm font-medium text-stone-500">Descontos adicionais aplicados após os preços promocionais dos itens.</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div className="rounded-lg bg-black p-5 text-white">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-white/60">Total</p>
-          <p className="mt-2 text-3xl font-bold">{stats.total}</p>
-        </div>
-        <div className="rounded-lg border border-stone-100 bg-white p-5">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Ativos agora</p>
-          <p className="mt-2 text-3xl font-bold text-black">{stats.active}</p>
-        </div>
-        <div className="rounded-lg border border-stone-100 bg-white p-5">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Pausados</p>
-          <p className="mt-2 text-3xl font-bold text-black">{stats.paused}</p>
-        </div>
+      <div className="admin-stats-grid grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
+        <AdminStatCard label="Total" value={stats.total} icon="campaign" tone="dark" />
+        <AdminStatCard label="Ativos agora" value={stats.active} icon="verified" tone="success" />
+        <AdminStatCard label="Pausados" value={stats.paused} icon="pause_circle" tone="warning" />
       </div>
 
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -289,13 +264,11 @@ export default function AdminPromotionsPage() {
       </div>
 
       {message && (
-        <div className="rounded-lg border border-stone-200 bg-white px-4 py-3 text-sm font-bold text-stone-700">
-          {message}
-        </div>
+        <AdminNotice>{message}</AdminNotice>
       )}
 
       {isFormOpen && (
-        <form onSubmit={handleSubmit} className="space-y-5 rounded-lg border border-stone-100 bg-white p-5 shadow-sm">
+        <form onSubmit={handleSubmit} className="admin-surface space-y-5 p-5 sm:p-6">
           <div className="flex items-center justify-between gap-4">
             <h2 className="text-lg font-bold text-black">{editingPromotion ? 'Editar cupom' : 'Novo cupom'}</h2>
             <button type="button" onClick={closeForm} className="text-stone-500 hover:text-black">
@@ -460,8 +433,8 @@ export default function AdminPromotionsPage() {
                         <p>{promotion.ends_at ? new Date(promotion.ends_at).toLocaleString('pt-BR') : 'Sem data final'}</p>
                       </td>
                       <td className="p-4">
-                        <span className={`rounded-full px-3 py-1 text-xs font-bold ${isPromotionCurrentlyActive(promotion) ? 'bg-emerald-50 text-emerald-700' : 'bg-stone-100 text-stone-500'}`}>
-                          {isPromotionCurrentlyActive(promotion) ? 'Ativo' : 'Inativo'}
+                        <span className={`rounded-full px-3 py-1 text-xs font-bold ${isActiveNow(promotion) ? 'bg-emerald-50 text-emerald-700' : 'bg-stone-100 text-stone-500'}`}>
+                          {isActiveNow(promotion) ? 'Ativo' : 'Inativo'}
                         </span>
                       </td>
                       <td className="p-4">
@@ -482,8 +455,6 @@ export default function AdminPromotionsPage() {
           </table>
         </div>
       </div>
-
-      <BannerManager />
     </div>
   );
 }

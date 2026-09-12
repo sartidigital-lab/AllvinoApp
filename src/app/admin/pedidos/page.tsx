@@ -345,7 +345,7 @@ export default function AdminPedidosPage() {
         <AdminNotice tone="danger">{errorMessage}</AdminNotice>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="admin-stats-grid grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-5">
         <AdminStatCard label="Total" value={isLoading ? '...' : summary.total} icon="receipt_long" tone="dark" />
         <AdminStatCard label="Pendentes" value={isLoading ? '...' : summary.pending} icon="pending_actions" tone="accent" />
         <AdminStatCard label="Aguardando pagamento" value={isLoading ? '...' : summary.paymentPending} icon="payments" />

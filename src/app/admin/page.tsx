@@ -262,7 +262,7 @@ export default function AdminAnalyticsPage() {
         </AdminNotice>
       )}
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <div className="admin-stats-grid grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-5">
         <AdminStatCard label="Faturamento" value={isLoading ? '...' : formatMoney(faturamento)} icon="payments" tone="dark" />
         <AdminStatCard label="Garrafas vendidas" value={isLoading ? '...' : garrafas} icon="wine_bar" />
         <AdminStatCard label="Total de pedidos" value={isLoading ? '...' : pedidos} icon="receipt_long" />
@@ -278,7 +278,7 @@ export default function AdminAnalyticsPage() {
         ) : (
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
             {actions.map((action) => (
-              <Link key={action.label} href={action.href} className="rounded-lg border border-stone-100 bg-white p-4 transition hover:border-stone-300 hover:bg-stone-50">
+              <Link key={action.label} href={action.href} className="admin-action-card rounded-2xl p-4 sm:p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
@@ -306,8 +306,8 @@ export default function AdminAnalyticsPage() {
           ) : (
             <div className="space-y-3">
               {topProducts.map((product, index) => (
-                <div key={product.name} className="flex items-center gap-3 rounded-lg border border-stone-100 p-3">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-stone-100 text-xs font-bold text-stone-600">
+                <div key={product.name} className="flex items-center gap-3 rounded-2xl border border-stone-100/80 bg-white/60 p-3.5 transition hover:border-stone-200 hover:bg-white">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#F3EAE2] text-xs font-bold text-[#8F1D2C]">
                     {index + 1}
                   </span>
                   <div className="min-w-0 flex-1">
@@ -329,7 +329,7 @@ export default function AdminAnalyticsPage() {
           ) : (
             <div className="space-y-3">
               {recentOrders.map((order) => (
-                <Link key={order.id} href="/admin/pedidos" className="flex items-center justify-between gap-4 rounded-lg border border-stone-100 p-3 transition hover:bg-stone-50">
+                <Link key={order.id} href="/admin/pedidos" className="flex items-center justify-between gap-4 rounded-2xl border border-stone-100/80 bg-white/60 p-3.5 transition hover:border-stone-200 hover:bg-white">
                   <div className="min-w-0">
                     <p className="text-sm font-bold text-black">Pedido #{order.id.slice(0, 8)}</p>
                     <p className="text-xs font-bold text-stone-400">

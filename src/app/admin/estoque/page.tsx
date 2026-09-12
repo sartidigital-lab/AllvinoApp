@@ -210,7 +210,7 @@ export default function AdminEstoquePage() {
         )}
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="admin-stats-grid grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <AdminStatCard label="Códigos vinculados" value={summary.linked} icon="link" tone="dark" />
         <AdminStatCard label="Unidades vinculadas" value={summary.linkedUnits} icon="inventory_2" />
         <AdminStatCard label="Sem produto" value={summary.unlinked} icon="link_off" tone="warning" />

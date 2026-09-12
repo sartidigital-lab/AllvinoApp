@@ -2,6 +2,7 @@
 
 import { createClient } from '@/utils/supabase/client';
 import { useEffect, useMemo, useState } from 'react';
+import { AdminNotice, AdminPageHeader, AdminStatCard } from '@/components/admin/AdminPrimitives';
 
 type CustomerOrder = {
   id: string;
@@ -159,49 +160,31 @@ export default function AdminClientesPage() {
   }, [customers]);
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 pb-6">
-        <div>
-          <h1 className="text-3xl font-bold font-serif text-black">Clientes</h1>
-          <p className="mt-1 text-sm font-bold text-stone-500">Acompanhe histórico, gasto total e recompra.</p>
-        </div>
-        <button
-          type="button"
-          onClick={loadCustomers}
-          className="flex items-center gap-2 rounded-lg bg-black px-5 py-2.5 text-sm font-bold text-white transition hover:bg-stone-800"
-        >
-          <span className="material-symbols-outlined text-[18px]">refresh</span>
-          Atualizar
-        </button>
-      </div>
+    <div className="space-y-6">
+      <AdminPageHeader
+        title="Clientes"
+        description="Acompanhe histórico, gasto total e sinais de recompra."
+        actions={(
+          <button type="button" onClick={loadCustomers} className="admin-button flex items-center gap-2 bg-black px-5 text-sm text-white hover:bg-stone-800">
+            <span className="material-symbols-outlined text-[18px]">refresh</span>
+            Atualizar
+          </button>
+        )}
+      />
 
       {errorMessage && (
-        <div className="rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
-          {errorMessage}
-        </div>
+        <AdminNotice tone="danger">{errorMessage}</AdminNotice>
       )}
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <div className="rounded-lg bg-black p-5 text-white shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-white/60">Clientes</p>
-          <p className="mt-2 text-3xl font-bold">{isLoading ? '...' : summary.totalCustomers}</p>
-        </div>
-        <div className="rounded-lg border border-stone-100 bg-white p-5 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Pedidos</p>
-          <p className="mt-2 text-3xl font-bold text-black">{isLoading ? '...' : summary.totalOrders}</p>
-        </div>
-        <div className="rounded-lg border border-stone-100 bg-white p-5 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Faturamento</p>
-          <p className="mt-2 text-xl font-bold text-black">{isLoading ? '...' : formatMoney(summary.totalSpent)}</p>
-        </div>
-        <div className="rounded-lg border border-stone-100 bg-white p-5 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Ticket médio</p>
-          <p className="mt-2 text-xl font-bold text-black">{isLoading ? '...' : formatMoney(summary.averageTicket)}</p>
-        </div>
+      <div className="admin-stats-grid grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+        <AdminStatCard label="Clientes" value={isLoading ? '...' : summary.totalCustomers} icon="groups" tone="dark" />
+        <AdminStatCard label="Pedidos" value={isLoading ? '...' : summary.totalOrders} icon="receipt_long" />
+        <AdminStatCard label="Faturamento" value={isLoading ? '...' : formatMoney(summary.totalSpent)} icon="monitoring" tone="success" />
+        <AdminStatCard label="Ticket médio" value={isLoading ? '...' : formatMoney(summary.averageTicket)} icon="payments" />
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
-        <div className="overflow-hidden rounded-lg border border-stone-100 bg-white shadow-sm">
+        <div className="admin-surface overflow-hidden">
           <div className="space-y-4 border-b border-stone-100 px-5 py-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="font-bold text-black">Base de clientes</h2>

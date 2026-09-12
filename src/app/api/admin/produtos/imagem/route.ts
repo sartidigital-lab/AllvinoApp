@@ -93,7 +93,8 @@ export async function POST(request: Request) {
   }
 
   const file = formData.get('file');
-  const productName = String(formData.get('productName') || 'produto').slice(0, 120);
+  const assetType = formData.get('assetType') === 'banner' ? 'banner' : 'product';
+  const assetName = String(formData.get('productName') || (assetType === 'banner' ? 'banner' : 'produto')).slice(0, 120);
 
   if (!(file instanceof File)) {
     return NextResponse.json({ error: 'Arquivo não enviado.' }, { status: 400 });
@@ -111,7 +112,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'O conteudo do arquivo nao corresponde a uma imagem valida.' }, { status: 400 });
   }
 
-  const filePath = `${Date.now()}-${slugify(productName)}.${getExtension(file)}`;
+  const filePath = `${assetType === 'banner' ? 'banners/' : ''}${Date.now()}-${slugify(assetName)}.${getExtension(file)}`;
   const { error: uploadError } = await supabase.storage
     .from('produtos')
     .upload(filePath, file, {
@@ -128,6 +129,6 @@ export async function POST(request: Request) {
   }
 
   const { data } = supabase.storage.from('produtos').getPublicUrl(filePath);
-  auditSecurityEvent('admin.product-image.uploaded', { userId: user.id, path: filePath });
+  auditSecurityEvent(`admin.${assetType}-image.uploaded`, { userId: user.id, path: filePath });
   return NextResponse.json({ publicUrl: data.publicUrl, path: filePath });
 }

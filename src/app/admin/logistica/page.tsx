@@ -9,6 +9,7 @@ import {
 } from '@/lib/database/delivery';
 import { formatZipCode, normalizeZipCode } from '@/lib/delivery/rules';
 import { DeliveryZone } from '@/types/database';
+import { AdminNotice, AdminPageHeader, AdminStatCard } from '@/components/admin/AdminPrimitives';
 
 type DeliveryZoneForm = {
   name: string;
@@ -168,34 +169,21 @@ export default function AdminLogisticsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 pb-6">
-        <div>
-          <h1 className="text-3xl font-bold font-serif text-black">Logística & Frete</h1>
-          <p className="mt-1 text-sm font-bold text-stone-500">Configure regiões, taxas e prazos de entrega.</p>
-        </div>
-        <button
-          type="button"
-          onClick={openCreateForm}
-          className="flex items-center gap-2 rounded-lg bg-black px-5 py-2.5 text-sm font-bold text-white shadow-lg transition hover:bg-stone-800"
-        >
-          <span className="material-symbols-outlined text-[20px]">add</span>
-          Nova Região
-        </button>
-      </div>
+      <AdminPageHeader
+        title="Logística & Frete"
+        description="Configure regiões, taxas e prazos de entrega."
+        actions={(
+          <button type="button" onClick={openCreateForm} className="admin-button flex items-center gap-2 bg-black px-5 text-sm text-white hover:bg-stone-800">
+            <span className="material-symbols-outlined text-[20px]">add</span>
+            Nova Região
+          </button>
+        )}
+      />
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div className="rounded-lg bg-black p-5 text-white">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-white/60">Regiões</p>
-          <p className="mt-2 text-3xl font-bold">{stats.total}</p>
-        </div>
-        <div className="rounded-lg border border-stone-100 bg-white p-5">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Ativas</p>
-          <p className="mt-2 text-3xl font-bold text-black">{stats.active}</p>
-        </div>
-        <div className="rounded-lg border border-stone-100 bg-white p-5">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Frete grátis</p>
-          <p className="mt-2 text-3xl font-bold text-black">{stats.freeRules}</p>
-        </div>
+      <div className="admin-stats-grid grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
+        <AdminStatCard label="Regiões" value={stats.total} icon="map" tone="dark" />
+        <AdminStatCard label="Ativas" value={stats.active} icon="check_circle" tone="success" />
+        <AdminStatCard label="Frete grátis" value={stats.freeRules} icon="local_shipping" />
       </div>
 
       <div className="flex justify-end">
@@ -210,13 +198,11 @@ export default function AdminLogisticsPage() {
       </div>
 
       {message && (
-        <div className="rounded-lg border border-stone-200 bg-white px-4 py-3 text-sm font-bold text-stone-700">
-          {message}
-        </div>
+        <AdminNotice>{message}</AdminNotice>
       )}
 
       {isFormOpen && (
-        <form onSubmit={handleSubmit} className="space-y-5 rounded-lg border border-stone-100 bg-white p-5 shadow-sm">
+        <form onSubmit={handleSubmit} className="admin-surface space-y-5 p-5 sm:p-6">
           <div className="flex items-center justify-between gap-4">
             <h2 className="text-lg font-bold text-black">{editingZone ? 'Editar região' : 'Nova região'}</h2>
             <button type="button" onClick={closeForm} className="text-stone-500 hover:text-black">

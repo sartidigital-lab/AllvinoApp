@@ -45,15 +45,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   if (!isAuthenticated) {
-    return <div className="admin-shell flex min-h-screen items-center justify-center"><p className="animate-pulse font-bold">Verificando acesso...</p></div>;
+    return (
+      <div className="admin-shell flex min-h-screen items-center justify-center px-6">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <span className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1B1917] text-white shadow-xl">
+            <span className="material-symbols-outlined animate-pulse">wine_bar</span>
+          </span>
+          <div>
+            <p className="font-serif text-xl font-bold text-stone-900">Abrindo a central</p>
+            <p className="mt-1 text-sm font-bold text-stone-500">Validando seu acesso administrativo...</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="admin-shell overflow-x-hidden">
       <Sidebar />
-      <div className="relative transition-all duration-300 ease-in-out lg:ml-64">
-        <main className="mx-auto w-full max-w-[1680px] px-4 py-5 pb-10 sm:px-5 lg:px-8 lg:py-7">
-          {children}
+      <div className="relative transition-all duration-300 ease-in-out lg:ml-72">
+        <main className="mx-auto w-full max-w-[1680px] px-4 py-5 sm:px-6 sm:py-7 lg:px-9 lg:py-8 2xl:px-12">
+          <div className="admin-page-enter">{children}</div>
         </main>
       </div>
     </div>

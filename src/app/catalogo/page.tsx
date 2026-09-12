@@ -1,8 +1,7 @@
 "use client";
 
-import { Suspense, useState, useMemo, useDeferredValue } from 'react';
+import { useState, useMemo, useDeferredValue, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
 import { useWines } from '@/hooks/useWines';
 import { useCart } from '@/context/CartContext';
 import { useToast } from '@/context/ToastContext';
@@ -10,8 +9,9 @@ import { useFavorites } from '@/context/FavoritesContext';
 import { useRecentlyViewed } from '@/context/RecentlyViewedContext';
 import { WineCardSkeleton, EmptyState, PageTransition, ProductImage } from '@/components/ui';
 import { Ban, CheckCircle, Heart, Plus, Search, SlidersHorizontal, TriangleAlert, Wine, X } from 'lucide-react';
-import Image from 'next/image';
-import CatalogBanners from '@/components/catalog/CatalogBanners';
+import { CatalogBannerCarousel } from '@/components/catalog/CatalogBannerCarousel';
+import { WinePrice } from '@/components/catalog/WinePrice';
+import type { CatalogBanner } from '@/types/database';
 
 const priceRanges = [
   { label: 'Até R$50', min: 0, max: 50 },
@@ -26,10 +26,8 @@ function getStockStatus(stock: number) {
   if (stock <= 5) return { label: `Últimas ${stock} un.`, color: 'bg-amber-100 text-amber-700', icon: TriangleAlert };
   return { label: `${stock} un.`, color: 'bg-emerald-100 text-emerald-700', icon: CheckCircle };
 }
-function CatalogoContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const promotionSlug = searchParams.get('promocao') || '';
+
+export default function CatalogoPage() {
   const { wines, isLoading, isOffline } = useWines();
   const { addToCart } = useCart();
   const { showToast } = useToast();
@@ -42,19 +40,55 @@ function CatalogoContent() {
   const [selectedType, setSelectedType] = useState('');
   const [selectedGrape, setSelectedGrape] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('');
+  const [selectedPromotion, setSelectedPromotion] = useState('');
+  const [banners, setBanners] = useState<CatalogBanner[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const deferredSearch = useDeferredValue(search);
+
+  useEffect(() => {
+    const syncPromotionFromUrl = () => {
+      setSelectedPromotion(new URLSearchParams(window.location.search).get('promocao') || '');
+    };
+    syncPromotionFromUrl();
+    window.addEventListener('popstate', syncPromotionFromUrl);
+
+    let active = true;
+    fetch('/api/catalogo/promocoes', { cache: 'no-store' })
+      .then((response) => (response.ok ? response.json() : []))
+      .then((data) => {
+        if (active && Array.isArray(data)) setBanners(data as CatalogBanner[]);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      active = false;
+      window.removeEventListener('popstate', syncPromotionFromUrl);
+    };
+  }, []);
 
   const types = useMemo(() => [...new Set(wines.map((w) => w.type).filter(Boolean))], [wines]);
   const grapes = useMemo(() => [...new Set(wines.map((w) => w.grape).filter(Boolean))], [wines]);
   const regions = useMemo(() => [...new Set(wines.map((w) => w.region).filter(Boolean))], [wines]);
+  const promotionSelections = useMemo(() => {
+    const selections = new Map<string, { slug: string; title: string; discount: number }>();
+    wines.forEach((wine) => {
+      if (wine.promotion_slug && wine.promotion_title && wine.discount_percent) {
+        selections.set(wine.promotion_slug, {
+          slug: wine.promotion_slug,
+          title: wine.promotion_title,
+          discount: wine.discount_percent,
+        });
+      }
+    });
+    return [...selections.values()].sort((a, b) => b.discount - a.discount);
+  }, [wines]);
+  const standalonePromotionSelections = useMemo(() => {
+    const bannerSlugs = new Set(banners.map((banner) => banner.promotion_slug));
+    return promotionSelections.filter((selection) => !bannerSlugs.has(selection.slug));
+  }, [banners, promotionSelections]);
 
   const filteredWines = useMemo(() => {
     let result = [...wines];
-
-    if (promotionSlug) {
-      result = result.filter((wine) => wine.promotion_slug === promotionSlug);
-    }
 
     if (deferredSearch) {
       const q = deferredSearch.toLowerCase();
@@ -75,6 +109,7 @@ function CatalogoContent() {
     if (selectedType) result = result.filter((w) => w.type === selectedType);
     if (selectedGrape) result = result.filter((w) => w.grape === selectedGrape);
     if (selectedRegion) result = result.filter((w) => w.region === selectedRegion);
+    if (selectedPromotion) result = result.filter((w) => w.promotion_slug === selectedPromotion);
 
     if (sortBy === 'name') result.sort((a, b) => a.name.localeCompare(b.name));
     else if (sortBy === 'price-asc') result.sort((a, b) => a.price - b.price);
@@ -82,14 +117,9 @@ function CatalogoContent() {
     else result.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
 
     return result;
-  }, [wines, deferredSearch, sortBy, selectedPrice, selectedType, selectedGrape, selectedRegion, promotionSlug]);
+  }, [wines, deferredSearch, sortBy, selectedPrice, selectedType, selectedGrape, selectedRegion, selectedPromotion]);
 
-  const selectedPromotion = useMemo(
-    () => wines.find((wine) => wine.promotion_slug === promotionSlug),
-    [wines, promotionSlug]
-  );
-
-  const activeFilterCount = [selectedPrice !== null, selectedType, selectedGrape, selectedRegion, search].filter(Boolean).length;
+  const activeFilterCount = [selectedPrice !== null, selectedType, selectedGrape, selectedRegion, selectedPromotion, search].filter(Boolean).length;
 
   const clearFilters = () => {
     setSearch('');
@@ -97,13 +127,24 @@ function CatalogoContent() {
     setSelectedType('');
     setSelectedGrape('');
     setSelectedRegion('');
+    setSelectedPromotion('');
+    window.history.replaceState(null, '', '/catalogo');
+  };
+
+  const handleSelectPromotion = (slug: string) => {
+    setSelectedPromotion(slug);
+    const nextUrl = new URL(window.location.href);
+    if (slug) nextUrl.searchParams.set('promocao', slug);
+    else nextUrl.searchParams.delete('promocao');
+    window.history.pushState(null, '', `${nextUrl.pathname}${nextUrl.search}#ofertas`);
+    window.setTimeout(() => document.getElementById('ofertas')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   };
 
   return (
     <PageTransition><main className="min-h-screen bg-brand-bg pb-24">
       {/* Header */}
       <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-stone-100">
-        <div className="flex items-center justify-between px-4 py-3">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 lg:px-8">
           <h1 className="font-serif text-xl font-bold">Catálogo</h1>
           {isOffline && (
             <span role="status" aria-live="polite" className="text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-1 rounded-full">Modo Offline</span>
@@ -124,7 +165,7 @@ function CatalogoContent() {
         </div>
 
         {/* Search & Sort */}
-        <div className="px-4 pb-3 flex gap-2">
+        <div className="mx-auto flex max-w-7xl gap-2 px-4 pb-3 lg:px-8">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" aria-hidden="true" />
             <input
@@ -151,7 +192,38 @@ function CatalogoContent() {
         </div>
       </div>
 
-      <CatalogBanners />
+      <div className="mx-auto max-w-7xl px-4 pt-5 lg:px-8 lg:pt-8">
+        <CatalogBannerCarousel banners={banners} onSelectPromotion={handleSelectPromotion} />
+      </div>
+
+      {standalonePromotionSelections.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 pt-6 lg:px-8" aria-label="Seleções em promoção">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-brand-primary">Ofertas da casa</p>
+              <h2 className="mt-1 font-serif text-2xl font-bold text-stone-950">Seleções com desconto</h2>
+            </div>
+            {selectedPromotion && (
+              <button type="button" onClick={() => handleSelectPromotion('')} className="text-xs font-bold text-stone-500 hover:text-brand-primary">
+                Ver todo catálogo
+              </button>
+            )}
+          </div>
+          <div className="mt-4 flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+            {standalonePromotionSelections.map((selection) => (
+              <button
+                key={selection.slug}
+                type="button"
+                onClick={() => handleSelectPromotion(selection.slug)}
+                className={`shrink-0 rounded-2xl border px-4 py-3 text-left transition ${selectedPromotion === selection.slug ? 'border-brand-primary bg-brand-primary text-white shadow-lg shadow-red-950/10' : 'border-stone-200 bg-white text-stone-900 hover:border-brand-primary/40'}`}
+              >
+                <span className="block text-[10px] font-black uppercase tracking-wider opacity-65">Até {selection.discount}% off</span>
+                <span className="mt-0.5 block text-sm font-bold">{selection.title}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Active Filters */}
       {activeFilterCount > 0 && (
@@ -186,6 +258,12 @@ function CatalogoContent() {
               <button type="button" onClick={() => setSelectedRegion('')} className="ml-1" aria-label="Remover filtro de região">×</button>
             </span>
           )}
+          {selectedPromotion && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-brand-primary px-2.5 py-1 text-xs font-bold text-white">
+              {promotionSelections.find((item) => item.slug === selectedPromotion)?.title || 'Promoção'}
+              <button onClick={() => handleSelectPromotion('')} className="ml-1" aria-label="Remover filtro de promoção">×</button>
+            </span>
+          )}
           <button onClick={clearFilters} className="text-xs font-bold text-stone-400 hover:text-brand-primary">
             Limpar filtros
           </button>
@@ -193,8 +271,8 @@ function CatalogoContent() {
       )}
 
       {/* Recently Viewed */}
-      {recentlyViewed.length > 0 && !promotionSlug && !search && selectedPrice === null && !selectedType && !selectedGrape && !selectedRegion && (
-        <div className="px-4 pt-4">
+      {recentlyViewed.length > 0 && !search && selectedPrice === null && !selectedType && !selectedGrape && !selectedRegion && !selectedPromotion && (
+        <div className="mx-auto max-w-7xl px-4 pt-6 lg:px-8">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-serif text-lg font-bold">Vistos Recentemente</h2>
             <Link href="/favoritos" className="text-xs font-bold text-stone-400 hover:text-brand-primary">
@@ -217,11 +295,9 @@ function CatalogoContent() {
                   className="w-full h-28 object-contain mix-blend-multiply p-2"
                 />
                 <div className="p-2">
-                  <p className="truncate text-[10px] font-bold uppercase text-stone-400">{wine.type || wine.region}</p>
+                  <p className="text-[10px] font-bold text-stone-400 uppercase truncate">{wine.type || wine.region}</p>
                   <p className="font-bold text-xs line-clamp-2 mt-0.5">{wine.name}</p>
-                  <p className="mt-1 text-xs font-bold text-brand-primary">
-                    R$ {wine.price.toFixed(2).replace('.', ',')}
-                  </p>
+                  <span className="mt-1 block text-xs"><WinePrice wine={wine} compact /></span>
                 </div>
               </Link>
             ))}
@@ -230,19 +306,7 @@ function CatalogoContent() {
       )}
 
       {/* Content */}
-      <div id="produtos-promocao" className="scroll-mt-36 px-4 pt-4">
-        {promotionSlug && !isLoading && (
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-red-100 bg-red-50 p-4">
-            <div>
-              <p className="text-xs font-black uppercase tracking-widest text-brand-primary">Seleção promocional</p>
-              <h2 className="mt-1 font-serif text-xl font-bold">{selectedPromotion?.promotion_title || 'Produtos em promoção'}</h2>
-            </div>
-            <div className="flex items-center gap-3">
-              {selectedPromotion?.discount_percent && <span className="rounded-full bg-brand-primary px-3 py-1.5 text-sm font-black text-white">{selectedPromotion.discount_percent}% OFF</span>}
-              <button type="button" onClick={() => router.replace('/catalogo', { scroll: false })} className="text-sm font-bold text-stone-500 hover:text-black">Ver todo o catálogo</button>
-            </div>
-          </div>
-        )}
+      <div id="ofertas" className="mx-auto max-w-7xl scroll-mt-32 px-4 pt-6 lg:px-8">
         {!isLoading && (
           <div className="mb-3 flex items-center justify-between gap-3 text-xs font-bold text-stone-500" role="status" aria-live="polite">
             <span>{filteredWines.length} {filteredWines.length === 1 ? 'vinho encontrado' : 'vinhos encontrados'}</span>
@@ -250,7 +314,7 @@ function CatalogoContent() {
           </div>
         )}
         {isLoading ? (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
               <WineCardSkeleton key={i} />
             ))}
@@ -266,7 +330,7 @@ function CatalogoContent() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
             {filteredWines.map((wine) => {
               const stock = getStockStatus(wine.stock);
               const StockIcon = stock.icon;
@@ -290,21 +354,16 @@ function CatalogoContent() {
                       {stock.label}
                     </span>
                     {wine.discount_percent && (
-                      <span className="absolute left-2 top-2 rounded-full bg-brand-primary px-2.5 py-1 text-[10px] font-black text-white shadow-sm">
-                        {wine.discount_percent}% OFF
+                      <span className="absolute left-2 top-2 rounded-full bg-brand-primary px-2.5 py-1 text-[10px] font-black text-white shadow-lg shadow-red-950/20">
+                        -{wine.discount_percent}%
                       </span>
                     )}
                   </div>
                   <div className="p-3">
-                    <p className="text-[10px] font-bold uppercase text-stone-400">{wine.type || wine.region}</p>
+                    <p className="text-[10px] font-bold text-stone-400 uppercase">{wine.type || wine.region}</p>
                     <p className="font-bold text-sm line-clamp-2 mt-0.5">{wine.name}</p>
                     <div className="flex justify-between items-center mt-2">
-                      <span className="flex flex-col font-bold text-brand-primary">
-                        {wine.discount_percent && wine.base_price && wine.base_price > wine.price && (
-                          <span className="text-[10px] text-stone-400 line-through">R$ {wine.base_price.toFixed(2).replace('.', ',')}</span>
-                        )}
-                        <span>R$ {wine.price.toFixed(2).replace('.', ',')}</span>
-                      </span>
+                      <WinePrice wine={wine} />
                       <div className="flex gap-1.5">
                         <button
                           onClick={(e) => {
@@ -355,6 +414,22 @@ function CatalogoContent() {
             </div>
             <div className="flex-1 overflow-y-auto p-5 space-y-6">
               <div>
+                {promotionSelections.length > 0 && (
+                  <div className="mb-6">
+                    <p className="mb-3 text-xs font-bold uppercase text-stone-400">Promoções</p>
+                    <div className="flex flex-wrap gap-2">
+                      {promotionSelections.map((selection) => (
+                        <button
+                          key={selection.slug}
+                          onClick={() => handleSelectPromotion(selectedPromotion === selection.slug ? '' : selection.slug)}
+                          className={`rounded-xl border px-3 py-2 text-xs font-bold transition ${selectedPromotion === selection.slug ? 'border-brand-primary bg-brand-primary text-white' : 'border-stone-200 bg-white text-stone-600 hover:border-brand-primary'}`}
+                        >
+                          {selection.title} · -{selection.discount}%
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <p className="mb-3 text-xs font-bold uppercase text-stone-400">Faixa de preço</p>
                 <div className="flex flex-wrap gap-2">
                   {priceRanges.map((range, i) => (
@@ -363,8 +438,8 @@ function CatalogoContent() {
                       onClick={() => setSelectedPrice(selectedPrice === i ? null : i)}
                       className={`px-3 py-2 rounded-xl text-xs font-bold border transition ${
                         selectedPrice === i
-                          ? 'bg-brand-primary text-white border-brand-primary'
-                          : 'bg-white text-stone-600 border-stone-200 hover:border-brand-primary'
+                          ? 'border-brand-primary bg-brand-primary text-white'
+                          : 'border-stone-200 bg-white text-stone-600 hover:border-brand-primary'
                       }`}
                     >
                       {range.label}
@@ -381,8 +456,8 @@ function CatalogoContent() {
                       onClick={() => setSelectedType(selectedType === type ? '' : type)}
                       className={`px-3 py-2 rounded-xl text-xs font-bold border transition ${
                         selectedType === type
-                          ? 'bg-brand-primary text-white border-brand-primary'
-                          : 'bg-white text-stone-600 border-stone-200 hover:border-brand-primary'
+                          ? 'border-brand-primary bg-brand-primary text-white'
+                          : 'border-stone-200 bg-white text-stone-600 hover:border-brand-primary'
                       }`}
                     >
                       {type}
@@ -399,8 +474,8 @@ function CatalogoContent() {
                       onClick={() => setSelectedGrape(selectedGrape === grape ? '' : grape)}
                       className={`px-3 py-2 rounded-xl text-xs font-bold border transition ${
                         selectedGrape === grape
-                          ? 'bg-brand-primary text-white border-brand-primary'
-                          : 'bg-white text-stone-600 border-stone-200 hover:border-brand-primary'
+                          ? 'border-brand-primary bg-brand-primary text-white'
+                          : 'border-stone-200 bg-white text-stone-600 hover:border-brand-primary'
                       }`}
                     >
                       {grape}
@@ -417,8 +492,8 @@ function CatalogoContent() {
                       onClick={() => setSelectedRegion(selectedRegion === region ? '' : region)}
                       className={`px-3 py-2 rounded-xl text-xs font-bold border transition ${
                         selectedRegion === region
-                          ? 'bg-brand-primary text-white border-brand-primary'
-                          : 'bg-white text-stone-600 border-stone-200 hover:border-brand-primary'
+                          ? 'border-brand-primary bg-brand-primary text-white'
+                          : 'border-stone-200 bg-white text-stone-600 hover:border-brand-primary'
                       }`}
                     >
                       {region}
@@ -439,13 +514,5 @@ function CatalogoContent() {
         </div>
       )}
     </main></PageTransition>
-  );
-}
-
-export default function CatalogoPage() {
-  return (
-    <Suspense fallback={<main className="min-h-screen bg-brand-bg" />}>
-      <CatalogoContent />
-    </Suspense>
   );
 }

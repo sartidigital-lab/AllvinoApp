@@ -1,3 +1,4 @@
+-- Version aligned with the migration recorded by the Supabase API.
 create index catalog_banners_promotion_id_idx
   on public.catalog_banners (promotion_id);
 
@@ -164,7 +165,3 @@ create policy "Admins can delete catalog banners"
   using ((select public.is_admin()));
 
 notify pgrst, 'reload schema';
-
-;
-
-

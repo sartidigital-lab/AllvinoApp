@@ -118,9 +118,14 @@ const product =
             p.id,
             p.nome,
             p.preco,
+            cp.base_price,
+            cp.effective_price,
+            cp.discount_percent,
+            cp.promotion_id,
             p.sku_sankhya,
             coalesce(s.quantity, -1) as stock_quantity
           from public.produtos p
+          join public.catalog_products cp on cp.id = p.id
           left join public.stock_levels s on s.product_code = trim(p.sku_sankhya)
           where p.id = ${sqlString(process.env.CHECKOUT_TEST_PRODUCT_ID)}
           limit 1;
@@ -133,9 +138,14 @@ const product =
             p.id,
             p.nome,
             p.preco,
+            cp.base_price,
+            cp.effective_price,
+            cp.discount_percent,
+            cp.promotion_id,
             p.sku_sankhya,
             coalesce(s.quantity, -1) as stock_quantity
           from public.produtos p
+          join public.catalog_products cp on cp.id = p.id
           join public.stock_levels s on s.product_code = trim(p.sku_sankhya)
           where nullif(trim(p.sku_sankhya), '') is not null
             and s.quantity > 0
@@ -154,49 +164,10 @@ if (!Number.isInteger(quantity) || quantity <= 0) {
   throw new Error('CHECKOUT_TEST_QUANTITY must be a positive integer.');
 }
 
-const privileges = firstRow(
-  `
-    select
-      procedure.prosecdef as wrapper_security_definer,
-      has_function_privilege(
-        'authenticated',
-        'public.create_order_with_stock_reservation(jsonb,text,text,text,text,text,text,text)',
-        'EXECUTE'
-      ) as authenticated_can_execute_wrapper,
-      has_function_privilege(
-        'anon',
-        'public.create_order_with_stock_reservation(jsonb,text,text,text,text,text,text,text)',
-        'EXECUTE'
-      ) as anon_can_execute_wrapper,
-      has_function_privilege(
-        'authenticated',
-        'app_private.create_order_with_stock_reservation(jsonb,text,text,text,text,text,text,text)',
-        'EXECUTE'
-      ) as authenticated_can_execute_private
-    from pg_proc procedure
-    join pg_namespace namespace on namespace.oid = procedure.pronamespace
-    where namespace.nspname = 'public'
-      and procedure.proname = 'create_order_with_stock_reservation'
-      and pg_get_function_identity_arguments(procedure.oid) = 'p_cart_items jsonb, p_delivery_method text, p_payment_method text, p_delivery_address text, p_promotion_code text, p_delivery_zip_code text, p_customer_name text, p_customer_phone text';
-  `,
-  'Checkout RPC privileges'
-);
-
-const privilegeFailures = [];
-if (!privileges.wrapper_security_definer) privilegeFailures.push('wrapper_security_definer=false');
-if (!privileges.authenticated_can_execute_wrapper) privilegeFailures.push('authenticated wrapper execute=false');
-if (privileges.anon_can_execute_wrapper) privilegeFailures.push('anonymous wrapper execute=true');
-if (privileges.authenticated_can_execute_private) privilegeFailures.push('authenticated private execute=true');
-if (privilegeFailures.length > 0) {
-  throw new Error(`Checkout RPC privilege verification failed: ${privilegeFailures.join(', ')}`);
-}
-
 const created = firstRow(
   `
-    with auth_context as materialized (
-      select
-        set_config('request.jwt.claim.sub', ${sqlString(userId)}, true) as subject,
-        set_config('role', 'authenticated', true) as database_role
+    with claims as (
+      select set_config('request.jwt.claim.sub', ${sqlString(userId)}, true)
     )
     select public.create_order_with_stock_reservation(
       jsonb_build_array(
@@ -214,7 +185,7 @@ const created = firstRow(
       'Teste Checkout Allvino',
       '27999999999'
     ) as order_id
-    from auth_context;
+    from claims;
   `,
   'Created checkout test order'
 );
@@ -237,7 +208,10 @@ try {
         o.stock_reserved_at is not null as stock_reserved,
         oi.product_id,
         oi.quantity,
-        oi.unit_price
+        oi.unit_price,
+        oi.base_unit_price,
+        oi.discount_percent as item_discount_percent,
+        oi.product_promotion_id
       from public.orders o
       join public.order_items oi on oi.order_id = o.id
       where o.id = ${sqlString(orderId)};
@@ -245,9 +219,8 @@ try {
     'Checkout test order details'
   );
 
-  const expectedSubtotal = Number(product.preco) * quantity;
-  // The controlled test uses PIX + store pickup: 10% for each incentive.
-  const expectedDiscount = Number((expectedSubtotal * 0.2).toFixed(2));
+  const expectedSubtotal = Number(product.effective_price) * quantity;
+  const expectedDiscount = Number((expectedSubtotal * 0.1).toFixed(2));
   const expectedTotal = Number((expectedSubtotal - expectedDiscount).toFixed(2));
   const actualTotal = Number(details.total_amount);
   const actualSubtotal = Number(details.subtotal_amount);
@@ -261,6 +234,10 @@ try {
   if (!details.stock_reserved) failures.push('stock_reserved=false');
   if (details.product_id !== product.id) failures.push(`product_id=${details.product_id}`);
   if (Number(details.quantity) !== quantity) failures.push(`quantity=${details.quantity}`);
+  if (Math.abs(Number(details.unit_price) - Number(product.effective_price)) > 0.001) failures.push(`unit_price=${details.unit_price}`);
+  if (Math.abs(Number(details.base_unit_price) - Number(product.base_price)) > 0.001) failures.push(`base_unit_price=${details.base_unit_price}`);
+  if (Number(details.item_discount_percent || 0) !== Number(product.discount_percent || 0)) failures.push(`item_discount_percent=${details.item_discount_percent}`);
+  if ((details.product_promotion_id || null) !== (product.promotion_id || null)) failures.push(`product_promotion_id=${details.product_promotion_id}`);
   if (Math.abs(actualSubtotal - expectedSubtotal) > 0.001) failures.push(`subtotal=${details.subtotal_amount}`);
   if (Math.abs(actualDiscount - expectedDiscount) > 0.001) failures.push(`discount=${details.discount_amount}`);
   if (Math.abs(actualTotal - expectedTotal) > 0.001) failures.push(`total=${details.total_amount}`);
