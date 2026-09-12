@@ -75,7 +75,7 @@ export function AppShareButton() {
       setIsOpen(false);
     } catch (error) {
       if ((error as DOMException).name !== 'AbortError') {
-        showToast('Nao foi possivel compartilhar agora', 'error');
+        showToast('Não foi possível compartilhar agora', 'error');
       }
     }
   };

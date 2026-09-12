@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { LegacyProduct, mapProductToWine } from '@/lib/catalog/products';
+import { CatalogProduct, mapCatalogProductToWine } from '@/lib/catalog/products';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -18,16 +18,15 @@ export async function GET() {
   );
 
   const { data, error } = await supabase
-    .from('produtos')
-    .select('id,nome,descricao,preco,sku_sankhya,imagem_url,pais,regiao,tipo,uva,estoque,publicado,criado_em')
-    .eq('publicado', true)
+    .from('catalog_products')
+    .select('id,nome,descricao,base_price,effective_price,sku_sankhya,imagem_url,pais,regiao,tipo,uva,estoque,publicado,criado_em,promotion_id,promotion_title,promotion_slug,discount_percent')
     .order('criado_em', { ascending: false });
 
   if (error) {
     return NextResponse.json({ error: 'Não foi possível carregar o catálogo.' }, { status: 500 });
   }
 
-  return NextResponse.json(((data || []) as LegacyProduct[]).map(mapProductToWine), {
+  return NextResponse.json(((data || []) as CatalogProduct[]).map(mapCatalogProductToWine), {
     headers: {
       'Cache-Control': 'no-store, max-age=0',
     },

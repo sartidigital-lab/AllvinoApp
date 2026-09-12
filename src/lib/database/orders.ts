@@ -1,4 +1,4 @@
-import { Order, OrderWithItems } from '@/types/database';
+import { OrderWithItems } from '@/types/database';
 import { CartItem } from '@/context/CartContext';
 
 export async function createOrder(
@@ -10,7 +10,7 @@ export async function createOrder(
   deliveryAddress?: string,
   promotionCode?: string,
   deliveryZipCode?: string
-): Promise<{ order: Order | null; error: Error | null }> {
+): Promise<{ order: OrderWithItems | null; error: Error | null }> {
   try {
     const response = await fetch('/api/pedidos', {
       method: 'POST',
@@ -19,7 +19,7 @@ export async function createOrder(
     });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || 'Erro ao criar pedido.');
-    return { order: payload.order as Order, error: null };
+    return { order: payload.order as OrderWithItems, error: null };
   } catch (error) {
     console.error('Error creating order through API:', error);
     return { order: null, error: error as Error };

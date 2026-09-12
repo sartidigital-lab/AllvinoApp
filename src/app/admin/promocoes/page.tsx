@@ -4,11 +4,13 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import {
   deletePromotion,
   fetchPromotions,
+  isPromotionCurrentlyActive,
   normalizePromotionCode,
   PromotionPayload,
   savePromotion,
 } from '@/lib/database/promotions';
 import { Promotion } from '@/types/database';
+import BannerManager from '@/components/admin/BannerManager';
 
 type PromotionForm = {
   code: string;
@@ -42,7 +44,20 @@ function formatMoney(value: number) {
 
 function formatDateTime(value: string | null) {
   if (!value) return '';
-  return new Date(value).toISOString().slice(0, 16);
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const pad = (part: number) => String(part).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function parseDateTime(value: string) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function toIsoDateTime(value: string) {
+  return parseDateTime(value)?.toISOString() ?? null;
 }
 
 function toForm(promotion: Promotion): PromotionForm {
@@ -69,18 +84,10 @@ function toPayload(form: PromotionForm): PromotionPayload {
     discount_value: Number(form.discount_value),
     min_subtotal: Number(form.min_subtotal || 0),
     max_discount: form.max_discount ? Number(form.max_discount) : null,
-    starts_at: form.starts_at ? new Date(form.starts_at).toISOString() : null,
-    ends_at: form.ends_at ? new Date(form.ends_at).toISOString() : null,
+    starts_at: toIsoDateTime(form.starts_at),
+    ends_at: toIsoDateTime(form.ends_at),
     is_active: form.is_active,
   };
-}
-
-function isActiveNow(promotion: Promotion) {
-  const now = Date.now();
-  const startsAt = promotion.starts_at ? new Date(promotion.starts_at).getTime() : null;
-  const endsAt = promotion.ends_at ? new Date(promotion.ends_at).getTime() : null;
-
-  return promotion.is_active && (!startsAt || startsAt <= now) && (!endsAt || endsAt >= now);
 }
 
 export default function AdminPromotionsPage() {
@@ -126,7 +133,7 @@ export default function AdminPromotionsPage() {
     return promotions.reduce(
       (acc, promotion) => {
         acc.total += 1;
-        if (isActiveNow(promotion)) acc.active += 1;
+        if (isPromotionCurrentlyActive(promotion)) acc.active += 1;
         if (!promotion.is_active) acc.paused += 1;
         return acc;
       },
@@ -169,8 +176,31 @@ export default function AdminPromotionsPage() {
       return;
     }
 
+    if (!Number.isFinite(payload.discount_value) || !Number.isFinite(payload.min_subtotal)) {
+      setMessage('Informe números válidos para desconto e pedido mínimo.');
+      return;
+    }
+
     if (payload.discount_type === 'percent' && payload.discount_value > 100) {
       setMessage('O desconto percentual não pode passar de 100%.');
+      return;
+    }
+
+    if (payload.max_discount !== null && (!Number.isFinite(payload.max_discount) || payload.max_discount <= 0)) {
+      setMessage('O teto do desconto deve ser maior que zero.');
+      return;
+    }
+
+    const startsAt = parseDateTime(form.starts_at);
+    const endsAt = parseDateTime(form.ends_at);
+
+    if ((form.starts_at && !startsAt) || (form.ends_at && !endsAt)) {
+      setMessage('Informe datas válidas para início e fim.');
+      return;
+    }
+
+    if (startsAt && endsAt && endsAt < startsAt) {
+      setMessage('A data final deve ser posterior ao início.');
       return;
     }
 
@@ -430,8 +460,8 @@ export default function AdminPromotionsPage() {
                         <p>{promotion.ends_at ? new Date(promotion.ends_at).toLocaleString('pt-BR') : 'Sem data final'}</p>
                       </td>
                       <td className="p-4">
-                        <span className={`rounded-full px-3 py-1 text-xs font-bold ${isActiveNow(promotion) ? 'bg-emerald-50 text-emerald-700' : 'bg-stone-100 text-stone-500'}`}>
-                          {isActiveNow(promotion) ? 'Ativo' : 'Inativo'}
+                        <span className={`rounded-full px-3 py-1 text-xs font-bold ${isPromotionCurrentlyActive(promotion) ? 'bg-emerald-50 text-emerald-700' : 'bg-stone-100 text-stone-500'}`}>
+                          {isPromotionCurrentlyActive(promotion) ? 'Ativo' : 'Inativo'}
                         </span>
                       </td>
                       <td className="p-4">
@@ -452,6 +482,8 @@ export default function AdminPromotionsPage() {
           </table>
         </div>
       </div>
+
+      <BannerManager />
     </div>
   );
 }

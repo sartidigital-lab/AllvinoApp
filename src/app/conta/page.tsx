@@ -191,7 +191,7 @@ export default function ContaPage() {
 
                           return (
                             <div key={step} className="space-y-1">
-                              <div className={`h-1.5 rounded-full ${isDone ? 'bg-[#B91C1C]' : 'bg-stone-200'}`} />
+                              <div className={`h-1.5 rounded-full ${isDone ? 'bg-brand-primary' : 'bg-stone-200'}`} />
                               <p className={`text-[9px] font-bold uppercase leading-tight ${isDone ? 'text-black' : 'text-stone-400'}`}>
                                 {statusLabels[step]}
                               </p>

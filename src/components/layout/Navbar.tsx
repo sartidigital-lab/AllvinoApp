@@ -25,7 +25,7 @@ export function Navbar() {
             href={item.href}
             aria-current={item.match ? 'page' : undefined}
             className={`flex min-h-12 min-w-14 flex-col items-center justify-center rounded-xl transition-colors ${
-              item.match ? 'font-bold text-[#B91C1C]' : 'text-stone-400 hover:text-black'
+              item.match ? 'font-bold text-brand-primary' : 'text-stone-400 hover:text-black'
             }`}
           >
             <Icon className="mb-1 h-5 w-5" strokeWidth={item.match ? 2.6 : 2.2} aria-hidden="true" />

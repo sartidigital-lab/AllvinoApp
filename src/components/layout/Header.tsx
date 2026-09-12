@@ -1,6 +1,7 @@
 "use client";
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useCart } from '@/context/CartContext';
 import { IconButton } from '@/components/ui';
 import { AppShareButton } from '@/components/share/AppShareButton';
@@ -15,7 +16,7 @@ export function Header() {
       <AppShareButton />
       
       <Link href="/catalogo" className="h-12 flex items-center justify-center">
-        <img src="/logo-allvino-header.png" alt="Allvino" className="w-36 h-auto object-contain" />
+        <Image src="/logo-allvino-header.png" alt="Allvino" width={144} height={48} priority className="h-auto w-36 object-contain" />
       </Link>
       
       <IconButton

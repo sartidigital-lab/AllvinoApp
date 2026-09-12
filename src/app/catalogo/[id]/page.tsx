@@ -6,10 +6,9 @@ import { useCart } from '@/context/CartContext';
 import { useToast } from '@/context/ToastContext';
 import { useFavorites } from '@/context/FavoritesContext';
 import { useRecentlyViewed } from '@/context/RecentlyViewedContext';
-import { WineDetailSkeleton } from '@/components/ui';
+import { ProductImage, WineDetailSkeleton } from '@/components/ui';
 import { useParams } from 'next/navigation';
 import { ArrowLeft, Ban, CheckCircle, Grape, Heart, MapPin, TriangleAlert, Wine, type LucideIcon } from 'lucide-react';
-import Image from 'next/image';
 
 function formatMoney(value: number) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -17,8 +16,8 @@ function formatMoney(value: number) {
 
 function getStockStatus(stock: number) {
   if (stock === 0) return { label: 'Esgotado', desc: 'Este vinho esta fora de estoque.', color: 'text-red-600 bg-red-50 border-red-200', icon: Ban };
-  if (stock <= 5) return { label: `Ultimas ${stock} unidades`, desc: 'Corra, estao quase esgotando!', color: 'text-amber-700 bg-amber-50 border-amber-200', icon: TriangleAlert };
-  return { label: `${stock} unidades disponiveis`, desc: 'Estoque disponivel para entrega.', color: 'text-emerald-700 bg-emerald-50 border-emerald-200', icon: CheckCircle };
+  if (stock <= 5) return { label: `Últimas ${stock} unidades`, desc: 'Corra, estão quase esgotando!', color: 'text-amber-700 bg-amber-50 border-amber-200', icon: TriangleAlert };
+  return { label: `${stock} unidades disponíveis`, desc: 'Estoque disponível para entrega.', color: 'text-emerald-700 bg-emerald-50 border-emerald-200', icon: CheckCircle };
 }
 
 function productAttribute(Icon: LucideIcon, label: string, value: string) {
@@ -68,9 +67,9 @@ export default function WineDetailPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-4">
         <Wine className="h-16 w-16 text-stone-200" aria-hidden="true" />
-        <p className="mt-4 text-lg font-bold">Vinho nao encontrado</p>
-        <a href="/catalogo" className="mt-4 text-sm font-bold text-[#B91C1C]">
-          Voltar ao catalogo
+        <p className="mt-4 text-lg font-bold">Vinho não encontrado</p>
+        <a href="/catalogo" className="mt-4 text-sm font-bold text-brand-primary">
+          Voltar ao catálogo
         </a>
       </div>
     );
@@ -84,10 +83,10 @@ export default function WineDetailPage() {
     .slice(0, 3);
 
   return (
-    <main className="min-h-screen bg-[#FDFBF7] pb-24">
+    <main className="min-h-screen bg-brand-bg pb-24">
       <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-stone-100">
         <div className="flex items-center px-4 py-3">
-          <a href="/catalogo" className="p-2 hover:bg-stone-100 rounded-full transition">
+          <a href="/catalogo" aria-label="Voltar ao catálogo" className="rounded-full p-2 hover:bg-stone-100 transition">
             <ArrowLeft className="h-5 w-5" aria-hidden="true" />
           </a>
           <p className="ml-2 font-bold text-sm truncate">{wine.name}</p>
@@ -96,14 +95,14 @@ export default function WineDetailPage() {
 
       <div className="max-w-6xl mx-auto px-4 py-6">
         <div className="grid lg:grid-cols-[minmax(0,1fr)_420px] gap-8">
-          <div className="bg-white rounded-2xl border border-stone-100 p-8 flex items-center justify-center">
-            <Image src={wine.image_url || 'https://via.placeholder.com/300x400'} alt={wine.name} width={600} height={800} priority sizes="(max-width: 1024px) 100vw, 60vw" className="w-full max-h-[500px] object-contain mix-blend-multiply" />
+          <div className="surface-card flex items-center justify-center p-8">
+            <ProductImage src={wine.image_url} alt={wine.name} width={600} height={800} priority sizes="(max-width: 1024px) 100vw, 60vw" className="w-full max-h-[500px] object-contain mix-blend-multiply" />
           </div>
 
           <div className="space-y-6">
             <div>
-              <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">
-                {wine.category || wine.type} · {wine.region || wine.region}
+              <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400">
+                {wine.category || wine.type} · {wine.region || 'Região não informada'}
               </p>
               <h1 className="font-serif text-3xl font-bold mt-2">{wine.name}</h1>
               {wine.description && (
@@ -114,13 +113,21 @@ export default function WineDetailPage() {
             <div className="grid grid-cols-2 gap-3">
               {wine.type && productAttribute(Wine, 'Tipo', wine.type)}
               {wine.grape && productAttribute(Grape, 'Uva', wine.grape)}
-              {wine.region && productAttribute(MapPin, 'Regiao', wine.region)}
-              {wine.category && productAttribute(MapPin, 'Pais', wine.category)}
+              {wine.region && productAttribute(MapPin, 'Região', wine.region)}
+                {wine.category && productAttribute(MapPin, 'País', wine.category)}
             </div>
 
             <div className="border-t border-stone-100 pt-6">
-              <p className="text-3xl font-bold text-[#B91C1C]">{formatMoney(wine.price)}</p>
-              <p className="text-xs text-stone-400 mt-1">Preco para pedidos online</p>
+              {wine.discount_percent && (
+                <span className="mb-2 inline-flex rounded-full bg-brand-primary px-3 py-1 text-xs font-black text-white">
+                  {wine.discount_percent}% OFF · {wine.promotion_title}
+                </span>
+              )}
+              {wine.discount_percent && wine.base_price && wine.base_price > wine.price && (
+                <p className="text-sm font-bold text-stone-400 line-through">{formatMoney(wine.base_price)}</p>
+              )}
+              <p className="text-3xl font-bold text-brand-primary">{formatMoney(wine.price)}</p>
+              <p className="mt-1 text-xs text-stone-400">Preço para pedidos online</p>
             </div>
 
             <div className={`flex items-center gap-3 p-4 rounded-xl border ${stock.color}`}>
@@ -136,9 +143,9 @@ export default function WineDetailPage() {
                 onClick={() => { toggleFavorite(wine); showToast(isFavorite(wine.id) ? 'Removido dos favoritos' : 'Adicionado aos favoritos', 'info'); }}
                 type="button"
                 aria-label={isFavorite(wine.id) ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
-                className={`w-14 h-14 rounded-2xl border flex items-center justify-center transition ${isFavorite(wine.id) ? 'bg-red-50 border-red-200' : 'bg-white border-stone-200 hover:border-[#B91C1C]'}`}
+                className={`flex h-14 w-14 items-center justify-center rounded-2xl border transition ${isFavorite(wine.id) ? 'bg-red-50 border-red-200' : 'bg-white border-stone-200 hover:border-brand-primary'}`}
               >
-                <Heart className={`h-6 w-6 ${isFavorite(wine.id) ? 'fill-current text-[#B91C1C]' : 'text-stone-400'}`} aria-hidden="true" />
+                <Heart className={`h-6 w-6 ${isFavorite(wine.id) ? 'fill-current text-brand-primary' : 'text-stone-400'}`} aria-hidden="true" />
               </button>
               <a
                 href={getWhatsAppShareUrl(wine)}
@@ -155,12 +162,12 @@ export default function WineDetailPage() {
                 onClick={() => { addToCart(wine); showToast('Vinho adicionado ao carrinho!', 'success'); }}
                 type="button"
                 disabled={wine.stock === 0}
-                className="flex-1 bg-[#B91C1C] text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-red-900/20 hover:scale-[1.02] active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+                className="flex-1 rounded-brand-2xl bg-brand-primary py-4 text-lg font-bold text-white shadow-lg shadow-red-900/20 transition hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
               >
-                {wine.stock === 0 ? 'Indisponivel' : 'Adicionar ao carrinho'}
+                {wine.stock === 0 ? 'Indisponível' : 'Adicionar ao carrinho'}
               </button>
             </div>
-            <a href="/catalogo" className="block text-center text-sm font-bold text-stone-400 hover:text-[#B91C1C] transition">
+            <a href="/catalogo" className="block text-center text-sm font-bold text-stone-400 hover:text-brand-primary transition">
               Continuar comprando
             </a>
           </div>
@@ -171,10 +178,10 @@ export default function WineDetailPage() {
             <h2 className="font-serif text-xl font-bold mb-4">Você também pode gostar</h2>
             <div className="grid grid-cols-3 gap-4">
               {relatedWines.map((w) => (
-                <a key={w.id} href={`/catalogo/${w.id}`} className="bg-white rounded-2xl border border-stone-100 p-4 text-center active:scale-[0.98] transition-transform">
-                  <Image src={w.image_url || 'https://via.placeholder.com/300x400'} alt={w.name} width={300} height={400} sizes="(max-width: 768px) 33vw, 220px" className="w-full h-28 object-contain mix-blend-multiply mb-2" />
+                <a key={w.id} href={`/catalogo/${w.id}`} className="surface-card p-4 text-center active:scale-[0.98] transition-transform">
+                  <ProductImage src={w.image_url} alt={w.name} width={300} height={400} sizes="(max-width: 768px) 33vw, 220px" className="mb-2 h-28 w-full object-contain mix-blend-multiply" />
                   <p className="font-bold text-xs line-clamp-2">{w.name}</p>
-                  <p className="text-xs font-bold text-[#B91C1C] mt-1">{formatMoney(w.price)}</p>
+              <p className="mt-1 text-xs font-bold text-brand-primary">{formatMoney(w.price)}</p>
                 </a>
               ))}
             </div>

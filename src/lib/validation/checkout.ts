@@ -11,7 +11,7 @@ export const checkoutRequestSchema = z.object({
   deliveryMethod: z.string()
     .refine((value) => value === 'Retirada na Loja' || value.startsWith('Entrega no '))
     .transform((value) => value === 'Retirada na Loja' ? 'Retirada na Loja' : 'Entrega no Endereco'),
-  paymentMethod: z.enum(['Pix', 'Cartao (Link)', 'Cartao (Maquininha)']),
+  paymentMethod: z.enum(['Pix', 'Cartao (Link)']),
   deliveryAddress: z.string().trim().max(500).nullable().optional(),
   promotionCode: z.string().trim().max(40).nullable().optional(),
   deliveryZipCode: z.string().regex(/^\d{8}$/).nullable().optional(),

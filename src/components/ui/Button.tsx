@@ -10,13 +10,13 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantStyles = {
   primary:
-    'bg-[#B91C1C] text-white hover:bg-[#991B1B] active:bg-[#7F1D1D] shadow-lg shadow-red-900/20',
+    'bg-brand-primary text-white hover:bg-brand-primary-hover active:bg-brand-primary-dark shadow-lg shadow-red-900/20',
   secondary:
-    'bg-white text-[#1C1917] border border-[#E7E5E4] hover:bg-[#F9F7F4] active:bg-[#F5F5F4]',
+    'bg-brand-surface text-brand-ink border border-brand-border hover:bg-brand-surface-elevated active:bg-stone-100',
   ghost:
-    'bg-transparent text-[#57534E] hover:bg-[#F5F5F4] active:bg-[#E7E5E4]',
+    'bg-transparent text-brand-ink-light hover:bg-stone-100 active:bg-brand-border',
   danger:
-    'bg-[#DC2626] text-white hover:bg-[#B91C1C] active:bg-[#991B1B]',
+    'bg-red-600 text-white hover:bg-brand-primary active:bg-brand-primary-hover',
 };
 
 const sizeStyles = {
@@ -33,7 +33,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled || loading}
         className={`
           inline-flex items-center justify-center gap-2
-          font-bold rounded-xl
+          font-bold rounded-brand-lg
           transition-all duration-150 ease-in-out
           active:scale-[0.98]
           disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100

@@ -3,6 +3,7 @@ export type Wine = {
   name: string;
   description: string | null;
   price: number;
+  base_price?: number | null;
   image_url: string | null;
   type: string | null;
   region: string | null;
@@ -12,6 +13,10 @@ export type Wine = {
   product_code: string | null;
   published: boolean;
   created_at: string;
+  promotion_id?: string | null;
+  promotion_title?: string | null;
+  promotion_slug?: string | null;
+  discount_percent?: number | null;
 };
 
 export type Order = {

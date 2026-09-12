@@ -5,13 +5,13 @@
 See: .planning/PROJECT.md
 
 **Core value:** Proporcionar uma experiencia de compra de vinhos fluida, rapida e elegante, com maxima estabilidade e seguranca.
-**Current focus:** Auditoria de seguranca concluida; ajustes finais antes da producao estao adiados.
+**Current focus:** Checkout provisório com PIX/WhatsApp e cartão/WhatsApp; próxima etapa é validação operacional e definição futura do gateway.
 
 ## Current Position
 
 Phase: 5 of 5 plus production-readiness hardening
 Status: Audit and hardening completed; paused before production configuration
-Last activity: 2026-07-15 - Supabase hardening, live checkout/RLS verification, smoke and typecheck passed
+Last activity: 2026-09-08 - Hotfix remoto do checkout corrigiu erro 42501 de privilégios para PIX e cartão
 
 Progress: [##########] 100% of planned audit work
 
@@ -24,6 +24,8 @@ Progress: [##########] 100% of planned audit work
 - Security tests, static security checks, image optimization, admin pagination.
 - Live Supabase migrations and checkout/RLS verification.
 - Encoding fixes required by smoke checks.
+- Banner campaigns connected to the public catalog, with atomic persistence for images and promotion products.
+- Banner theme removed from the UI; button text color is configurable and persisted.
 
 ## Deferred before production
 

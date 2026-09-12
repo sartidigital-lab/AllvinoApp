@@ -3,7 +3,7 @@ import { createClient } from '@/utils/supabase/server';
 import { normalizePromotionCode } from '@/lib/promotions/rules';
 import { normalizeZipCode } from '@/lib/delivery/rules';
 import { checkoutRequestSchema } from '@/lib/validation/checkout';
-import { checkRateLimit, getClientKey, rateLimitResponse } from '@/lib/security/rateLimit';
+import { checkRateLimitDistributed, getClientKey, rateLimitResponse } from '@/lib/security/rateLimit';
 import { auditSecurityEvent } from '@/lib/security/audit';
 
 const checkoutMessages = [
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
   }
 
-  const limit = checkRateLimit(getClientKey(request, 'checkout', user.id), 10, 60_000);
+  const limit = await checkRateLimitDistributed(getClientKey(request, 'checkout', user.id), 10, 60_000);
   if (!limit.allowed) return rateLimitResponse(limit.retryAfter);
 
   let body: unknown;
@@ -90,7 +90,7 @@ export async function POST(request: Request) {
 
   const { data: order, error: orderError } = await supabase
     .from('orders')
-    .select('id,user_id,status,total_amount,created_at,delivery_type,payment_method,payment_provider,payment_status,payment_reference,payment_url,paid_at,payment_error,delivery_address,discount_amount,subtotal_amount,customer_name,customer_phone,promotion_code,delivery_zip_code,delivery_zone_name,delivery_estimate_days,shipping_fee,stock_reserved_at')
+    .select('id,user_id,status,total_amount,created_at,delivery_type,payment_method,payment_provider,payment_status,payment_reference,payment_url,paid_at,payment_error,delivery_address,discount_amount,subtotal_amount,customer_name,customer_phone,promotion_code,delivery_zip_code,delivery_zone_name,delivery_estimate_days,shipping_fee,stock_reserved_at,order_items(id,order_id,wine_id,product_id,product_name,quantity,unit_price)')
     .eq('id', orderId)
     .single();
 

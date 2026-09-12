@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
 import { toCurrentUser } from '@/lib/auth/userProfile';
 import { auditSecurityEvent } from '@/lib/security/audit';
-import { checkRateLimit, getClientKey, rateLimitResponse } from '@/lib/security/rateLimit';
+import { checkRateLimitDistributed, getClientKey, rateLimitResponse } from '@/lib/security/rateLimit';
 
 const profileUpdateSchema = z.object({
   nome: z.string().trim().min(1).max(120),
@@ -40,7 +40,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'Nao autenticado.' }, { status: 401 });
   }
 
-  const limit = checkRateLimit(getClientKey(request, 'profile-update', user.id), 10, 60_000);
+  const limit = await checkRateLimitDistributed(getClientKey(request, 'profile-update', user.id), 10, 60_000);
   if (!limit.allowed) return rateLimitResponse(limit.retryAfter);
 
   let body: unknown;

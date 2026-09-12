@@ -8,7 +8,6 @@ const nextConfig = {
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "*.supabase.co", pathname: "/**" },
-      { protocol: "https", hostname: "via.placeholder.com", pathname: "/**" },
     ],
   },
   turbopack: {

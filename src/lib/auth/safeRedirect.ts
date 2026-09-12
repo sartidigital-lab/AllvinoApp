@@ -1,4 +1,4 @@
-const allowedRedirects = new Set(['/', '/checkout', '/conta', '/admin']);
+const allowedRedirects = new Set(['/', '/checkout', '/conta', '/admin', '/recuperar-senha']);
 
 export function safeInternalRedirect(value: string | null | undefined, fallback = '/') {
   if (!value || !value.startsWith('/') || value.startsWith('//')) return fallback;

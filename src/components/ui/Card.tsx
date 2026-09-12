@@ -8,17 +8,17 @@ interface CardProps {
 
 const paddingStyles = {
   none: '',
-  sm: 'p-3',
-  md: 'p-5',
-  lg: 'p-6',
+  sm: 'p-brand-3',
+  md: 'p-brand-5',
+  lg: 'p-brand-6',
 };
 
 export function Card({ children, className = '', padding = 'md' }: CardProps) {
   return (
     <div
       className={`
-        bg-white border border-[#E7E5E4] rounded-xl
-        shadow-[0_1px_2px_rgba(0,0,0,0.04)]
+        bg-brand-surface border border-brand-border rounded-brand-lg
+        shadow-brand-sm
         ${paddingStyles[padding]}
         ${className}
       `}
@@ -38,9 +38,9 @@ export function CardHeader({ title, description, actions }: CardHeaderProps) {
   return (
     <div className="flex flex-wrap items-start justify-between gap-4">
       <div className="min-w-0">
-        <h3 className="font-bold text-[#1C1917]">{title}</h3>
+        <h3 className="font-bold text-brand-ink">{title}</h3>
         {description && (
-          <p className="mt-0.5 text-sm text-[#78716C]">{description}</p>
+          <p className="mt-0.5 text-sm text-brand-muted">{description}</p>
         )}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}

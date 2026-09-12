@@ -32,8 +32,8 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
           rounded-full transition-all duration-150
           ${
             variant === 'ghost'
-              ? 'text-[#1C1917] hover:bg-[#F5F5F4] active:bg-[#E7E5E4]'
-              : 'bg-[#B91C1C] text-white hover:bg-[#991B1B] active:bg-[#7F1D1D]'
+              ? 'text-brand-ink hover:bg-stone-100 active:bg-brand-border'
+              : 'bg-brand-primary text-white hover:bg-brand-primary-hover active:bg-brand-primary-dark'
           }
           ${sizeStyles[size]}
           ${className}
@@ -42,7 +42,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       >
         <span className={iconSizes[size]}>{icon}</span>
         {typeof badge === 'number' && badge > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 bg-[#B91C1C] text-white text-[9px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1 border-2 border-white">
+          <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full border-2 border-white bg-brand-primary px-1 text-[9px] font-bold flex items-center justify-center">
             {badge > 99 ? '99+' : badge}
           </span>
         )}

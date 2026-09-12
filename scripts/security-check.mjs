@@ -6,6 +6,7 @@ const orders = read('src/lib/database/orders.ts');
 const upload = read('src/app/api/admin/produtos/imagem/route.ts');
 const migration = read('supabase/migrations/20260714120000_harden_product_visibility_and_checkout.sql');
 const checkoutHardening = read('supabase/migrations/20260813213000_harden_checkout_and_stock_consistency.sql');
+const checkoutWrapperFix = read('supabase/migrations/20260908213000_fix_checkout_wrapper_privileges.sql');
 const adminHardening = read('supabase/migrations/20260816131908_harden_admin_authorization.sql');
 const productReadHardening = read('supabase/migrations/20260816134408_separate_public_and_admin_product_reads.sql');
 const stock = read('src/lib/database/stock.ts');
@@ -31,6 +32,10 @@ assert.match(checkoutHardening, /revoke insert on public\.order_items from authe
 assert.match(checkoutHardening, /Modalidade de entrega invalida/);
 assert.match(checkoutHardening, /new\.product_name := v_product_name/);
 assert.match(checkoutHardening, /set_manual_stock_level/);
+assert.match(checkoutWrapperFix, /alter function public\.create_order_with_stock_reservation[\s\S]*security definer[\s\S]*set search_path = ''/i);
+assert.match(checkoutWrapperFix, /revoke all on function public\.create_order_with_stock_reservation[\s\S]*from public, anon, authenticated/i);
+assert.match(checkoutWrapperFix, /grant execute on function public\.create_order_with_stock_reservation[\s\S]*to authenticated/i);
+assert.doesNotMatch(checkoutWrapperFix, /grant (?:usage|execute)[\s\S]*app_private[\s\S]*to authenticated/i);
 assert.match(adminHardening, /security definer[\s\S]*set search_path = ''/i);
 assert.match(adminHardening, /revoke truncate, references, trigger[\s\S]*from authenticated/i);
 assert.match(adminHardening, /revoke all on table public\.admin_users from anon, authenticated/i);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { CurrentUser, getCurrentUserFast } from '@/lib/auth/currentUser';
@@ -12,6 +13,15 @@ import {
 } from '@/lib/database/promotions';
 import { fetchDeliveryQuote } from '@/lib/database/delivery';
 import { calculateShippingFee, formatZipCode, normalizeZipCode } from '@/lib/delivery/rules';
+import { createPixPayload, createPixQrCode, getPixConfig } from '@/lib/payments/pix';
+import {
+  calculatePixDiscount,
+  getCardInstallmentOptions,
+  MAX_CARD_INSTALLMENTS,
+  MIN_CARD_INSTALLMENT_AMOUNT,
+  normalizeCardInstallments,
+} from '@/lib/payments/terms';
+import { buildCheckoutWhatsAppMessage, buildWhatsAppUrl } from '@/lib/payments/whatsapp';
 import { DeliveryZone, Promotion } from '@/types/database';
 
 const SALES_WHATSAPP_NUMBER = '5527992770952';
@@ -27,12 +37,14 @@ export default function CheckoutPage() {
   const [unsupportedZip, setUnsupportedZip] = useState<string | null>(null);
   const [isCheckingDelivery, setIsCheckingDelivery] = useState(false);
   const [pagamento, setPagamento] = useState('Pix');
+  const [installments, setInstallments] = useState(1);
   const [promotionCode, setPromotionCode] = useState('');
   const [appliedPromotion, setAppliedPromotion] = useState<Promotion | null>(null);
   const [promotionMessage, setPromotionMessage] = useState<string | null>(null);
   const [isCheckingPromotion, setIsCheckingPromotion] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
+  const [copyMessage, setCopyMessage] = useState<string | null>(null);
   const [successOrderId, setSuccessOrderId] = useState<string | null>(null);
   const [successSummary, setSuccessSummary] = useState<{
     total: number;
@@ -44,9 +56,13 @@ export default function CheckoutPage() {
     zoneName: string | null;
     estimateDays: number | null;
     payment: string;
+    installments: number | null;
     paymentProvider: string;
     paymentStatus: string;
     paymentUrl: string | null;
+    pixKey: string | null;
+    pixPayload: string | null;
+    pixQrCode: string | null;
     whatsappUrl: string;
     whatsappOpened: boolean;
     delivery: string;
@@ -56,13 +72,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     const fetchUser = async () => {
       const currentUser = await getCurrentUserFast();
-
-      if (!currentUser) {
-        window.location.assign('/?login=true&redirectTo=/checkout');
-        return;
-      }
-
-      setUser(currentUser);
+      if (currentUser) setUser(currentUser);
     };
 
     fetchUser();
@@ -70,9 +80,15 @@ export default function CheckoutPage() {
 
   const pickupDiscount = entrega === 'retirada' ? cartTotal * 0.1 : 0;
   const promotionDiscount = appliedPromotion ? calculatePromotionDiscount(appliedPromotion, cartTotal) : 0;
-  const discount = Math.min(cartTotal, pickupDiscount + promotionDiscount);
+  const nonPaymentDiscount = Math.min(cartTotal, pickupDiscount + promotionDiscount);
+  const pixDiscount = pagamento === 'Pix'
+    ? Math.min(calculatePixDiscount(cartTotal), cartTotal - nonPaymentDiscount)
+    : 0;
+  const discount = nonPaymentDiscount + pixDiscount;
   const shippingFee = entrega === 'entrega' && deliveryZone ? calculateShippingFee(deliveryZone, cartTotal) : 0;
   const finalTotal = cartTotal - discount + shippingFee;
+  const cardInstallmentOptions = getCardInstallmentOptions(finalTotal);
+  const selectedCardInstallments = normalizeCardInstallments(finalTotal, installments);
   const cartItemsMessage = cart.map((item) => `${item.quantity}x ${item.name}`).join('\n');
   const unsupportedZipWhatsAppUrl = unsupportedZip
     ? `https://wa.me/${SALES_WHATSAPP_NUMBER}?text=${encodeURIComponent(
@@ -125,6 +141,15 @@ export default function CheckoutPage() {
     setAppliedPromotion(null);
     setPromotionCode('');
     setPromotionMessage(null);
+  };
+
+  const copyPixValue = async (value: string, successMessage: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopyMessage(successMessage);
+    } catch {
+      setCopyMessage('Não foi possível copiar automaticamente. Selecione o valor e copie manualmente.');
+    }
   };
 
   const handleCalculateDelivery = async () => {
@@ -185,7 +210,19 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (!user) return;
+    if (!user) {
+      window.location.assign('/?login=true&mode=signup&redirectTo=/checkout');
+      return;
+    }
+
+    if (pagamento === 'Pix' && !getPixConfig().key) {
+      setCheckoutMessage('O pagamento via PIX ainda não está configurado. Escolha cartão ou fale com a loja.');
+      return;
+    }
+
+    const isCardPayment = pagamento === 'Cartao (Link)';
+    const whatsappWindow = window.open('about:blank', '_blank');
+    if (whatsappWindow) whatsappWindow.opener = null;
 
     setIsLoading(true);
 
@@ -201,48 +238,69 @@ export default function CheckoutPage() {
     );
 
     if (error || !order) {
+      whatsappWindow?.close();
       setCheckoutMessage(error?.message || 'Erro ao criar pedido. Tente novamente.');
       setIsLoading(false);
       return;
     }
 
-    const itensMsg = cart.map((item) => `*${item.quantity}x ${item.name}*`).join('\n');
-    let msg = `*NOVO PEDIDO - ALLVINO*\n\n*Cliente:* ${user.name}\n*WhatsApp:* ${user.phone || 'Não informado'}\n\n*ITENS DO PEDIDO:*\n${itensMsg}\n\n*Pagamento:* ${pagamento}\n*Modalidade:* ${entrega === 'retirada' ? 'Retirada na Loja (-10% OFF)' : 'Entrega no Endereço'}\n`;
+    const subtotal = order.subtotal_amount ?? cartTotal;
+    const orderDiscount = order.discount_amount || 0;
+    const orderShippingFee = order.shipping_fee || 0;
+    const orderInstallments = isCardPayment
+      ? normalizeCardInstallments(order.total_amount, installments)
+      : 1;
+    const msg = buildCheckoutWhatsAppMessage({
+      orderId: order.id,
+      customerName: user.name,
+      customerPhone: user.phone,
+      items: order.order_items.map((item) => ({
+        name: item.product_name || 'Produto',
+        quantity: item.quantity,
+        unitPrice: item.unit_price,
+      })),
+      paymentMethod: isCardPayment ? 'Cartao (Link)' : 'Pix',
+      installments: orderInstallments,
+      deliveryType: entrega === 'retirada' ? 'Retirada na loja (-10% OFF)' : 'Entrega no endereço',
+      deliveryAddress: entrega === 'entrega' ? (order.delivery_address || endereco) : null,
+      deliveryZipCode: order.delivery_zip_code ? formatZipCode(order.delivery_zip_code) : null,
+      deliveryZoneName: order.delivery_zone_name,
+      deliveryEstimateDays: order.delivery_estimate_days,
+      shippingFee: orderShippingFee,
+      subtotal,
+      discount: orderDiscount,
+      total: order.total_amount,
+      promotionCode: order.promotion_code,
+    });
 
-    if (order.promotion_code) {
-      msg += `*Cupom:* ${order.promotion_code}\n`;
-    }
-
-    if (entrega === 'entrega') {
-      msg += `*Endereço:* ${endereco}\n`;
-      if (order.delivery_zip_code) msg += `*CEP:* ${formatZipCode(order.delivery_zip_code)}\n`;
-      if (order.shipping_fee > 0) msg += `*Frete:* R$ ${order.shipping_fee.toFixed(2).replace('.', ',')}\n`;
-    }
-
-    msg += `\n*VALOR TOTAL: R$ ${order.total_amount.toFixed(2).replace('.', ',')}*`;
-
-    const link = `https://wa.me/${SALES_WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
-
-    const whatsappWindow = window.open('', '_blank');
+    const link = buildWhatsAppUrl(SALES_WHATSAPP_NUMBER, msg);
     if (whatsappWindow) {
-      whatsappWindow.opener = null;
       whatsappWindow.location.href = link;
     }
+
+    const pixPayload = pagamento === 'Pix' ? createPixPayload(order.total_amount) : null;
+    const pixQrCode = pixPayload
+      ? await createPixQrCode(pixPayload).catch(() => null)
+      : null;
     clearCart();
     setSuccessOrderId(order.id);
     setSuccessSummary({
       total: order.total_amount,
-      subtotal: order.subtotal_amount || cartTotal,
-      discount: order.discount_amount || 0,
+      subtotal,
+      discount: orderDiscount,
       promotionCode: order.promotion_code,
-      shippingFee: order.shipping_fee || 0,
+      shippingFee: orderShippingFee,
       zipCode: order.delivery_zip_code,
       zoneName: order.delivery_zone_name,
       estimateDays: order.delivery_estimate_days,
       payment: order.payment_method || pagamento,
+      installments: isCardPayment ? orderInstallments : null,
       paymentProvider: order.payment_provider,
       paymentStatus: order.payment_status,
       paymentUrl: order.payment_url,
+      pixKey: pagamento === 'Pix' ? getPixConfig().key : null,
+      pixPayload,
+      pixQrCode,
       whatsappUrl: link,
       whatsappOpened: whatsappWindow !== null,
       delivery: order.delivery_type,
@@ -250,10 +308,6 @@ export default function CheckoutPage() {
     });
     setIsLoading(false);
   };
-
-  if (!user) {
-    return <p className="text-center mt-20 animate-pulse font-bold">Carregando Checkout...</p>;
-  }
 
   if (successOrderId && successSummary) {
     return (
@@ -265,9 +319,13 @@ export default function CheckoutPage() {
           <div>
             <h1 className="text-3xl font-bold font-serif text-black">Pedido realizado</h1>
             <p className="mt-2 text-sm font-bold text-stone-500">
-              {successSummary.whatsappOpened
-                ? 'Abrimos o pedido no WhatsApp da Allvino. Agora é só enviar a mensagem e acompanhar o status na sua conta.'
-                : 'O navegador bloqueou a abertura do WhatsApp. Use o botão abaixo para enviar o pedido.'}
+              {successSummary.payment === 'Pix'
+                ? successSummary.whatsappOpened
+                  ? 'Abrimos o pedido no WhatsApp da Allvino. Envie a mensagem e faça o pagamento pelo QR Code, código copia e cola ou chave PIX.'
+                  : 'O navegador bloqueou o WhatsApp. Use o botão abaixo para enviar os detalhes do pedido e depois faça o pagamento via PIX.'
+                : successSummary.whatsappOpened
+                  ? 'Abrimos o pedido no WhatsApp da Allvino. A loja enviará o link de pagamento do cartão por lá.'
+                  : 'O navegador bloqueou a abertura do WhatsApp. Use o botão abaixo para enviar o pedido e receber o link do cartão.'}
             </p>
           </div>
           <p className="rounded-2xl bg-stone-50 px-4 py-3 text-xs font-bold uppercase tracking-widest text-stone-500">
@@ -278,6 +336,12 @@ export default function CheckoutPage() {
               <span className="font-bold text-stone-500">Pagamento</span>
               <span className="font-bold text-black">{successSummary.payment}</span>
             </div>
+            {successSummary.installments && (
+              <div className="flex justify-between gap-4">
+                <span className="font-bold text-stone-500">Parcelamento solicitado</span>
+                <span className="font-bold text-black">{successSummary.installments}x</span>
+              </div>
+            )}
             <div className="flex justify-between gap-4">
               <span className="font-bold text-stone-500">Status pagamento</span>
               <span className="text-right font-bold text-black">
@@ -309,10 +373,14 @@ export default function CheckoutPage() {
                 </span>
               </div>
             )}
-            {successSummary.shippingFee > 0 && (
+            {successSummary.delivery === 'Entrega no Endereco' && (
               <div className="flex justify-between gap-4">
                 <span className="font-bold text-stone-500">Frete</span>
-                <span className="font-bold text-black">R$ {successSummary.shippingFee.toFixed(2).replace('.', ',')}</span>
+                <span className="font-bold text-black">
+                  {successSummary.shippingFee > 0
+                    ? `R$ ${successSummary.shippingFee.toFixed(2).replace('.', ',')}`
+                    : 'Grátis'}
+                </span>
               </div>
             )}
             {successSummary.discount > 0 && (
@@ -333,6 +401,33 @@ export default function CheckoutPage() {
                 Abrir link de pagamento
               </a>
             )}
+            {successSummary.payment === 'Pix' && successSummary.pixPayload && (
+              <div className="space-y-3 rounded-xl border border-emerald-100 bg-emerald-50 p-4">
+                <p className="text-xs font-bold uppercase tracking-widest text-emerald-800">Pagamento via PIX</p>
+                {successSummary.pixQrCode && (
+                  <Image src={successSummary.pixQrCode} alt="QR Code para pagamento via PIX" width={224} height={224} unoptimized className="mx-auto h-56 w-56 rounded-lg bg-white p-2" />
+                )}
+                <p className="break-all rounded-lg bg-white p-3 text-[11px] font-bold text-stone-600">{successSummary.pixPayload}</p>
+                <p className="text-center text-xs font-bold text-emerald-800">Chave PIX: {successSummary.pixKey}</p>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => copyPixValue(successSummary.pixPayload!, 'Código PIX copia e cola copiado.')}
+                    className="rounded-xl bg-emerald-700 px-3 py-3 text-xs font-bold text-white"
+                  >
+                    Copiar código PIX
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => copyPixValue(successSummary.pixKey!, 'Chave PIX copiada.')}
+                    className="rounded-xl border border-emerald-200 bg-white px-3 py-3 text-xs font-bold text-emerald-800"
+                  >
+                    Copiar chave PIX
+                  </button>
+                </div>
+                {copyMessage && <p role="status" className="text-center text-xs font-bold text-emerald-800">{copyMessage}</p>}
+              </div>
+            )}
             <div className="flex justify-between gap-4 border-t border-stone-200 pt-2 text-base">
               <span className="font-bold text-black">Total</span>
               <span className="font-bold text-black">R$ {successSummary.total.toFixed(2).replace('.', ',')}</span>
@@ -345,9 +440,9 @@ export default function CheckoutPage() {
               rel="noreferrer"
               className="rounded-2xl bg-emerald-600 py-4 text-sm font-bold text-white"
             >
-              Enviar pedido pelo WhatsApp
+              Abrir pedido no WhatsApp
             </a>
-            <Link href="/conta" className="rounded-2xl bg-[#B91C1C] py-4 text-sm font-bold text-white">
+            <Link href="/conta" className="rounded-brand-2xl bg-brand-primary py-4 text-sm font-bold text-white">
               Ver meus pedidos
             </Link>
             <Link href="/catalogo" className="rounded-2xl border border-stone-200 py-4 text-sm font-bold text-stone-600">
@@ -388,10 +483,16 @@ export default function CheckoutPage() {
             <span>Subtotal</span>
             <span>R$ {cartTotal.toFixed(2).replace('.', ',')}</span>
           </div>
-          {discount > 0 && (
+          {nonPaymentDiscount > 0 && (
             <div className="flex justify-between text-sm text-green-600">
-              <span>Descontos</span>
-              <span>- R$ {discount.toFixed(2).replace('.', ',')}</span>
+              <span>Outros descontos</span>
+              <span>- R$ {nonPaymentDiscount.toFixed(2).replace('.', ',')}</span>
+            </div>
+          )}
+          {pixDiscount > 0 && (
+            <div className="flex justify-between text-sm font-bold text-green-600">
+              <span>Desconto PIX (10%)</span>
+              <span>- R$ {pixDiscount.toFixed(2).replace('.', ',')}</span>
             </div>
           )}
           {shippingFee > 0 && (
@@ -409,16 +510,22 @@ export default function CheckoutPage() {
 
       <div className="bg-white rounded-3xl p-6 border border-stone-100 shadow-sm space-y-5">
         <h2 className="text-xs font-bold text-stone-400 uppercase tracking-widest border-b pb-2">Seus Dados</h2>
-        <div className="grid grid-cols-1 gap-4">
-          <div>
-            <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest ml-1">Nome</label>
-            <input type="text" readOnly value={user.name} className="w-full border-stone-200 bg-stone-50 rounded-xl text-sm font-bold text-stone-500 mt-1 focus:ring-0" />
+        {user ? (
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest ml-1">Nome</label>
+              <input type="text" readOnly value={user.name} className="w-full border-stone-200 bg-stone-50 rounded-xl text-sm font-bold text-stone-500 mt-1 focus:ring-0" />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest ml-1">WhatsApp</label>
+              <input type="text" readOnly value={user.phone || 'Não informado'} className="w-full border-stone-200 bg-stone-50 rounded-xl text-sm font-bold text-stone-500 mt-1 focus:ring-0" />
+            </div>
           </div>
-          <div>
-            <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest ml-1">WhatsApp</label>
-            <input type="text" readOnly value={user.phone || 'Não informado'} className="w-full border-stone-200 bg-stone-50 rounded-xl text-sm font-bold text-stone-500 mt-1 focus:ring-0" />
-          </div>
-        </div>
+        ) : (
+          <p className="rounded-2xl bg-stone-50 p-4 text-sm font-bold text-stone-500">
+            Você pode montar o pedido sem cadastro. Ao enviar para pagamento, pediremos seu nome, WhatsApp, e-mail e senha para criar a conta.
+          </p>
+        )}
       </div>
 
       <div className="space-y-4">
@@ -535,8 +642,33 @@ export default function CheckoutPage() {
           >
             <option value="Pix">Pix (Rápido e Seguro)</option>
             <option value="Cartao (Link)">Cartão de Crédito (Link de Pagamento)</option>
-            <option value="Cartao (Maquininha)">Cartão (Levar maquininha)</option>
           </select>
+          {pagamento === 'Pix' ? (
+            <div className="space-y-2 rounded-2xl bg-emerald-50 p-4 text-xs font-bold text-emerald-800">
+              <p>Pagamento via PIX recebe 10% de desconto adicional.</p>
+              <p>Após criar o pedido, o WhatsApp será aberto com todos os detalhes. Envie a mensagem e pague pelo QR Code, copia e cola ou chave PIX.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <label className="block space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400">Parcelamento desejado</span>
+                <select
+                  value={selectedCardInstallments}
+                  onChange={(event) => setInstallments(Number(event.target.value))}
+                  className="w-full rounded-2xl border-stone-200 p-4 text-sm font-bold outline-none transition-colors focus:border-black"
+                >
+                  {cardInstallmentOptions.map((count) => (
+                    <option key={count} value={count}>
+                      {count}x sem juros — R$ {(finalTotal / count).toFixed(2).replace('.', ',')} por parcela
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <p className="text-xs font-bold text-stone-500">
+                Até {MAX_CARD_INSTALLMENTS}x sem juros, com parcela mínima de R$ {MIN_CARD_INSTALLMENT_AMOUNT.toFixed(2).replace('.', ',')}. O pedido completo será enviado ao WhatsApp para a loja retornar o link seguro do cartão.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -546,16 +678,28 @@ export default function CheckoutPage() {
             {checkoutMessage}
           </div>
         )}
-        <p className="text-center text-sm font-bold text-stone-500">O pedido será recebido em nosso WhatsApp.</p>
+        <p className="text-center text-sm font-bold text-stone-500">
+          {pagamento === 'Pix'
+            ? 'O pedido será registrado e aberto no WhatsApp antes da geração do PIX.'
+            : 'O pedido completo será enviado ao WhatsApp da loja.'}
+        </p>
         <button
           onClick={handleFinalizar}
           disabled={isLoading}
-          className="w-full bg-[#25D366] text-white py-5 rounded-3xl font-bold text-lg shadow-xl shadow-emerald-900/20 active:scale-95 transition-transform flex items-center justify-center gap-3 hover:bg-[#1ebe5d] disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-3 rounded-3xl bg-brand-whatsapp py-5 text-lg font-bold text-white shadow-xl shadow-emerald-900/20 transition-transform hover:bg-brand-whatsapp-hover active:scale-95 disabled:opacity-50"
         >
-          <svg aria-hidden="true" viewBox="0 0 32 32" className="h-6 w-6 fill-current">
-            <path d="M16.03 4C9.39 4 4 9.28 4 15.78c0 2.24.65 4.34 1.78 6.12L4.61 28l6.29-1.62A12.2 12.2 0 0 0 16.03 27C22.67 27 28 21.72 28 15.22 28 8.72 22.67 4 16.03 4Zm0 20.83c-1.66 0-3.28-.43-4.7-1.25l-.34-.2-3.73.96.99-3.55-.23-.37a9.36 9.36 0 0 1-1.49-5.07c0-5.3 4.38-9.62 9.76-9.62 5.37 0 9.19 4.02 9.19 9.49 0 5.3-4.09 9.61-9.45 9.61Zm5.37-7.2c-.29-.14-1.72-.83-1.99-.92-.27-.1-.46-.14-.66.14-.19.28-.76.92-.93 1.11-.17.19-.34.21-.63.07-.29-.14-1.23-.44-2.34-1.4-.86-.75-1.44-1.68-1.61-1.96-.17-.28-.02-.43.13-.57.13-.13.29-.34.43-.51.14-.16.19-.28.29-.47.1-.19.05-.35-.02-.5-.07-.14-.66-1.55-.9-2.13-.24-.56-.49-.49-.66-.5h-.56c-.19 0-.5.07-.76.35-.27.28-1 1-1 2.42 0 1.42 1.03 2.79 1.17 2.98.14.19 2.03 3.02 4.91 4.24.69.29 1.22.46 1.64.59.69.21 1.31.18 1.8.11.55-.08 1.72-.69 1.96-1.35.24-.67.24-1.24.17-1.35-.07-.11-.26-.18-.55-.32Z" />
-          </svg>
-          {isLoading ? 'ENVIANDO...' : 'ENVIAR PEDIDO'}
+          {pagamento === 'Pix' ? (
+            <span className="material-symbols-outlined text-[26px]">qr_code_2</span>
+          ) : (
+            <svg aria-hidden="true" viewBox="0 0 32 32" className="h-6 w-6 fill-current">
+              <path d="M16.03 4C9.39 4 4 9.28 4 15.78c0 2.24.65 4.34 1.78 6.12L4.61 28l6.29-1.62A12.2 12.2 0 0 0 16.03 27C22.67 27 28 21.72 28 15.22 28 8.72 22.67 4 16.03 4Zm0 20.83c-1.66 0-3.28-.43-4.7-1.25l-.34-.2-3.73.96.99-3.55-.23-.37a9.36 9.36 0 0 1-1.49-5.07c0-5.3 4.38-9.62 9.76-9.62 5.37 0 9.19 4.02 9.19 9.49 0 5.3-4.09 9.61-9.45 9.61Zm5.37-7.2c-.29-.14-1.72-.83-1.99-.92-.27-.1-.46-.14-.66.14-.19.28-.76.92-.93 1.11-.17.19-.34.21-.63.07-.29-.14-1.23-.44-2.34-1.4-.86-.75-1.44-1.68-1.61-1.96-.17-.28-.02-.43.13-.57.13-.13.29-.34.43-.51.14-.16.19-.28.29-.47.1-.19.05-.35-.02-.5-.07-.14-.66-1.55-.9-2.13-.24-.56-.49-.49-.66-.5h-.56c-.19 0-.5.07-.76.35-.27.28-1 1-1 2.42 0 1.42 1.03 2.79 1.17 2.98.14.19 2.03 3.02 4.91 4.24.69.29 1.22.46 1.64.59.69.21 1.31.18 1.8.11.55-.08 1.72-.69 1.96-1.35.24-.67.24-1.24.17-1.35-.07-.11-.26-.18-.55-.32Z" />
+            </svg>
+          )}
+          {isLoading
+            ? 'PROCESSANDO...'
+            : pagamento === 'Pix'
+              ? 'GERAR PIX E ENVIAR PEDIDO'
+              : 'SOLICITAR LINK NO WHATSAPP'}
         </button>
       </div>
     </main>

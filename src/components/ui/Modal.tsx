@@ -63,12 +63,12 @@ interface ModalHeaderProps {
 
 export function ModalHeader({ title, onClose }: ModalHeaderProps) {
   return (
-    <div className="flex items-center justify-between p-6 border-b border-[#E7E5E4]">
-      <h2 className="text-xl font-bold text-[#1C1917]">{title}</h2>
+    <div className="flex items-center justify-between border-b border-brand-border p-6">
+      <h2 className="text-xl font-bold text-brand-ink">{title}</h2>
       {onClose && (
         <button
           onClick={onClose}
-          className="p-2 text-[#78716C] hover:text-[#1C1917] hover:bg-[#F5F5F4] rounded-full transition-colors"
+          className="rounded-full p-2 text-brand-muted hover:bg-stone-100 hover:text-brand-ink transition-colors"
         >
           <span className="material-symbols-outlined">close</span>
         </button>
@@ -83,7 +83,7 @@ export function ModalBody({ children }: { children: ReactNode }) {
 
 export function ModalFooter({ children }: { children: ReactNode }) {
   return (
-    <div className="p-6 border-t border-[#E7E5E4] bg-[#F9F7F4] rounded-b-2xl">
+    <div className="rounded-b-brand-2xl border-t border-brand-border bg-brand-surface-elevated p-6">
       {children}
     </div>
   );

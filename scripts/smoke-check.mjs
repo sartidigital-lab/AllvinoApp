@@ -30,7 +30,7 @@ const checks = [
   },
   {
     file: 'src/app/checkout/page.tsx',
-    includes: ['5527992770952', 'O pedido será recebido em nosso WhatsApp', 'Pedido realizado', 'createOrder', 'fetchActivePromotionByCode', 'fetchDeliveryQuote', 'Consultar atendimento pelo WhatsApp', 'Cupom', 'CEP'],
+    includes: ['5527992770952', 'O pedido completo será enviado ao WhatsApp da loja', 'GERAR PIX E ENVIAR PEDIDO', 'Pedido realizado', 'createOrder', 'calculatePixDiscount', 'getCardInstallmentOptions', 'fetchActivePromotionByCode', 'fetchDeliveryQuote', 'Consultar atendimento pelo WhatsApp', 'Cupom', 'CEP'],
   },
   {
     file: 'src/app/conta/page.tsx',

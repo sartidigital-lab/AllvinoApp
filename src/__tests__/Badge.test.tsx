@@ -11,38 +11,38 @@ describe('Badge', () => {
   it('applies default variant styles', () => {
     render(<Badge>Default</Badge>);
     const badge = screen.getByText('Default');
-    expect(badge.className).toContain('bg-[#F5F5F4]');
+    expect(badge.className).toContain('bg-stone-100');
   });
 
   it('applies primary variant styles', () => {
     render(<Badge variant="primary">Primary</Badge>);
     const badge = screen.getByText('Primary');
-    expect(badge.className).toContain('bg-[#B91C1C]');
+    expect(badge.className).toContain('bg-brand-primary');
     expect(badge.className).toContain('text-white');
   });
 
   it('applies success variant styles', () => {
     render(<Badge variant="success">Success</Badge>);
     const badge = screen.getByText('Success');
-    expect(badge.className).toContain('bg-[#F0FDF4]');
+    expect(badge.className).toContain('bg-green-50');
   });
 
   it('applies warning variant styles', () => {
     render(<Badge variant="warning">Warning</Badge>);
     const badge = screen.getByText('Warning');
-    expect(badge.className).toContain('bg-[#FFFBEB]');
+    expect(badge.className).toContain('bg-amber-50');
   });
 
   it('applies danger variant styles', () => {
     render(<Badge variant="danger">Danger</Badge>);
     const badge = screen.getByText('Danger');
-    expect(badge.className).toContain('bg-[#FEF2F2]');
+    expect(badge.className).toContain('bg-red-50');
   });
 
   it('applies info variant styles', () => {
     render(<Badge variant="info">Info</Badge>);
     const badge = screen.getByText('Info');
-    expect(badge.className).toContain('bg-[#EFF6FF]');
+    expect(badge.className).toContain('bg-blue-50');
   });
 
   it('applies sm size styles', () => {

@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { safeInternalRedirect } from '@/lib/auth/safeRedirect';
 import { checkRateLimit } from '@/lib/security/rateLimit';
 import { checkoutRequestSchema } from '@/lib/validation/checkout';
+import { getPasswordPolicyError } from '@/lib/auth/passwordPolicy';
 
 describe('security controls', () => {
   it('allows only known internal redirects', () => {
     expect(safeInternalRedirect('/checkout')).toBe('/checkout');
     expect(safeInternalRedirect('/conta?tab=orders')).toBe('/conta?tab=orders');
+    expect(safeInternalRedirect('/recuperar-senha')).toBe('/recuperar-senha');
     expect(safeInternalRedirect('https://evil.example')).toBe('/');
     expect(safeInternalRedirect('//evil.example')).toBe('/');
     expect(safeInternalRedirect('/admin/users')).toBe('/');
@@ -30,5 +32,12 @@ describe('security controls', () => {
     expect(checkRateLimit(key, 2, 60_000).allowed).toBe(true);
     expect(checkRateLimit(key, 2, 60_000).allowed).toBe(true);
     expect(checkRateLimit(key, 2, 60_000).allowed).toBe(false);
+  });
+
+  it('matches the Supabase password character policy before submission', () => {
+    expect(getPasswordPolicyError('abcdefgh')).toContain('maiúscula');
+    expect(getPasswordPolicyError('Abcdefgh')).toContain('número');
+    expect(getPasswordPolicyError('Abcdefg1')).toContain('símbolo');
+    expect(getPasswordPolicyError('Abcdefg1!')).toBeNull();
   });
 });

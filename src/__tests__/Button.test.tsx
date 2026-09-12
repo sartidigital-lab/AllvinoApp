@@ -37,13 +37,13 @@ describe('Button', () => {
   it('applies primary variant styles by default', () => {
     render(<Button>Primary</Button>);
     const button = screen.getByRole('button');
-    expect(button.className).toContain('bg-[#B91C1C]');
+    expect(button.className).toContain('bg-brand-primary');
   });
 
   it('applies secondary variant styles', () => {
     render(<Button variant="secondary">Secondary</Button>);
     const button = screen.getByRole('button');
-    expect(button.className).toContain('bg-white');
+    expect(button.className).toContain('bg-brand-surface');
   });
 
   it('applies ghost variant styles', () => {
@@ -55,7 +55,7 @@ describe('Button', () => {
   it('applies danger variant styles', () => {
     render(<Button variant="danger">Danger</Button>);
     const button = screen.getByRole('button');
-    expect(button.className).toContain('bg-[#DC2626]');
+    expect(button.className).toContain('bg-red-600');
   });
 
   it('applies sm size styles', () => {

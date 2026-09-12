@@ -154,10 +154,49 @@ if (!Number.isInteger(quantity) || quantity <= 0) {
   throw new Error('CHECKOUT_TEST_QUANTITY must be a positive integer.');
 }
 
+const privileges = firstRow(
+  `
+    select
+      procedure.prosecdef as wrapper_security_definer,
+      has_function_privilege(
+        'authenticated',
+        'public.create_order_with_stock_reservation(jsonb,text,text,text,text,text,text,text)',
+        'EXECUTE'
+      ) as authenticated_can_execute_wrapper,
+      has_function_privilege(
+        'anon',
+        'public.create_order_with_stock_reservation(jsonb,text,text,text,text,text,text,text)',
+        'EXECUTE'
+      ) as anon_can_execute_wrapper,
+      has_function_privilege(
+        'authenticated',
+        'app_private.create_order_with_stock_reservation(jsonb,text,text,text,text,text,text,text)',
+        'EXECUTE'
+      ) as authenticated_can_execute_private
+    from pg_proc procedure
+    join pg_namespace namespace on namespace.oid = procedure.pronamespace
+    where namespace.nspname = 'public'
+      and procedure.proname = 'create_order_with_stock_reservation'
+      and pg_get_function_identity_arguments(procedure.oid) = 'p_cart_items jsonb, p_delivery_method text, p_payment_method text, p_delivery_address text, p_promotion_code text, p_delivery_zip_code text, p_customer_name text, p_customer_phone text';
+  `,
+  'Checkout RPC privileges'
+);
+
+const privilegeFailures = [];
+if (!privileges.wrapper_security_definer) privilegeFailures.push('wrapper_security_definer=false');
+if (!privileges.authenticated_can_execute_wrapper) privilegeFailures.push('authenticated wrapper execute=false');
+if (privileges.anon_can_execute_wrapper) privilegeFailures.push('anonymous wrapper execute=true');
+if (privileges.authenticated_can_execute_private) privilegeFailures.push('authenticated private execute=true');
+if (privilegeFailures.length > 0) {
+  throw new Error(`Checkout RPC privilege verification failed: ${privilegeFailures.join(', ')}`);
+}
+
 const created = firstRow(
   `
-    with claims as (
-      select set_config('request.jwt.claim.sub', ${sqlString(userId)}, true)
+    with auth_context as materialized (
+      select
+        set_config('request.jwt.claim.sub', ${sqlString(userId)}, true) as subject,
+        set_config('role', 'authenticated', true) as database_role
     )
     select public.create_order_with_stock_reservation(
       jsonb_build_array(
@@ -175,7 +214,7 @@ const created = firstRow(
       'Teste Checkout Allvino',
       '27999999999'
     ) as order_id
-    from claims;
+    from auth_context;
   `,
   'Created checkout test order'
 );
@@ -207,7 +246,8 @@ try {
   );
 
   const expectedSubtotal = Number(product.preco) * quantity;
-  const expectedDiscount = Number((expectedSubtotal * 0.1).toFixed(2));
+  // The controlled test uses PIX + store pickup: 10% for each incentive.
+  const expectedDiscount = Number((expectedSubtotal * 0.2).toFixed(2));
   const expectedTotal = Number((expectedSubtotal - expectedDiscount).toFixed(2));
   const actualTotal = Number(details.total_amount);
   const actualSubtotal = Number(details.subtotal_amount);

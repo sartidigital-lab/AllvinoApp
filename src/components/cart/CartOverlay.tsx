@@ -2,8 +2,8 @@
 
 import { useCart } from '@/context/CartContext';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { IconButton, Button, Checkbox, EmptyState } from '@/components/ui';
+import { useEffect, useRef, useState } from 'react';
+import { Button, Checkbox, EmptyState, IconButton, ProductImage } from '@/components/ui';
 import { usePathname } from 'next/navigation';
 import { X } from 'lucide-react';
 
@@ -11,6 +11,8 @@ export function CartOverlay() {
   const { cart, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, cartTotal } = useCart();
   const [retirada, setRetirada] = useState(false);
   const pathname = usePathname();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   const discount = retirada ? cartTotal * 0.10 : 0;
   const finalTotal = cartTotal - discount;
@@ -18,6 +20,49 @@ export function CartOverlay() {
   useEffect(() => {
     setIsCartOpen(false);
   }, [pathname, setIsCartOpen]);
+
+  useEffect(() => {
+    if (!isCartOpen) return;
+
+    const previousActiveElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    closeButtonRef.current?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsCartOpen(false);
+        return;
+      }
+
+      if (event.key !== 'Tab' || !panelRef.current) return;
+
+      const focusableElements = Array.from(
+        panelRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      );
+      if (focusableElements.length === 0) return;
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previousActiveElement?.focus();
+    };
+  }, [isCartOpen, setIsCartOpen]);
 
   if (!isCartOpen) return null;
 
@@ -30,10 +75,17 @@ export function CartOverlay() {
       ></div>
       
       {/* Panel */}
-      <div className="relative w-full max-w-md h-full bg-white flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cart-title"
+        className="relative flex h-full w-full max-w-md flex-col bg-white shadow-2xl animate-in slide-in-from-right duration-300"
+      >
         <div className="p-6 border-b flex justify-between items-center">
-          <h2 className="text-xl font-bold">Sua Seleção</h2>
+          <h2 id="cart-title" className="text-xl font-bold">Sua Seleção</h2>
           <IconButton
+            ref={closeButtonRef}
             icon={<X className="h-5 w-5" aria-hidden="true" />}
             aria-label="Fechar carrinho"
             onClick={() => setIsCartOpen(false)}
@@ -46,12 +98,13 @@ export function CartOverlay() {
           ) : (
             cart.map((item) => (
               <div key={item.id} className="flex gap-4 items-center border-b pb-4">
-                <img 
-                  loading="lazy"
-                  decoding="async"
-                  src={item.image_url || 'https://via.placeholder.com/300x400'} 
+                <ProductImage
+                  src={item.image_url}
                   alt={item.name}
-                  className="w-16 h-20 object-contain mix-blend-multiply"
+                  width={64}
+                  height={80}
+                  sizes="64px"
+                  className="h-20 w-16 object-contain mix-blend-multiply"
                 />
                 <div className="flex-1">
                   <p className="font-bold text-sm line-clamp-2">{item.name}</p>
@@ -60,20 +113,23 @@ export function CartOverlay() {
                 <div className="flex items-center gap-2">
                   <button 
                     onClick={() => updateQuantity(item.id, -1)} 
-                    className="w-6 h-6 border rounded font-bold hover:bg-stone-100 flex items-center justify-center"
+                    aria-label={`Diminuir quantidade de ${item.name}`}
+                    className="flex h-10 w-10 items-center justify-center rounded-lg border font-bold hover:bg-stone-100"
                   >
                     -
                   </button>
-                  <span className="text-xs font-bold w-4 text-center">{item.quantity}</span>
+                  <span className="w-6 text-center text-sm font-bold" aria-label={`Quantidade: ${item.quantity}`}>{item.quantity}</span>
                   <button 
                     onClick={() => updateQuantity(item.id, 1)} 
-                    className="w-6 h-6 border rounded font-bold hover:bg-stone-100 flex items-center justify-center"
+                    aria-label={`Aumentar quantidade de ${item.name}`}
+                    className="flex h-10 w-10 items-center justify-center rounded-lg border font-bold hover:bg-stone-100"
                   >
                     +
                   </button>
                   <button 
                     onClick={() => removeFromCart(item.id)} 
-                    className="text-stone-300 hover:text-red-500 ml-1 flex items-center justify-center" 
+                    aria-label={`Remover ${item.name} do carrinho`}
+                    className="ml-1 flex h-10 w-10 items-center justify-center text-stone-300 hover:text-red-500"
                     title="Remover"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5">

@@ -99,7 +99,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
       return [...prev, { ...safeWine, quantity: 1 }];
     });
-    setIsCartOpen(true);
   };
 
   const addManyToCart = (items: CartItem[]) => {
@@ -123,7 +122,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
       return next;
     });
-    setIsCartOpen(true);
   };
 
   const removeFromCart = (id: string) => {

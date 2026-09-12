@@ -1,10 +1,13 @@
 'use client'
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { createClient } from '../../utils/supabase/client'
 import { safeInternalRedirect } from '@/lib/auth/safeRedirect'
-import { Modal, ModalHeader, ModalBody, Input, Button, IconButton } from '@/components/ui'
+import { getPasswordPolicyError } from '@/lib/auth/passwordPolicy'
+import { Modal, ModalHeader, ModalBody, Input, Button } from '@/components/ui'
+
+type AuthMode = 'login' | 'signup'
 
 export function AuthModal() {
   const searchParams = useSearchParams()
@@ -12,32 +15,54 @@ export function AuthModal() {
   const pathname = usePathname()
   const isLoginOpen = searchParams.get('login') === 'true'
   const redirectTo = safeInternalRedirect(searchParams.get('redirectTo'))
+  const requestedMode: AuthMode = searchParams.get('mode') === 'signup' ? 'signup' : 'login'
 
+  const [mode, setMode] = useState<AuthMode>(requestedMode)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [passwordConfirmation, setPasswordConfirmation] = useState('')
+  const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
 
   const supabase = createClient()
+
+  useEffect(() => {
+    setMode(requestedMode)
+  }, [requestedMode])
 
   const closeModal = () => {
     const params = new URLSearchParams(searchParams)
     params.delete('login')
+    params.delete('mode')
     const newUrl = pathname + (params.toString() ? `?${params.toString()}` : '')
     router.replace(newUrl, { scroll: false })
   }
 
-  const handleEmailLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const switchMode = (nextMode: AuthMode) => {
+    setMode(nextMode)
+    setError(null)
+    setNotice(null)
+    const params = new URLSearchParams(searchParams)
+    params.set('login', 'true')
+    params.set('mode', nextMode)
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+  }
+
+  const handleEmailLogin = async (event: FormEvent) => {
+    event.preventDefault()
     setLoading(true)
     setError(null)
+    setNotice(null)
 
     try {
       const timeout = new Promise<never>((_, reject) => {
         window.setTimeout(() => reject(new Error('Tempo esgotado. Verifique sua conexão e tente novamente.')), 15000)
       })
 
-      const { error } = await Promise.race([
+      const { error: loginError } = await Promise.race([
         supabase.auth.signInWithPassword({
           email: email.trim(),
           password,
@@ -45,8 +70,8 @@ export function AuthModal() {
         timeout,
       ])
 
-      if (error) {
-        setError(error.message)
+      if (loginError) {
+        setError(loginError.message)
         return
       }
 
@@ -60,78 +85,149 @@ export function AuthModal() {
     }
   }
 
+  const handleEmailSignUp = async (event: FormEvent) => {
+    event.preventDefault()
+    setLoading(true)
+    setError(null)
+    setNotice(null)
+
+    const passwordError = getPasswordPolicyError(password)
+    if (passwordError) {
+      setError(passwordError)
+      setLoading(false)
+      return
+    }
+
+    if (password !== passwordConfirmation) {
+      setError('A confirmação da senha não confere.')
+      setLoading(false)
+      return
+    }
+
+    try {
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          data: {
+            nome_completo: name.trim(),
+            telefone: phone.trim(),
+          },
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
+        },
+      })
+
+      if (signUpError) {
+        setError(signUpError.message)
+        return
+      }
+
+      if (!data.session) {
+        setNotice('Cadastro criado. Verifique seu e-mail para confirmar a conta e continuar.')
+        return
+      }
+
+      closeModal()
+      router.replace(redirectTo)
+      router.refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Não foi possível criar o cadastro agora.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handlePasswordReset = async () => {
+    setLoading(true)
+    setError(null)
+    setNotice(null)
+
+    if (!email.trim()) {
+      setError('Informe seu e-mail para receber o link de redefinição.')
+      setLoading(false)
+      return
+    }
+
+    try {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/auth/callback?next=/recuperar-senha`,
+      })
+
+      if (resetError) {
+        setError(resetError.message)
+        return
+      }
+
+      setNotice('Se o e-mail estiver cadastrado, enviaremos um link para redefinir sua senha.')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Não foi possível solicitar a redefinição agora.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleGoogleLogin = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
       },
     })
-    
-    if (error) {
-      setError(error.message)
-    }
+
+    if (oauthError) setError(oauthError.message)
   }
 
   return (
     <Modal isOpen={isLoginOpen} onClose={closeModal}>
-      <ModalHeader title="Entrar no Allvino" onClose={closeModal} />
+      <ModalHeader title={mode === 'signup' ? 'Criar cadastro no Allvino' : 'Entrar no Allvino'} onClose={closeModal} />
       <ModalBody>
-        <form onSubmit={handleEmailLogin} className="space-y-4">
-          <Input
-            label="E-mail"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            placeholder="seu@email.com"
-          />
-          <Input
-            label="Senha"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            placeholder="••••••••"
-          />
-          
-          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-          
-          <Button
-            type="submit"
-            disabled={loading}
-            loading={loading}
-            className="w-full"
-          >
-            {loading ? 'Entrando...' : 'Entrar'}
+        <div className="mb-5 flex rounded-xl bg-stone-100 p-1 text-sm font-bold">
+          <button type="button" onClick={() => switchMode('login')} className={`flex-1 rounded-lg px-3 py-2 ${mode === 'login' ? 'bg-white text-black shadow-sm' : 'text-stone-500'}`}>
+            Entrar
+          </button>
+          <button type="button" onClick={() => switchMode('signup')} className={`flex-1 rounded-lg px-3 py-2 ${mode === 'signup' ? 'bg-white text-black shadow-sm' : 'text-stone-500'}`}>
+            Criar cadastro
+          </button>
+        </div>
+
+        <form onSubmit={mode === 'signup' ? handleEmailSignUp : handleEmailLogin} className="space-y-4">
+          {mode === 'signup' && (
+            <>
+              <Input label="Nome completo" type="text" value={name} onChange={(event) => setName(event.target.value)} required minLength={2} placeholder="Seu nome" />
+              <Input label="WhatsApp" type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} required minLength={8} placeholder="(00) 00000-0000" />
+            </>
+          )}
+
+          <Input label="E-mail" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required placeholder="seu@email.com" />
+          <Input label="Senha" type="password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={8} placeholder="Mínimo de 8 caracteres" />
+
+          {mode === 'signup' && (
+            <Input label="Confirmar senha" type="password" value={passwordConfirmation} onChange={(event) => setPasswordConfirmation(event.target.value)} required minLength={8} placeholder="Repita sua senha" />
+          )}
+
+          {error && <p className="text-center text-sm text-red-600">{error}</p>}
+          {notice && <p className="text-center text-sm font-bold text-emerald-700">{notice}</p>}
+
+          <Button type="submit" disabled={loading} loading={loading} className="w-full">
+            {loading ? 'Aguarde...' : mode === 'signup' ? 'Criar cadastro' : 'Entrar'}
           </Button>
         </form>
 
+        {mode === 'login' && (
+          <button type="button" onClick={handlePasswordReset} disabled={loading} className="mt-4 w-full text-center text-sm font-bold text-stone-500 underline hover:text-black">
+            Esqueci minha senha
+          </button>
+        )}
+
         <div className="mt-6">
           <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Ou continue com</span>
-            </div>
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-300" /></div>
+            <div className="relative flex justify-center text-sm"><span className="bg-white px-2 text-gray-500">Ou continue com</span></div>
           </div>
 
-          <div className="mt-6">
-            <Button
-              variant="secondary"
-              onClick={handleGoogleLogin}
-              className="w-full"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
-                <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-              </svg>
-              Google
-            </Button>
-          </div>
+          <Button variant="secondary" onClick={handleGoogleLogin} className="mt-6 w-full">
+            Google
+          </Button>
         </div>
       </ModalBody>
     </Modal>

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
-import { checkRateLimit, getClientKey, rateLimitResponse } from '@/lib/security/rateLimit';
+import { checkRateLimitDistributed, getClientKey, rateLimitResponse } from '@/lib/security/rateLimit';
 
 const orderSelect = 'id,user_id,status,total_amount,created_at,delivery_type,payment_method,payment_provider,payment_status,payment_reference,payment_url,paid_at,payment_error,delivery_address,discount_amount,subtotal_amount,customer_name,customer_phone,promotion_code,delivery_zip_code,delivery_zone_name,delivery_estimate_days,shipping_fee,stock_reserved_at,order_items(id,order_id,wine_id,product_id,product_name,quantity,unit_price)';
 
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Nao autenticado.' }, { status: 401 });
   }
 
-  const limit = checkRateLimit(getClientKey(request, 'customer-orders', user.id), 60, 60_000);
+  const limit = await checkRateLimitDistributed(getClientKey(request, 'customer-orders', user.id), 60, 60_000);
   if (!limit.allowed) return rateLimitResponse(limit.retryAfter);
 
   const { data, error } = await supabase

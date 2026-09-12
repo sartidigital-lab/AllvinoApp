@@ -9,3 +9,4 @@ export { Skeleton, WineCardSkeleton, WineDetailSkeleton } from './Skeleton';
 export { EmptyState } from './EmptyState';
 export { PageTransition, StaggerChildren } from './PageTransition';
 export { ListItem } from './ListItem';
+export { ProductImage, PRODUCT_PLACEHOLDER } from './ProductImage';

@@ -7,6 +7,7 @@ import { fetchStockLevelByCode, fetchStockLevelsByCodes, importStockLevels, norm
 import { readStockImportRows } from '@/lib/stock/importFile';
 import { createClient } from '@/utils/supabase/client';
 import { Wine } from '@/types/database';
+import { ProductImage } from '@/components/ui';
 
 type WineForm = {
   name: string;
@@ -395,7 +396,7 @@ export default function AdminCatalogPage() {
 
         if (manualStockError) {
           const detail = getErrorMessage(manualStockError);
-          setMessage(`Produto salvo, mas nao foi possivel atualizar a base de estoque manual.${detail ? ` Detalhe: ${detail}` : ''}`);
+          setMessage(`Produto salvo, mas não foi possível atualizar a base de estoque manual.${detail ? ` Detalhe: ${detail}` : ''}`);
           await loadWines();
           return;
         }
@@ -537,7 +538,7 @@ export default function AdminCatalogPage() {
               <input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black" />
             </label>
             <label className="space-y-1">
-              <span className="text-xs font-bold uppercase text-stone-400">Preco</span>
+              <span className="text-xs font-bold uppercase text-stone-400">Preço</span>
               <input type="number" min="0" step="0.01" value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black" />
             </label>
             <label className="space-y-1">
@@ -592,7 +593,7 @@ export default function AdminCatalogPage() {
                 <div className="flex items-center gap-3">
                   <div className="flex h-24 w-20 shrink-0 items-center justify-center rounded bg-stone-50">
                     {form.image_url ? (
-                      <img loading="lazy" decoding="async" src={form.image_url} alt="Preview do produto" className="h-full w-full object-contain rounded" />
+                      <ProductImage src={form.image_url} alt="Preview do produto" width={80} height={96} sizes="80px" className="h-full w-full rounded object-contain" />
                     ) : (
                       <span className="material-symbols-outlined text-stone-300">image</span>
                     )}
@@ -687,7 +688,7 @@ export default function AdminCatalogPage() {
                 return (
                   <article key={wine.id} className={`rounded-lg border bg-white p-4 transition-opacity ${wine.published ? 'border-stone-100' : 'border-stone-200 opacity-70'}`}>
                     <div className="flex gap-3">
-                      <img loading="lazy" decoding="async" src={wine.image_url || 'https://via.placeholder.com/50x150'} alt={wine.name} className="h-24 w-16 shrink-0 rounded bg-stone-50 object-contain" />
+                      <ProductImage src={wine.image_url} alt={wine.name} width={64} height={96} sizes="64px" className="h-24 w-16 shrink-0 rounded bg-stone-50 object-contain" />
                       <div className="min-w-0 flex-1">
                         <p className="line-clamp-2 text-sm font-bold text-black">{wine.name}</p>
                         <p className="mt-1 text-xs font-bold text-stone-400">{wine.product_code || 'Sem código'}</p>
@@ -731,7 +732,7 @@ export default function AdminCatalogPage() {
                   <tr className="bg-[#FDFBF7] text-stone-500 text-xs uppercase tracking-wider border-b border-stone-100">
                     <th className="p-4 font-bold">Produto</th>
                     <th className="p-4 font-bold">Tipo / País</th>
-                    <th className="p-4 font-bold">Preco</th>
+                    <th className="p-4 font-bold">Preço</th>
                     <th className="p-4 font-bold">Estoque</th>
                     <th className="p-4 font-bold">Vínculo estoque</th>
                     <th className="p-4 font-bold">Status</th>
@@ -746,7 +747,7 @@ export default function AdminCatalogPage() {
                     <tr key={wine.id} className={`transition-colors ${wine.published ? 'hover:bg-stone-50' : 'bg-stone-50/50 opacity-70'}`}>
                       <td className="p-4">
                         <div className="flex items-center gap-4 min-w-72">
-                          <img loading="lazy" decoding="async" src={wine.image_url || 'https://via.placeholder.com/50x150'} alt={wine.name} className="h-16 w-12 object-contain bg-stone-50 rounded" />
+                          <ProductImage src={wine.image_url} alt={wine.name} width={48} height={64} sizes="48px" className="h-16 w-12 rounded bg-stone-50 object-contain" />
                           <div>
                             <p className="font-bold text-black">{wine.name}</p>
                             <p className="text-xs text-stone-400 font-bold">{wine.product_code || 'Sem código'} | {wine.grape || 'Uva'} | {wine.category || 'País'} | {wine.region || 'Região'}</p>

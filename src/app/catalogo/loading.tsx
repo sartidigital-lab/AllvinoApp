@@ -2,7 +2,7 @@ import { Skeleton, WineCardSkeleton } from '@/components/ui';
 
 export default function CatalogoLoading() {
   return (
-    <main className="min-h-screen bg-[#FDFBF7] pb-24">
+    <main className="min-h-screen bg-brand-bg pb-24">
       <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-stone-100">
         <div className="flex items-center justify-between px-4 py-3">
           <Skeleton className="h-6 w-24 rounded-lg" />

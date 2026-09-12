@@ -7,7 +7,7 @@ import './globals.css';
 
 export const metadata = {
   title: 'Allvino App',
-  description: 'Aplicativo de degustacao e catalogo de vinhos Allvino',
+  description: 'Aplicativo de degustação e catálogo de vinhos Allvino',
   manifest: '/manifest-v4.json',
   icons: {
     icon: [

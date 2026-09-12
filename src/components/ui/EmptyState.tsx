@@ -38,7 +38,7 @@ export function EmptyState({ icon, title, description, action, children }: Empty
       {action && (
         <Link
           href={action.href}
-          className="mt-6 inline-flex items-center gap-2 bg-[#B91C1C] text-white px-6 py-3 rounded-2xl font-bold text-sm shadow-lg shadow-red-900/20 hover:bg-[#991B1B] active:scale-95 transition-transform"
+          className="mt-6 inline-flex items-center gap-2 rounded-brand-2xl bg-brand-primary px-6 py-3 text-sm font-bold text-white shadow-lg shadow-red-900/20 transition-transform hover:bg-brand-primary-hover active:scale-95"
         >
           <ArrowRight className="h-4 w-4" aria-hidden="true" />
           {action.label}

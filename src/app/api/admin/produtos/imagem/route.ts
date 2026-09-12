@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
-import { checkRateLimit, getClientKey, rateLimitResponse } from '@/lib/security/rateLimit';
+import { checkRateLimitDistributed, getClientKey, rateLimitResponse } from '@/lib/security/rateLimit';
 import { auditSecurityEvent } from '@/lib/security/audit';
 
 const allowedImageTypes = new Set(['image/png', 'image/jpeg', 'image/webp']);
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Apenas administradores podem enviar imagens.' }, { status: 403 });
   }
 
-  const limit = checkRateLimit(getClientKey(request, 'admin-image', user.id), 20, 60_000);
+  const limit = await checkRateLimitDistributed(getClientKey(request, 'admin-image', user.id), 20, 60_000);
   if (!limit.allowed) return rateLimitResponse(limit.retryAfter);
 
   let formData: FormData;
