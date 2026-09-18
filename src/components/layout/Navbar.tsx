@@ -2,13 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Heart, Home, LayoutGrid, User } from 'lucide-react';
+import { Heart, LayoutGrid, User } from 'lucide-react';
 
 export function Navbar() {
   const pathname = usePathname();
 
   const navItems = [
-    { href: '/', icon: Home, label: 'Início', match: pathname === '/' },
     { href: '/catalogo', icon: LayoutGrid, label: 'Catálogo', match: pathname?.startsWith('/catalogo') },
     { href: '/favoritos', icon: Heart, label: 'Favoritos', match: pathname?.startsWith('/favoritos') },
     { href: '/conta', icon: User, label: 'Conta', match: pathname?.startsWith('/conta') },

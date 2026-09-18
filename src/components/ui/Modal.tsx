@@ -45,8 +45,10 @@ export function Modal({ isOpen, onClose, children, size = 'md' }: ModalProps) {
       }}
     >
       <div
+        role="dialog"
+        aria-modal="true"
         className={`
-          bg-white rounded-2xl w-full ${sizeStyles[size]}
+          max-h-[calc(100dvh-2rem)] w-full overflow-y-auto rounded-2xl bg-white ${sizeStyles[size]}
           shadow-xl animate-in zoom-in-95 fade-in duration-200
         `}
       >

@@ -58,7 +58,7 @@ export async function PATCH(request: Request) {
   const { data, error } = await supabase.auth.updateUser({
     data: {
       nome_completo: parsed.data.nome,
-      telefone: parsed.data.whatsapp,
+      whatsapp: parsed.data.whatsapp,
       data_nascimento: parsed.data.nascimento,
     },
   });

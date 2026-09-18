@@ -5,7 +5,8 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { createClient } from '../../utils/supabase/client'
 import { safeInternalRedirect } from '@/lib/auth/safeRedirect'
 import { getPasswordPolicyError } from '@/lib/auth/passwordPolicy'
-import { Modal, ModalHeader, ModalBody, Input, Button } from '@/components/ui'
+import { formatCpf, formatPhone, getLocalToday, isValidCpf, isValidPhone, onlyDigits } from '@/lib/auth/customerRegistration'
+import { Modal, ModalHeader, ModalBody, Input, Button, Checkbox } from '@/components/ui'
 
 type AuthMode = 'login' | 'signup'
 
@@ -22,7 +23,11 @@ export function AuthModal() {
   const [password, setPassword] = useState('')
   const [passwordConfirmation, setPasswordConfirmation] = useState('')
   const [name, setName] = useState('')
+  const [cpf, setCpf] = useState('')
   const [phone, setPhone] = useState('')
+  const [whatsapp, setWhatsapp] = useState('')
+  const [whatsappSamePhone, setWhatsappSamePhone] = useState(true)
+  const [birthDate, setBirthDate] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
@@ -104,6 +109,31 @@ export function AuthModal() {
       return
     }
 
+    if (!isValidCpf(cpf)) {
+      setError('Informe um CPF válido.')
+      setLoading(false)
+      return
+    }
+
+    if (!isValidPhone(phone)) {
+      setError('Informe um telefone válido com DDD.')
+      setLoading(false)
+      return
+    }
+
+    const resolvedWhatsapp = whatsappSamePhone ? phone : whatsapp
+    if (!isValidPhone(resolvedWhatsapp)) {
+      setError('Informe um WhatsApp válido com DDD.')
+      setLoading(false)
+      return
+    }
+
+    if (birthDate && birthDate > getLocalToday()) {
+      setError('A data de aniversário não pode estar no futuro.')
+      setLoading(false)
+      return
+    }
+
     try {
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: email.trim(),
@@ -111,7 +141,11 @@ export function AuthModal() {
         options: {
           data: {
             nome_completo: name.trim(),
-            telefone: phone.trim(),
+            cpf: onlyDigits(cpf),
+            telefone: onlyDigits(phone),
+            whatsapp: onlyDigits(resolvedWhatsapp),
+            whatsapp_mesmo_telefone: whatsappSamePhone,
+            data_nascimento: birthDate || null,
           },
           emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
         },
@@ -192,21 +226,39 @@ export function AuthModal() {
 
         <form onSubmit={mode === 'signup' ? handleEmailSignUp : handleEmailLogin} className="space-y-4">
           {mode === 'signup' && (
+            <Input id="signup-name" label="Nome completo" type="text" value={name} onChange={(event) => setName(event.target.value)} required minLength={2} maxLength={120} autoComplete="name" placeholder="Seu nome" />
+          )}
+
+          <Input id="auth-email" label="E-mail" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" placeholder="seu@email.com" />
+
+          {mode === 'signup' && (
             <>
-              <Input label="Nome completo" type="text" value={name} onChange={(event) => setName(event.target.value)} required minLength={2} placeholder="Seu nome" />
-              <Input label="WhatsApp" type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} required minLength={8} placeholder="(00) 00000-0000" />
+              <Input id="signup-cpf" label="CPF" type="text" inputMode="numeric" value={cpf} onChange={(event) => setCpf(formatCpf(event.target.value))} required maxLength={14} autoComplete="off" placeholder="000.000.000-00" />
+              <Input id="signup-phone" label="Telefone" type="tel" inputMode="tel" value={phone} onChange={(event) => setPhone(formatPhone(event.target.value))} required autoComplete="tel" placeholder="(00) 00000-0000" />
+              <Checkbox
+                id="signup-whatsapp-same-phone"
+                label="Meu WhatsApp é o mesmo número"
+                description="Desmarque para informar outro contato."
+                checked={whatsappSamePhone}
+                onChange={(event) => setWhatsappSamePhone(event.target.checked)}
+              />
+              {!whatsappSamePhone && (
+                <Input id="signup-whatsapp" label="WhatsApp" type="tel" inputMode="tel" value={whatsapp} onChange={(event) => setWhatsapp(formatPhone(event.target.value))} required autoComplete="tel" placeholder="(00) 00000-0000" />
+              )}
             </>
           )}
 
-          <Input label="E-mail" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required placeholder="seu@email.com" />
-          <Input label="Senha" type="password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={8} placeholder="Mínimo de 8 caracteres" />
+          <Input id="auth-password" label={mode === 'signup' ? 'Criar senha' : 'Senha'} type="password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={8} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} placeholder="Mínimo de 8 caracteres" />
 
           {mode === 'signup' && (
-            <Input label="Confirmar senha" type="password" value={passwordConfirmation} onChange={(event) => setPasswordConfirmation(event.target.value)} required minLength={8} placeholder="Repita sua senha" />
+            <>
+              <Input id="signup-password-confirmation" label="Confirmar senha" type="password" value={passwordConfirmation} onChange={(event) => setPasswordConfirmation(event.target.value)} required minLength={8} autoComplete="new-password" placeholder="Repita sua senha" />
+              <Input id="signup-birth-date" label="Data de aniversário (opcional)" type="date" value={birthDate} onChange={(event) => setBirthDate(event.target.value)} max={getLocalToday()} autoComplete="bday" />
+            </>
           )}
 
-          {error && <p className="text-center text-sm text-red-600">{error}</p>}
-          {notice && <p className="text-center text-sm font-bold text-emerald-700">{notice}</p>}
+          {error && <p role="alert" className="text-center text-sm text-red-600">{error}</p>}
+          {notice && <p role="status" className="text-center text-sm font-bold text-emerald-700">{notice}</p>}
 
           <Button type="submit" disabled={loading} loading={loading} className="w-full">
             {loading ? 'Aguarde...' : mode === 'signup' ? 'Criar cadastro' : 'Entrar'}
@@ -219,16 +271,18 @@ export function AuthModal() {
           </button>
         )}
 
-        <div className="mt-6">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-300" /></div>
-            <div className="relative flex justify-center text-sm"><span className="bg-white px-2 text-gray-500">Ou continue com</span></div>
-          </div>
+        {mode === 'login' && (
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-300" /></div>
+              <div className="relative flex justify-center text-sm"><span className="bg-white px-2 text-gray-500">Ou continue com</span></div>
+            </div>
 
-          <Button variant="secondary" onClick={handleGoogleLogin} className="mt-6 w-full">
-            Google
-          </Button>
-        </div>
+            <Button variant="secondary" onClick={handleGoogleLogin} className="mt-6 w-full">
+              Google
+            </Button>
+          </div>
+        )}
       </ModalBody>
     </Modal>
   )

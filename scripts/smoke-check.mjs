@@ -6,7 +6,7 @@ const root = process.cwd();
 const checks = [
   {
     file: 'src/components/layout/Header.tsx',
-    includes: ['href="/catalogo"', 'logo-allvino-header.png', 'ShoppingBag'],
+    includes: ['href="/catalogo"', 'logo-allvino-header.png', 'ShoppingBag', 'Carrinho'],
   },
   {
     file: 'src/components/layout/AppChrome.tsx',
@@ -14,7 +14,7 @@ const checks = [
   },
   {
     file: 'src/components/layout/Navbar.tsx',
-    includes: ["href: '/'", "href: '/catalogo'", "href: '/conta'", 'Início', 'Catálogo', 'Conta'],
+    includes: ["href: '/catalogo'", "href: '/favoritos'", "href: '/conta'", 'Catálogo', 'Favoritos', 'Conta'],
   },
   {
     file: 'src/components/cart/CartOverlay.tsx',

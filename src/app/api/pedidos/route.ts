@@ -75,7 +75,7 @@ export async function POST(request: Request) {
       p_promotion_code: promotionCode || null,
       p_delivery_zip_code: deliveryZipCode || null,
       p_customer_name: user.user_metadata?.nome_completo || user.email?.split('@')[0] || null,
-      p_customer_phone: user.user_metadata?.telefone || null,
+      p_customer_phone: user.user_metadata?.whatsapp || user.user_metadata?.telefone || null,
     }
   );
 

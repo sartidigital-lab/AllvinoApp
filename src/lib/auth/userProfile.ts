@@ -17,7 +17,7 @@ export function toCurrentUser(user: {
     id: user.id,
     email: user.email,
     name: metadata.nome_completo || user.email?.split('@')[0] || '',
-    phone: metadata.telefone || '',
+    phone: metadata.whatsapp || metadata.telefone || '',
     birthDate: metadata.data_nascimento || '',
   };
 }
