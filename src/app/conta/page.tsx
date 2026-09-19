@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
+import { PushPreferences } from '@/components/push/PushPreferences';
+import { unregisterPushSubscription } from '@/lib/push/client';
 import { CurrentUser, getCurrentUserFast } from '@/lib/auth/currentUser';
 import { getUserOrders } from '@/lib/database/orders';
 import { CartItem, useCart } from '@/context/CartContext';
@@ -128,6 +130,7 @@ export default function ContaPage() {
 
   const fazerLogout = async () => {
     if (confirm('Deseja realmente sair da sua conta?')) {
+      await unregisterPushSubscription().catch(() => undefined);
       const supabase = createClient();
       await supabase.auth.signOut();
       router.replace('/?login=true');
@@ -306,6 +309,8 @@ export default function ContaPage() {
           )}
         </form>
       </div>
+
+      <PushPreferences />
 
       <div className="pt-4">
         <button

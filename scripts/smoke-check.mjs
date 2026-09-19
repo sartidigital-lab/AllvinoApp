@@ -13,6 +13,22 @@ const checks = [
     includes: ['isAdminRoute', "startsWith('/admin')", 'Header', 'Navbar', 'CartOverlay'],
   },
   {
+    file: 'src/app/layout.tsx',
+    includes: ['FirstVisitExperience', 'WhatsAppButton'],
+  },
+  {
+    file: 'src/components/onboarding/FirstVisitExperience.tsx',
+    includes: ['Tenho 18 anos ou mais', 'Permitir localização', 'beforeinstallprompt', 'Notification.requestPermission', "register('/sw.js')"],
+  },
+  {
+    file: 'src/app/api/admin/notificacoes/route.ts',
+    includes: ["rpc('is_admin')", 'sendNotification', 'pushSubscriptionSchema', 'checkRateLimitDistributed'],
+  },
+  {
+    file: 'src/app/api/push/subscription/route.ts',
+    includes: ['auth.getUser()', 'push_subscriptions', 'isSameOrigin', 'pushSubscriptionSchema'],
+  },
+  {
     file: 'src/components/layout/Navbar.tsx',
     includes: ["href: '/catalogo'", "href: '/favoritos'", "href: '/conta'", 'Catálogo', 'Favoritos', 'Conta'],
   },
@@ -22,7 +38,7 @@ const checks = [
   },
   {
     file: 'src/app/catalogo/page.tsx',
-    includes: ['Buscar por nome', 'Mais recentes', 'Menor preço', 'Limpar filtros', 'addToCart'],
+    includes: ['Buscar por nome', 'Mais recentes', 'Menor preço', 'Limpar filtros', 'addToCart', 'Sobre a Allvino', 'Rua Goiânia, 339'],
   },
   {
     file: 'src/app/catalogo/[id]/page.tsx',

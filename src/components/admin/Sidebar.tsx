@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
+import { unregisterPushSubscription } from '@/lib/push/client';
 import { useState, useEffect } from 'react';
 
 export default function Sidebar() {
@@ -38,6 +39,7 @@ export default function Sidebar() {
   }, [isOpen]);
 
   const handleLogout = async () => {
+    await unregisterPushSubscription().catch(() => undefined);
     const supabase = createClient();
     await supabase.auth.signOut();
     router.replace('/?login=true');
@@ -65,6 +67,7 @@ export default function Sidebar() {
         { href: '/admin/catalogo', label: 'Catálogo', icon: 'wine_bar' },
         { href: '/admin/estoque', label: 'Estoque', icon: 'inventory_2' },
         { href: '/admin/promocoes', label: 'Promoções', icon: 'campaign' },
+        { href: '/admin/notificacoes', label: 'Notificações', icon: 'notifications' },
         { href: '/admin/logistica', label: 'Logística', icon: 'local_shipping' },
         { href: '/admin/equipe', label: 'Equipe', icon: 'group' },
         { href: '/admin/perfil', label: 'Meu Perfil', icon: 'person_edit' },

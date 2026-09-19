@@ -1,4 +1,7 @@
 import { AppChrome } from '../components/layout/AppChrome';
+import { FirstVisitExperience } from '../components/onboarding/FirstVisitExperience';
+import { WhatsAppButton } from '../components/layout/WhatsAppButton';
+import { PushSubscriptionManager } from '../components/push/PushSubscriptionManager';
 import { CartProvider } from '../context/CartContext';
 import { ToastProvider } from '../context/ToastContext';
 import { FavoritesProvider } from '../context/FavoritesContext';
@@ -30,8 +33,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <RecentlyViewedProvider>
             <FavoritesProvider>
               <CartProvider>
-              <AppChrome />
-              {children}              </CartProvider>
+                <AppChrome />
+                {children}
+                <WhatsAppButton />
+                <FirstVisitExperience />
+                <PushSubscriptionManager />
+              </CartProvider>
             </FavoritesProvider>
           </RecentlyViewedProvider>
         </ToastProvider>

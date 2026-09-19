@@ -513,6 +513,22 @@ export default function CatalogoPage() {
           </div>
         </div>
       )}
+      <footer className="mx-auto mt-16 max-w-7xl border-t border-brand-border px-4 pb-12 pt-10 lg:px-8">
+        <div className="max-w-3xl space-y-7 text-sm leading-7 text-brand-ink-light">
+          <section>
+            <h2 className="mb-3 font-serif text-xl font-bold text-brand-ink">Sobre a Allvino</h2>
+            <p>Somos importadores de vinhos e trabalhamos com marcas exclusivas e não exclusivas. Atendemos os segmentos de atacado (B2B) e varejo (B2C) com representantes, lojas online e física, além do nosso espaço gastronômico para levar o máximo de experiência aos nossos clientes.</p>
+          </section>
+          <section>
+            <h2 className="mb-3 font-serif text-xl font-bold text-brand-ink">Compre online</h2>
+            <p>Compre online com pagamento no checkout e receba em seu endereço ou retire em nossa loja.</p>
+          </section>
+          <section>
+            <h2 className="mb-3 font-serif text-xl font-bold text-brand-ink">Nossa localização</h2>
+            <address className="not-italic">Rua Goiânia, 339 - Itapuã, Vila Velha - ES, 29101-780</address>
+          </section>
+        </div>
+      </footer>
     </main></PageTransition>
   );
 }
