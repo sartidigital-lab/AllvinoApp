@@ -181,7 +181,7 @@ export default function AdminNotificationsPage() {
             <label className="flex items-start gap-3 text-sm text-brand-ink-light"><input type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} className="mt-1" />Confirmo o envio para {audienceMode === 'full' ? 'toda a base habilitada' : 'o segmento por ticket médio'}.</label>
             <button type="button" onClick={() => void send('test')} disabled={busy || !summary?.configured || !summary.ownCount || title.trim().length < 3 || body.trim().length < 5 || !url.startsWith('/')} className="min-h-11 w-full rounded-brand-lg border border-brand-primary px-5 text-sm font-bold text-brand-primary disabled:cursor-not-allowed disabled:opacity-50">{busy ? 'Enviando...' : 'Enviar teste para minha conta'}</button>
             <button type="submit" disabled={!confirmed || busy || !summary?.configured || !campaignDeviceCount || campaignDeviceCount > 500 || summary.preview || !ticketLimitsAreValid} className="min-h-12 w-full rounded-brand-lg bg-brand-primary px-6 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">{busy ? 'Enviando...' : 'Enviar notificações'}</button>
-            {!summary?.configured && <p className="text-xs font-bold text-brand-primary">Configure as chaves VAPID no servidor antes de enviar.</p>}
+            {summary && !summary.configured && <p className="text-xs font-bold text-brand-primary">Configure as chaves VAPID no servidor antes de enviar.</p>}
             {summary?.preview && <p className="text-xs font-bold text-brand-primary">Em Preview, somente o envio de teste está disponível.</p>}
             {status && <p role="status" className="text-sm font-bold text-brand-ink-light">{status}</p>}
           </form>
