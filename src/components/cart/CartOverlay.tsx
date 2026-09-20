@@ -6,10 +6,12 @@ import { useEffect, useRef, useState } from 'react';
 import { Button, Checkbox, EmptyState, IconButton, ProductImage } from '@/components/ui';
 import { usePathname } from 'next/navigation';
 import { X } from 'lucide-react';
+import { createClient } from '@/utils/supabase/client';
 
 export function CartOverlay() {
   const { cart, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, cartTotal } = useCart();
   const [retirada, setRetirada] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const pathname = usePathname();
   const panelRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -20,6 +22,24 @@ export function CartOverlay() {
   useEffect(() => {
     setIsCartOpen(false);
   }, [pathname, setIsCartOpen]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    let active = true;
+
+    supabase.auth.getUser().then(({ data }) => {
+      if (active) setIsAuthenticated(Boolean(data.user));
+    });
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (active) setIsAuthenticated(Boolean(session?.user));
+    });
+
+    return () => {
+      active = false;
+      listener.subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     if (!isCartOpen) return;
@@ -163,14 +183,17 @@ export function CartOverlay() {
             </div>
             
             <Link 
-              href="/checkout" 
+              href={isAuthenticated ? '/checkout' : '/?login=true&redirectTo=/checkout'}
               onClick={() => setIsCartOpen(false)}
               className="w-full block"
             >
               <Button variant="primary" size="lg" className="w-full">
-                Ir para Pagamento
+                {isAuthenticated ? 'Ir para Pagamento' : 'Entrar ou criar conta'}
               </Button>
             </Link>
+            {isAuthenticated === false && (
+              <p className="text-center text-xs font-medium text-stone-500">Entre ou crie sua conta para finalizar o pedido.</p>
+            )}
           </div>
         )}
       </div>

@@ -10,6 +10,7 @@ import { ProductImage, WineDetailSkeleton } from '@/components/ui';
 import { useParams } from 'next/navigation';
 import { ArrowLeft, Ban, Grape, Heart, MapPin, TriangleAlert, Wine, type LucideIcon } from 'lucide-react';
 import { getStockStatus } from '@/lib/catalog/stockStatus';
+import { getGrapeClassification, parseGrapes } from '@/lib/catalog/grapes';
 
 function formatMoney(value: number) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -72,6 +73,8 @@ export default function WineDetailPage() {
 
   const stock = getStockStatus(wine.stock);
   const StockIcon = stock?.tone === 'danger' ? Ban : TriangleAlert;
+  const grapeClassification = getGrapeClassification(wine.grape);
+  const grapes = parseGrapes(wine.grape);
 
   const relatedWines = wines
     .filter((w) => w.id !== wine.id && (w.type === wine.type || w.region === wine.region || w.category === wine.category || w.grape === wine.grape))
@@ -107,10 +110,13 @@ export default function WineDetailPage() {
 
             <div className="grid grid-cols-2 gap-3">
               {wine.type && productAttribute(Wine, 'Tipo', wine.type)}
-              {wine.grape && productAttribute(Grape, 'Uva', wine.grape)}
+              {grapeClassification && productAttribute(Grape, grapeClassification === 'Blend' ? 'Estilo' : 'Uva', grapeClassification)}
               {wine.region && productAttribute(MapPin, 'Região', wine.region)}
-                {wine.category && productAttribute(MapPin, 'País', wine.category)}
+              {wine.category && productAttribute(MapPin, 'País', wine.category)}
             </div>
+            {grapeClassification === 'Blend' && grapes.length > 0 && (
+              <p className="text-xs font-medium text-stone-500">Uvas: {grapes.join(', ')}</p>
+            )}
 
             <div className="border-t border-stone-100 pt-6">
               {wine.discount_percent && (

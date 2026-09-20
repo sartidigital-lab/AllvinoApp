@@ -8,6 +8,8 @@ import { readStockImportRows } from '@/lib/stock/importFile';
 import { createClient } from '@/utils/supabase/client';
 import { Wine } from '@/types/database';
 import { ProductImage } from '@/components/ui';
+import { parseGrapes, serializeGrapes } from '@/lib/catalog/grapes';
+import { formatProductDescription, formatProductText } from '@/lib/catalog/productText';
 
 type WineForm = {
   name: string;
@@ -124,17 +126,19 @@ function toForm(wine: Wine): WineForm {
 }
 
 function toPayload(form: WineForm): Partial<Wine> {
+  const grapes = parseGrapes(form.grape).map(formatProductText);
+
   return {
-    name: form.name.trim(),
-    description: form.description.trim() || null,
+    name: formatProductText(form.name),
+    description: formatProductDescription(form.description) || null,
     price: Number(form.price),
     product_code: form.product_code.trim() || null,
     image_url: form.image_url.trim() || null,
-    type: form.type.trim() || null,
-    region: form.region.trim() || null,
-    grape: form.grape.trim() || null,
+    type: formatProductText(form.type) || null,
+    region: formatProductText(form.region) || null,
+    grape: serializeGrapes(grapes),
     stock: Number(form.stock || 0),
-    category: form.category.trim() || null,
+    category: formatProductText(form.category) || null,
     published: form.published,
   };
 }
@@ -146,12 +150,33 @@ export default function AdminCatalogPage() {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [search, setSearch] = useState('');
   const [form, setForm] = useState<WineForm>(emptyForm);
+  const [grapeInput, setGrapeInput] = useState('');
   const [stockByCode, setStockByCode] = useState<Map<string, number>>(new Map());
   const [editingWine, setEditingWine] = useState<Wine | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSyncingStock, setIsSyncingStock] = useState(false);
   const [isImportingStock, setIsImportingStock] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  const grapesInForm = useMemo(() => parseGrapes(form.grape), [form.grape]);
+
+  const addGrape = () => {
+    const nextGrape = formatProductText(grapeInput);
+    if (!nextGrape) return;
+
+    setForm((current) => ({
+      ...current,
+      grape: serializeGrapes([...parseGrapes(current.grape), nextGrape]) || '',
+    }));
+    setGrapeInput('');
+  };
+
+  const removeGrape = (grape: string) => {
+    setForm((current) => ({
+      ...current,
+      grape: serializeGrapes(parseGrapes(current.grape).filter((item) => item !== grape)) || '',
+    }));
+  };
 
   useEffect(() => {
     loadWines();
@@ -209,6 +234,7 @@ export default function AdminCatalogPage() {
   const openCreateForm = () => {
     setEditingWine(null);
     setForm(emptyForm);
+    setGrapeInput('');
     setIsFormOpen(true);
     setMessage(null);
   };
@@ -216,6 +242,7 @@ export default function AdminCatalogPage() {
   const openEditForm = (wine: Wine) => {
     setEditingWine(wine);
     setForm(toForm(wine));
+    setGrapeInput('');
     setIsFormOpen(true);
     setMessage(null);
   };
@@ -224,6 +251,7 @@ export default function AdminCatalogPage() {
     setIsFormOpen(false);
     setEditingWine(null);
     setForm(emptyForm);
+    setGrapeInput('');
   };
 
   const syncStockFromProductCode = async (productCode: string, options: { showMessage?: boolean } = {}) => {
@@ -376,6 +404,7 @@ export default function AdminCatalogPage() {
       const finalStock = Math.trunc(manualStock);
       const payload = toPayload({
         ...form,
+        grape: serializeGrapes([...parseGrapes(form.grape), grapeInput]) || '',
         product_code: normalizedProductCode || '',
         stock: String(finalStock),
       });
@@ -535,7 +564,7 @@ export default function AdminCatalogPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <label className="space-y-1 lg:col-span-2">
               <span className="text-xs font-bold uppercase text-stone-400">Nome</span>
-              <input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black" />
+              <input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} onBlur={() => setForm((current) => ({ ...current, name: formatProductText(current.name) }))} className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black" />
             </label>
             <label className="space-y-1">
               <span className="text-xs font-bold uppercase text-stone-400">Preço</span>
@@ -573,19 +602,46 @@ export default function AdminCatalogPage() {
             )}
             <label className="space-y-1">
               <span className="text-xs font-bold uppercase text-stone-400">Tipo</span>
-              <input value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })} className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black" />
+              <input value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })} onBlur={() => setForm((current) => ({ ...current, type: formatProductText(current.type) }))} className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black" />
             </label>
             <label className="space-y-1">
               <span className="text-xs font-bold uppercase text-stone-400">País</span>
-              <input value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })} className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black" />
+              <input value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })} onBlur={() => setForm((current) => ({ ...current, category: formatProductText(current.category) }))} className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black" />
             </label>
-            <label className="space-y-1">
-              <span className="text-xs font-bold uppercase text-stone-400">Uva</span>
-              <input value={form.grape} onChange={(event) => setForm({ ...form, grape: event.target.value })} className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black" />
-            </label>
+            <div className="space-y-1">
+              <span className="text-xs font-bold uppercase text-stone-400">Uvas</span>
+              <div className="rounded-lg border border-stone-200 bg-white p-2 focus-within:border-black">
+                {grapesInForm.length > 0 && (
+                  <div className="mb-2 flex flex-wrap gap-2">
+                    {grapesInForm.map((grape) => (
+                      <span key={grape} className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2.5 py-1 text-xs font-bold text-stone-700">
+                        {grape}
+                        <button type="button" onClick={() => removeGrape(grape)} className="text-stone-400 transition hover:text-red-600" aria-label={`Remover uva ${grape}`}>×</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <input
+                    value={grapeInput}
+                    onChange={(event) => setGrapeInput(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ',') {
+                        event.preventDefault();
+                        addGrape();
+                      }
+                    }}
+                    placeholder="Digite uma uva"
+                    className="min-w-0 flex-1 bg-transparent p-1 text-sm font-bold outline-none"
+                  />
+                  <button type="button" onClick={addGrape} className="rounded-md bg-stone-900 px-2 text-xs font-bold text-white hover:bg-stone-700">Adicionar</button>
+                </div>
+              </div>
+              <p className="text-[10px] font-bold text-stone-400">Uma uva define um varietal. Duas ou mais formam um Blend.</p>
+            </div>
             <label className="space-y-1">
               <span className="text-xs font-bold uppercase text-stone-400">Região</span>
-              <input value={form.region} onChange={(event) => setForm({ ...form, region: event.target.value })} className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black" />
+              <input value={form.region} onChange={(event) => setForm({ ...form, region: event.target.value })} onBlur={() => setForm((current) => ({ ...current, region: formatProductText(current.region) }))} className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black" />
             </label>
             <div className="space-y-2 lg:col-span-2">
               <span className="text-xs font-bold uppercase text-stone-400">Imagem do produto</span>
@@ -627,7 +683,7 @@ export default function AdminCatalogPage() {
             </div>
             <label className="space-y-1 lg:col-span-2">
               <span className="text-xs font-bold uppercase text-stone-400">Descrição</span>
-              <textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} rows={3} className="w-full resize-none rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black" />
+              <textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} onBlur={() => setForm((current) => ({ ...current, description: formatProductDescription(current.description) }))} rows={3} className="w-full resize-none rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black" />
             </label>
             <div className="space-y-2 lg:col-span-4">
               <span className="text-xs font-bold uppercase text-stone-400">Visibilidade</span>

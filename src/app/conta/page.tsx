@@ -312,6 +312,21 @@ export default function ContaPage() {
 
       <PushPreferences />
 
+      <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400">Privacidade</p>
+        <h2 className="mt-1 text-lg font-bold text-black">Excluir conta</h2>
+        <p className="mt-2 text-sm leading-6 text-stone-600">Para solicitar a exclusão da sua conta, fale com nosso atendimento. Confirmaremos sua identidade antes de tratar a solicitação.</p>
+        <a
+          href={`https://wa.me/5527992770952?text=${encodeURIComponent('Olá, gostaria de solicitar a exclusão da minha conta Allvino.')}`}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-stone-200 px-4 text-sm font-bold text-stone-800 transition hover:border-brand-primary hover:text-brand-primary"
+        >
+          <span className="material-symbols-outlined text-[18px]">support_agent</span>
+          Falar com atendimento
+        </a>
+      </section>
+
       <div className="pt-4">
         <button
           onClick={fazerLogout}

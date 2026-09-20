@@ -1,4 +1,6 @@
 import { Wine } from '@/types/database';
+import { parseGrapes, serializeGrapes } from '@/lib/catalog/grapes';
+import { formatProductDescription, formatProductText } from '@/lib/catalog/productText';
 
 export type LegacyProduct = {
   id: string;
@@ -94,15 +96,15 @@ export function mapCatalogProductToWine(product: CatalogProduct): Wine {
 
 export function mapWineToProduct(wineData: Partial<Wine>) {
   return {
-    nome: wineData.name,
-    descricao: wineData.description,
+    nome: wineData.name === undefined ? undefined : formatProductText(wineData.name),
+    descricao: wineData.description === undefined ? undefined : wineData.description === null ? null : formatProductDescription(wineData.description),
     sku_sankhya: wineData.product_code,
     preco: wineData.original_price ?? wineData.price,
     imagem_url: wineData.image_url,
-    pais: wineData.category,
-    regiao: wineData.region,
-    tipo: wineData.type,
-    uva: wineData.grape,
+    pais: wineData.category === undefined ? undefined : wineData.category === null ? null : formatProductText(wineData.category),
+    regiao: wineData.region === undefined ? undefined : wineData.region === null ? null : formatProductText(wineData.region),
+    tipo: wineData.type === undefined ? undefined : wineData.type === null ? null : formatProductText(wineData.type),
+    uva: wineData.grape === undefined ? undefined : serializeGrapes(parseGrapes(wineData.grape).map(formatProductText)),
     estoque: wineData.stock,
     publicado: wineData.published ?? true,
   };

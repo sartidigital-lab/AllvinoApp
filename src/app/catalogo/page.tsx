@@ -12,6 +12,7 @@ import { Ban, Heart, Plus, Search, SlidersHorizontal, TriangleAlert, Wine, X } f
 import { CatalogBannerCarousel } from '@/components/catalog/CatalogBannerCarousel';
 import { WinePrice } from '@/components/catalog/WinePrice';
 import { getStockStatus } from '@/lib/catalog/stockStatus';
+import { getGrapeClassification } from '@/lib/catalog/grapes';
 import type { CatalogBanner } from '@/types/database';
 
 const priceRanges = [
@@ -34,6 +35,7 @@ export default function CatalogoPage() {
   const [selectedPrice, setSelectedPrice] = useState<number | null>(null);
   const [selectedType, setSelectedType] = useState('');
   const [selectedGrape, setSelectedGrape] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('');
   const [selectedPromotion, setSelectedPromotion] = useState('');
   const [banners, setBanners] = useState<CatalogBanner[]>([]);
@@ -61,9 +63,10 @@ export default function CatalogoPage() {
     };
   }, []);
 
-  const types = useMemo(() => [...new Set(wines.map((w) => w.type).filter(Boolean))], [wines]);
-  const grapes = useMemo(() => [...new Set(wines.map((w) => w.grape).filter(Boolean))], [wines]);
-  const regions = useMemo(() => [...new Set(wines.map((w) => w.region).filter(Boolean))], [wines]);
+  const types = useMemo(() => [...new Set(wines.map((w) => w.type).filter((value): value is string => Boolean(value)))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [wines]);
+  const grapes = useMemo(() => [...new Set(wines.map((w) => getGrapeClassification(w.grape)).filter((value): value is string => Boolean(value)))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [wines]);
+  const countries = useMemo(() => [...new Set(wines.map((w) => w.category).filter((value): value is string => Boolean(value)))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [wines]);
+  const regions = useMemo(() => [...new Set(wines.map((w) => w.region).filter((value): value is string => Boolean(value)))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [wines]);
   const promotionSelections = useMemo(() => {
     const selections = new Map<string, { slug: string; title: string; discount: number }>();
     wines.forEach((wine) => {
@@ -92,6 +95,7 @@ export default function CatalogoPage() {
           w.name.toLowerCase().includes(q) ||
           w.grape?.toLowerCase().includes(q) ||
           w.region?.toLowerCase().includes(q) ||
+          w.category?.toLowerCase().includes(q) ||
           w.type?.toLowerCase().includes(q)
       );
     }
@@ -102,7 +106,8 @@ export default function CatalogoPage() {
     }
 
     if (selectedType) result = result.filter((w) => w.type === selectedType);
-    if (selectedGrape) result = result.filter((w) => w.grape === selectedGrape);
+    if (selectedGrape) result = result.filter((w) => getGrapeClassification(w.grape) === selectedGrape);
+    if (selectedCountry) result = result.filter((w) => w.category === selectedCountry);
     if (selectedRegion) result = result.filter((w) => w.region === selectedRegion);
     if (selectedPromotion) result = result.filter((w) => w.promotion_slug === selectedPromotion);
 
@@ -112,15 +117,16 @@ export default function CatalogoPage() {
     else result.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
 
     return result;
-  }, [wines, deferredSearch, sortBy, selectedPrice, selectedType, selectedGrape, selectedRegion, selectedPromotion]);
+  }, [wines, deferredSearch, sortBy, selectedPrice, selectedType, selectedGrape, selectedCountry, selectedRegion, selectedPromotion]);
 
-  const activeFilterCount = [selectedPrice !== null, selectedType, selectedGrape, selectedRegion, selectedPromotion, search].filter(Boolean).length;
+  const activeFilterCount = [selectedPrice !== null, selectedType, selectedGrape, selectedCountry, selectedRegion, selectedPromotion, search].filter(Boolean).length;
 
   const clearFilters = () => {
     setSearch('');
     setSelectedPrice(null);
     setSelectedType('');
     setSelectedGrape('');
+    setSelectedCountry('');
     setSelectedRegion('');
     setSelectedPromotion('');
     window.history.replaceState(null, '', '/catalogo');
@@ -247,6 +253,12 @@ export default function CatalogoPage() {
               <button type="button" onClick={() => setSelectedGrape('')} className="ml-1" aria-label="Remover filtro de uva">×</button>
             </span>
           )}
+          {selectedCountry && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-brand-primary/10 px-2.5 py-1 text-xs font-bold text-brand-primary">
+              {selectedCountry}
+              <button type="button" onClick={() => setSelectedCountry('')} className="ml-1" aria-label="Remover filtro de país">×</button>
+            </span>
+          )}
           {selectedRegion && (
             <span className="inline-flex items-center gap-1 rounded-full bg-brand-primary/10 px-2.5 py-1 text-xs font-bold text-brand-primary">
               {selectedRegion}
@@ -266,7 +278,7 @@ export default function CatalogoPage() {
       )}
 
       {/* Recently Viewed */}
-      {recentlyViewed.length > 0 && !search && selectedPrice === null && !selectedType && !selectedGrape && !selectedRegion && !selectedPromotion && (
+      {recentlyViewed.length > 0 && !search && selectedPrice === null && !selectedType && !selectedGrape && !selectedCountry && !selectedRegion && !selectedPromotion && (
         <div className="mx-auto max-w-7xl px-4 pt-6 lg:px-8">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-serif text-lg font-bold">Vistos Recentemente</h2>
@@ -464,6 +476,7 @@ export default function CatalogoPage() {
               </div>
               <div>
                 <p className="text-xs font-bold text-stone-400 uppercase mb-3">Uva</p>
+                <p className="mb-3 text-xs text-stone-500">Vinhos com duas ou mais uvas aparecem como Blend.</p>
                 <div className="flex flex-wrap gap-2">
                   {grapes.map((grape) => (
                     <button
@@ -482,6 +495,24 @@ export default function CatalogoPage() {
               </div>
               <div>
                 <p className="mb-3 text-xs font-bold uppercase text-stone-400">País</p>
+                <div className="flex flex-wrap gap-2">
+                  {countries.map((country) => (
+                    <button
+                      key={country}
+                      onClick={() => setSelectedCountry(selectedCountry === country ? '' : country)}
+                      className={`px-3 py-2 rounded-xl text-xs font-bold border transition ${
+                        selectedCountry === country
+                          ? 'border-brand-primary bg-brand-primary text-white'
+                          : 'border-stone-200 bg-white text-stone-600 hover:border-brand-primary'
+                      }`}
+                    >
+                      {country}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="mb-3 text-xs font-bold uppercase text-stone-400">Região</p>
                 <div className="flex flex-wrap gap-2">
                   {regions.map((region) => (
                     <button

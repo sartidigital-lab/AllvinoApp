@@ -73,7 +73,9 @@ export default function AdminClientesPage() {
   const [selectedCustomerKey, setSelectedCustomerKey] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const loadCustomers = async () => {
     setIsLoading(true);
@@ -101,6 +103,35 @@ export default function AdminClientesPage() {
   useEffect(() => {
     loadCustomers();
   }, []);
+
+  const deleteCustomerAccount = async (customer: CustomerSummary) => {
+    if (!customer.userId || isDeleting) return;
+
+    const confirmed = window.confirm(
+      `Excluir permanentemente a conta de ${customer.name} e seus dados vinculados? Esta ação não pode ser desfeita.`
+    );
+    if (!confirmed) return;
+
+    setIsDeleting(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    const supabase = createClient();
+    const { error } = await supabase.functions.invoke('delete-customer-account', {
+      body: { userId: customer.userId },
+    });
+
+    if (error) {
+      setErrorMessage('Não foi possível excluir a conta. Tente novamente ou contate o suporte técnico.');
+      setIsDeleting(false);
+      return;
+    }
+
+    setOrders((current) => current.filter((order) => order.user_id !== customer.userId));
+    setSelectedCustomerKey(null);
+    setSuccessMessage('Conta e dados vinculados do cliente foram excluídos permanentemente.');
+    setIsDeleting(false);
+  };
 
   const customers = useMemo(() => {
     const groups = new Map<string, CustomerOrder[]>();
@@ -174,6 +205,9 @@ export default function AdminClientesPage() {
 
       {errorMessage && (
         <AdminNotice tone="danger">{errorMessage}</AdminNotice>
+      )}
+      {successMessage && (
+        <AdminNotice tone="success">{successMessage}</AdminNotice>
       )}
 
       <div className="admin-stats-grid grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
@@ -279,6 +313,27 @@ export default function AdminClientesPage() {
                   Chamar no WhatsApp
                 </a>
               )}
+
+              <section className="rounded-xl border border-red-100 bg-red-50 p-4">
+                <p className="text-xs font-bold uppercase tracking-widest text-red-700">Zona de risco</p>
+                <h3 className="mt-1 text-sm font-bold text-red-900">Excluir conta e dados</h3>
+                {selectedCustomer.userId ? (
+                  <>
+                    <p className="mt-2 text-xs leading-5 text-red-800">Remove permanentemente o acesso, perfil, pedidos, pagamentos, CRM, conversas e preferências deste cliente.</p>
+                    <button
+                      type="button"
+                      disabled={isDeleting}
+                      onClick={() => deleteCustomerAccount(selectedCustomer)}
+                      className="mt-3 flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-red-700 px-3 text-xs font-bold text-white transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <span className="material-symbols-outlined text-[17px]">delete_forever</span>
+                      {isDeleting ? 'Excluindo dados...' : 'Excluir conta do cliente'}
+                    </button>
+                  </>
+                ) : (
+                  <p className="mt-2 text-xs leading-5 text-red-800">Este pedido não está vinculado a uma conta. Não há uma conta de cliente para excluir.</p>
+                )}
+              </section>
 
               <div>
                 <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-stone-400">Histórico</h3>
