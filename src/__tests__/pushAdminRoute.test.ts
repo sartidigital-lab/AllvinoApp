@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   sendNotification: vi.fn(),
   setVapidDetails: vi.fn(),
   filterByOwner: vi.fn(),
+  filterByTicket: vi.fn(),
 }));
 
 vi.mock('@/utils/supabase/server', () => ({
@@ -15,6 +16,7 @@ vi.mock('@/utils/supabase/server', () => ({
     rpc: mocks.isAdmin,
     from: () => ({ select: () => ({
       eq: mocks.filterByOwner,
+      in: mocks.filterByTicket,
       order: () => ({ limit: mocks.selectRows }),
     }) }),
   }),
@@ -44,6 +46,7 @@ describe('admin push delivery', () => {
     mocks.isAdmin.mockResolvedValue({ data: true, error: null });
     mocks.sendNotification.mockResolvedValue({ statusCode: 201 });
     mocks.filterByOwner.mockImplementation(() => ({ order: () => ({ limit: mocks.selectRows }) }));
+    mocks.filterByTicket.mockImplementation(() => ({ order: () => ({ limit: mocks.selectRows }) }));
   });
 
   it('does not send from another origin or a non-admin account', async () => {
@@ -80,6 +83,28 @@ describe('admin push delivery', () => {
     expect(response.status).toBe(200);
     expect(mocks.filterByOwner).toHaveBeenCalledWith('user_id', 'admin-id');
     expect(mocks.selectRows).toHaveBeenCalledWith(1);
+    expect(mocks.sendNotification).toHaveBeenCalledOnce();
+  });
+
+  it('limits a campaign to enabled buyers in the requested ticket range', async () => {
+    mocks.isAdmin.mockImplementation((functionName: string) => {
+      if (functionName === 'is_admin') return Promise.resolve({ data: true, error: null });
+      if (functionName === 'get_notification_audience') {
+        return Promise.resolve({ data: [{ user_id: 'buyer-id', notifications_enabled: true, has_orders: true }], error: null });
+      }
+      return Promise.resolve({ data: null, error: null });
+    });
+    mocks.selectRows.mockResolvedValue({ data: [{
+      id: 'ticket-subscription', user_id: 'buyer-id',
+      endpoint: 'https://fcm.googleapis.com/fcm/send/abc123456789012345678901234567890',
+      p256dh: 'A'.repeat(60), auth_secret: 'B'.repeat(24),
+    }], error: null });
+
+    const response = await POST(request({ title: 'Seleção', body: 'Uma novidade para você', url: '/catalogo', audience: 'ticket', ticketMin: 150 }));
+
+    expect(response.status).toBe(200);
+    expect(mocks.isAdmin).toHaveBeenCalledWith('get_notification_audience', { p_ticket_min: 150, p_ticket_max: null });
+    expect(mocks.filterByTicket).toHaveBeenCalledWith('user_id', ['buyer-id']);
     expect(mocks.sendNotification).toHaveBeenCalledOnce();
   });
 

@@ -2,6 +2,12 @@ import { createClient } from '@/utils/supabase/client';
 
 const OWNER_KEY = 'allvino:push-owner:v1';
 
+function getDeviceType(): 'desktop' | 'mobile' {
+  return /android|iphone|ipod|ipad|mobile|iemobile|opera mini/i.test(navigator.userAgent)
+    ? 'mobile'
+    : 'desktop';
+}
+
 function decodeKey(key: string) {
   const padding = '='.repeat((4 - key.length % 4) % 4);
   const binary = atob((key + padding).replace(/-/g, '+').replace(/_/g, '/'));
@@ -37,7 +43,7 @@ export async function registerPushSubscription(): Promise<'subscribed' | 'login-
   const save = (current: PushSubscription) => fetch('/api/push/subscription', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(current.toJSON()),
+    body: JSON.stringify({ ...current.toJSON(), deviceType: getDeviceType() }),
   });
   let saveResponse = await save(subscription);
   if (saveResponse.status === 409) {

@@ -6,11 +6,26 @@ import { isSameOrigin, pushSubscriptionSchema } from '@/lib/push/subscription';
 
 export const runtime = 'nodejs';
 
+const optionalMoney = z.preprocess(
+  (value) => value === '' || value === null ? undefined : value,
+  z.coerce.number().finite().min(0).optional()
+);
+
 const campaignSchema = z.object({
   title: z.string().trim().min(3).max(80),
   body: z.string().trim().min(5).max(200),
   url: z.string().trim().regex(/^\/(?!\/)[^\s]*$/).max(200),
   mode: z.enum(['test', 'campaign']).default('campaign'),
+  audience: z.enum(['full', 'ticket']).default('full'),
+  ticketMin: optionalMoney,
+  ticketMax: optionalMoney,
+}).superRefine((value, context) => {
+  if (value.audience === 'ticket' && value.ticketMin === undefined && value.ticketMax === undefined) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: 'Informe ao menos um limite de ticket médio.' });
+  }
+  if (value.ticketMin !== undefined && value.ticketMax !== undefined && value.ticketMin > value.ticketMax) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: 'O ticket mínimo não pode superar o máximo.' });
+  }
 });
 
 async function getAdmin() {
@@ -24,11 +39,15 @@ async function getAdmin() {
 export async function GET() {
   const { supabase, user } = await getAdmin();
   if (!user) return Response.json({ error: 'Acesso restrito.' }, { status: 403 });
-  const { count, error } = await supabase.from('push_subscriptions').select('id', { count: 'exact', head: true });
-  if (error) return Response.json({ error: 'Não foi possível consultar as assinaturas.' }, { status: 500 });
+
+  const { data: audience, error } = await supabase.rpc('get_notification_audience');
+  if (error) return Response.json({ error: 'Não foi possível carregar a base de usuários.' }, { status: 500 });
   const { count: ownCount, error: ownError } = await supabase.from('push_subscriptions').select('id', { count: 'exact', head: true }).eq('user_id', user.id);
   if (ownError) return Response.json({ error: 'Não foi possível consultar os dispositivos de teste.' }, { status: 500 });
-  return Response.json({ count: count ?? 0, ownCount: ownCount ?? 0, configured: Boolean(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY), preview: process.env.VERCEL_ENV === 'preview' }, { headers: { 'Cache-Control': 'no-store' } });
+
+  const users = Array.isArray(audience) ? audience : [];
+  const count = users.reduce((total, item) => total + Number(item.device_count || 0), 0);
+  return Response.json({ count, ownCount: ownCount ?? 0, configured: Boolean(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY), preview: process.env.VERCEL_ENV === 'preview', users }, { headers: { 'Cache-Control': 'no-store' } });
 }
 
 export async function POST(request: Request) {
@@ -41,7 +60,7 @@ export async function POST(request: Request) {
   if (!publicKey || !privateKey) return Response.json({ error: 'Configure as chaves VAPID antes de enviar.' }, { status: 503 });
 
   const parsed = campaignSchema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) return Response.json({ error: 'Preencha título, mensagem e caminho válidos.' }, { status: 400 });
+  if (!parsed.success) return Response.json({ error: 'Preencha título, mensagem, caminho e segmento válidos.' }, { status: 400 });
   const isTest = parsed.data.mode === 'test';
   if (!isTest && process.env.VERCEL_ENV === 'preview') {
     return Response.json({ error: 'Campanhas gerais estão disponíveis somente em produção.' }, { status: 403 });
@@ -49,9 +68,28 @@ export async function POST(request: Request) {
   const limit = await checkRateLimitDistributed(getClientKey(request, isTest ? 'admin-push-test' : 'admin-push-send', user.id), isTest ? 5 : 3, 600_000);
   if (!limit.allowed) return rateLimitResponse(limit.retryAfter);
 
-  const query = supabase.from('push_subscriptions').select('id,endpoint,p256dh,auth_secret');
-  const scopedQuery = isTest ? query.eq('user_id', user.id) : query;
-  const { data: rows, error } = await scopedQuery.order('created_at', { ascending: true }).limit(isTest ? 1 : 501);
+  const query = supabase.from('push_subscriptions').select('id,user_id,endpoint,p256dh,auth_secret');
+  let rows: Array<{ id: string; user_id: string; endpoint: string; p256dh: string; auth_secret: string }> | null = null;
+  let error: { code?: string } | null = null;
+
+  if (isTest) {
+    ({ data: rows, error } = await query.eq('user_id', user.id).order('created_at', { ascending: true }).limit(1));
+  } else if (parsed.data.audience === 'ticket') {
+    const { data: audience, error: audienceError } = await supabase.rpc('get_notification_audience', {
+      p_ticket_min: parsed.data.ticketMin ?? null,
+      p_ticket_max: parsed.data.ticketMax ?? null,
+    });
+    if (audienceError) return Response.json({ error: 'Não foi possível calcular o segmento por ticket médio.' }, { status: 500 });
+
+    const userIds = (audience || [])
+      .filter((item) => item.notifications_enabled && item.has_orders)
+      .map((item) => item.user_id as string);
+    if (userIds.length === 0) return Response.json({ error: 'Nenhum dispositivo habilitado corresponde a esse ticket médio.' }, { status: 409 });
+    ({ data: rows, error } = await query.in('user_id', userIds).order('created_at', { ascending: true }).limit(501));
+  } else {
+    ({ data: rows, error } = await query.order('created_at', { ascending: true }).limit(501));
+  }
+
   if (error) return Response.json({ error: 'Não foi possível consultar as assinaturas.' }, { status: 500 });
   if (!rows?.length) return Response.json({ error: isTest ? 'Ative as notificações neste dispositivo antes do teste.' : 'Nenhum dispositivo inscrito.' }, { status: 409 });
   if (rows.length > 500) return Response.json({ error: 'Limite de 500 dispositivos por campanha. Divida o envio antes de prosseguir.' }, { status: 409 });

@@ -18,12 +18,13 @@ export async function POST(request: Request) {
   const parsed = pushSubscriptionSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return Response.json({ error: 'Assinatura de push inválida.' }, { status: 400 });
 
-  const { endpoint, keys } = parsed.data;
+  const { endpoint, keys, deviceType } = parsed.data;
   const { error } = await supabase.from('push_subscriptions').upsert({
     user_id: user.id,
     endpoint,
     p256dh: keys.p256dh,
     auth_secret: keys.auth,
+    device_type: deviceType,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'endpoint' });
 

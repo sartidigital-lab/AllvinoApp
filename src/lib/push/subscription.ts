@@ -21,6 +21,7 @@ export const pushSubscriptionSchema = z.object({
     p256dh: base64url.min(40).max(256),
     auth: base64url.min(16).max(128),
   }),
+  deviceType: z.enum(['desktop', 'mobile', 'unknown']).optional().default('unknown'),
 });
 
 export type PushSubscriptionPayload = z.infer<typeof pushSubscriptionSchema>;
