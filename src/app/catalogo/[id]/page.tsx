@@ -8,16 +8,11 @@ import { useFavorites } from '@/context/FavoritesContext';
 import { useRecentlyViewed } from '@/context/RecentlyViewedContext';
 import { ProductImage, WineDetailSkeleton } from '@/components/ui';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, Ban, CheckCircle, Grape, Heart, MapPin, TriangleAlert, Wine, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, Ban, Grape, Heart, MapPin, TriangleAlert, Wine, type LucideIcon } from 'lucide-react';
+import { getStockStatus } from '@/lib/catalog/stockStatus';
 
 function formatMoney(value: number) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-}
-
-function getStockStatus(stock: number) {
-  if (stock === 0) return { label: 'Esgotado', desc: 'Este vinho esta fora de estoque.', color: 'text-red-600 bg-red-50 border-red-200', icon: Ban };
-  if (stock <= 5) return { label: `Últimas ${stock} unidades`, desc: 'Corra, estão quase esgotando!', color: 'text-amber-700 bg-amber-50 border-amber-200', icon: TriangleAlert };
-  return { label: `${stock} unidades disponíveis`, desc: 'Estoque disponível para entrega.', color: 'text-emerald-700 bg-emerald-50 border-emerald-200', icon: CheckCircle };
 }
 
 function productAttribute(Icon: LucideIcon, label: string, value: string) {
@@ -76,7 +71,7 @@ export default function WineDetailPage() {
   }
 
   const stock = getStockStatus(wine.stock);
-  const StockIcon = stock.icon;
+  const StockIcon = stock?.tone === 'danger' ? Ban : TriangleAlert;
 
   const relatedWines = wines
     .filter((w) => w.id !== wine.id && (w.type === wine.type || w.region === wine.region || w.category === wine.category || w.grape === wine.grape))
@@ -130,13 +125,15 @@ export default function WineDetailPage() {
               <p className="mt-1 text-xs text-stone-400">Preço para pedidos online</p>
             </div>
 
-            <div className={`flex items-center gap-3 p-4 rounded-xl border ${stock.color}`}>
-              <StockIcon className="h-5 w-5" aria-hidden="true" />
-              <div>
-                <p className="font-bold text-sm">{stock.label}</p>
-                <p className="text-xs opacity-70">{stock.desc}</p>
+            {stock && (
+              <div className={`flex items-center gap-3 p-4 rounded-xl border ${stock.tone === 'danger' ? 'text-red-600 bg-red-50 border-red-200' : 'text-amber-700 bg-amber-50 border-amber-200'}`}>
+                <StockIcon className="h-5 w-5" aria-hidden="true" />
+                <div>
+                  <p className="font-bold text-sm">{stock.label}</p>
+                  <p className="text-xs opacity-70">{stock.description}</p>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="flex gap-3">
               <button

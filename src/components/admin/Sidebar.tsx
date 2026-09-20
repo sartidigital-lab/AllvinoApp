@@ -88,6 +88,7 @@ export default function Sidebar() {
   const mobileLinks = [
     flatLinks.find((link) => link.href === '/admin'),
     flatLinks.find((link) => link.href === '/admin/pedidos'),
+    flatLinks.find((link) => link.href === '/admin/notificacoes'),
     flatLinks.find((link) => link.href === '/admin/catalogo'),
   ].filter((link): link is NonNullable<typeof link> => Boolean(link));
 
@@ -179,7 +180,7 @@ export default function Sidebar() {
         <button type="button" aria-label="Fechar menu administrativo" onClick={() => setIsOpen(false)} className="fixed inset-0 z-40 bg-black/55 backdrop-blur-sm transition-opacity lg:hidden" />
       )}
 
-      <nav aria-label="Navegação rápida" className="fixed inset-x-3 bottom-3 z-30 grid grid-cols-4 rounded-[22px] border border-white/10 bg-[#171513]/95 p-1.5 text-white shadow-[0_18px_50px_rgba(23,21,19,0.28)] backdrop-blur-xl lg:hidden">
+      <nav aria-label="Navegação rápida" className="fixed inset-x-3 bottom-3 z-30 grid grid-cols-5 rounded-[22px] border border-white/10 bg-[#171513]/95 p-1.5 text-white shadow-[0_18px_50px_rgba(23,21,19,0.28)] backdrop-blur-xl lg:hidden">
         {mobileLinks.map((link) => {
           const isActive = link.href === '/admin' ? pathname === '/admin' : pathname?.startsWith(link.href);
           return (

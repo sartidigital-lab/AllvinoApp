@@ -8,9 +8,10 @@ import { useToast } from '@/context/ToastContext';
 import { useFavorites } from '@/context/FavoritesContext';
 import { useRecentlyViewed } from '@/context/RecentlyViewedContext';
 import { WineCardSkeleton, EmptyState, PageTransition, ProductImage } from '@/components/ui';
-import { Ban, CheckCircle, Heart, Plus, Search, SlidersHorizontal, TriangleAlert, Wine, X } from 'lucide-react';
+import { Ban, Heart, Plus, Search, SlidersHorizontal, TriangleAlert, Wine, X } from 'lucide-react';
 import { CatalogBannerCarousel } from '@/components/catalog/CatalogBannerCarousel';
 import { WinePrice } from '@/components/catalog/WinePrice';
+import { getStockStatus } from '@/lib/catalog/stockStatus';
 import type { CatalogBanner } from '@/types/database';
 
 const priceRanges = [
@@ -20,12 +21,6 @@ const priceRanges = [
   { label: 'R$200 - R$500', min: 200, max: 500 },
   { label: 'Acima de R$500', min: 500, max: Infinity },
 ];
-
-function getStockStatus(stock: number) {
-  if (stock === 0) return { label: 'Esgotado', color: 'bg-red-100 text-red-700', icon: Ban };
-  if (stock <= 5) return { label: `Últimas ${stock} un.`, color: 'bg-amber-100 text-amber-700', icon: TriangleAlert };
-  return { label: `${stock} un.`, color: 'bg-emerald-100 text-emerald-700', icon: CheckCircle };
-}
 
 export default function CatalogoPage() {
   const { wines, isLoading, isOffline } = useWines();
@@ -333,7 +328,7 @@ export default function CatalogoPage() {
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
             {filteredWines.map((wine) => {
               const stock = getStockStatus(wine.stock);
-              const StockIcon = stock.icon;
+              const StockIcon = stock?.tone === 'danger' ? Ban : TriangleAlert;
               return (
                 <Link
                   key={wine.id}
@@ -349,10 +344,12 @@ export default function CatalogoPage() {
                       sizes="(max-width: 768px) 50vw, 320px"
                       className="w-full h-48 object-contain mix-blend-multiply p-4"
                     />
-                    <span className={`absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${stock.color}`}>
-                      <StockIcon className="mr-0.5 inline h-3 w-3 align-[-2px]" aria-hidden="true" />
-                      {stock.label}
-                    </span>
+                    {stock && (
+                      <span className={`absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${stock.tone === 'danger' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+                        <StockIcon className="mr-0.5 inline h-3 w-3 align-[-2px]" aria-hidden="true" />
+                        {stock.label}
+                      </span>
+                    )}
                     {wine.discount_percent && (
                       <span className="absolute left-2 top-2 rounded-full bg-brand-primary px-2.5 py-1 text-[10px] font-black text-white shadow-lg shadow-red-950/20">
                         -{wine.discount_percent}%
