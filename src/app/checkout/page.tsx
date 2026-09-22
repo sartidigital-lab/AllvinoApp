@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
@@ -26,12 +26,44 @@ import { DeliveryZone, Promotion } from '@/types/database';
 
 const SALES_WHATSAPP_NUMBER = '5527992770952';
 
+type AddressFields = {
+  logradouro: string;
+  numero: string;
+  bairro: string;
+  localidade: string;
+  uf: string;
+};
+
+type BrasilApiCepResponse = {
+  street?: string | null;
+  neighborhood?: string | null;
+  city?: string | null;
+  state?: string | null;
+};
+
+const EMPTY_ADDRESS: AddressFields = {
+  logradouro: '',
+  numero: '',
+  bairro: '',
+  localidade: '',
+  uf: '',
+};
+
+function formatDeliveryAddress(address: AddressFields) {
+  const streetAndNumber = [address.logradouro, address.numero].filter(Boolean).join(', ');
+  const cityAndState = [address.localidade, address.uf].filter(Boolean).join('/');
+
+  return [streetAndNumber, address.bairro, cityAndState].filter(Boolean).join(' - ');
+}
+
 export default function CheckoutPage() {
   const { cart, cartTotal, clearCart } = useCart();
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [entrega, setEntrega] = useState('entrega');
-  const [endereco, setEndereco] = useState('');
+  const [address, setAddress] = useState<AddressFields>(EMPTY_ADDRESS);
   const [cep, setCep] = useState('');
+  const [isLookingUpAddress, setIsLookingUpAddress] = useState(false);
+  const [addressLookupMessage, setAddressLookupMessage] = useState<string | null>(null);
   const [deliveryZone, setDeliveryZone] = useState<DeliveryZone | null>(null);
   const [deliveryMessage, setDeliveryMessage] = useState<string | null>(null);
   const [unsupportedZip, setUnsupportedZip] = useState<string | null>(null);
@@ -45,6 +77,10 @@ export default function CheckoutPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
   const [copyMessage, setCopyMessage] = useState<string | null>(null);
+  const addressLookupControllerRef = useRef<AbortController | null>(null);
+  const addressLookupRequestRef = useRef(0);
+  const numberInputRef = useRef<HTMLInputElement>(null);
+  const numberFocusTimeoutRef = useRef<number | null>(null);
   const [successOrderId, setSuccessOrderId] = useState<string | null>(null);
   const [successSummary, setSuccessSummary] = useState<{
     total: number;
@@ -76,6 +112,13 @@ export default function CheckoutPage() {
     };
 
     fetchUser();
+  }, []);
+
+  useEffect(() => () => {
+    addressLookupControllerRef.current?.abort();
+    if (numberFocusTimeoutRef.current !== null) {
+      window.clearTimeout(numberFocusTimeoutRef.current);
+    }
   }, []);
 
   const pickupDiscount = entrega === 'retirada' ? cartTotal * 0.1 : 0;
@@ -192,15 +235,91 @@ export default function CheckoutPage() {
     setIsCheckingDelivery(false);
   };
 
+  const handleAddressFieldChange = (field: keyof AddressFields, value: string) => {
+    setAddress((currentAddress) => ({
+      ...currentAddress,
+      [field]: field === 'uf' ? value.toUpperCase().slice(0, 2) : value,
+    }));
+  };
+
+  const lookupAddressByZipCode = async (zipCode: string) => {
+    addressLookupControllerRef.current?.abort();
+    const controller = new AbortController();
+    const requestId = addressLookupRequestRef.current + 1;
+
+    addressLookupControllerRef.current = controller;
+    addressLookupRequestRef.current = requestId;
+    setIsLookingUpAddress(true);
+    setAddressLookupMessage(null);
+
+    try {
+      const response = await fetch(`https://brasilapi.com.br/api/cep/v2/${zipCode}`, {
+        signal: controller.signal,
+      });
+
+      if (!response.ok) throw new Error(`CEP lookup failed with status ${response.status}`);
+
+      const data = await response.json() as BrasilApiCepResponse;
+      if (addressLookupRequestRef.current !== requestId) return;
+
+      setAddress((currentAddress) => ({
+        ...currentAddress,
+        logradouro: data.street || '',
+        bairro: data.neighborhood || '',
+        localidade: data.city || '',
+        uf: data.state || '',
+      }));
+      setAddressLookupMessage('Endereço preenchido automaticamente.');
+
+      if (numberFocusTimeoutRef.current !== null) {
+        window.clearTimeout(numberFocusTimeoutRef.current);
+      }
+      numberFocusTimeoutRef.current = window.setTimeout(() => {
+        numberInputRef.current?.focus();
+        numberFocusTimeoutRef.current = null;
+      }, 0);
+    } catch {
+      if (controller.signal.aborted || addressLookupRequestRef.current !== requestId) return;
+
+      setAddress(EMPTY_ADDRESS);
+      setAddressLookupMessage('CEP não encontrado. Preencha o endereço manualmente.');
+    } finally {
+      if (addressLookupRequestRef.current === requestId) {
+        setIsLookingUpAddress(false);
+      }
+    }
+  };
+
+  const handleZipCodeChange = (value: string) => {
+    const normalizedZip = normalizeZipCode(value);
+    const currentZip = normalizeZipCode(cep);
+
+    setCep(formatZipCode(normalizedZip));
+    setDeliveryZone(null);
+    setUnsupportedZip(null);
+    addressLookupControllerRef.current?.abort();
+    setIsLookingUpAddress(false);
+
+    if (normalizedZip.length < 8) {
+      setAddressLookupMessage(null);
+      return;
+    }
+
+    if (normalizedZip === currentZip) return;
+
+    void lookupAddressByZipCode(normalizedZip);
+  };
+
   const handleFinalizar = async () => {
     setCheckoutMessage(null);
+    const deliveryAddress = formatDeliveryAddress(address);
 
     if (cart.length === 0) {
       setCheckoutMessage('Carrinho vazio. Adicione pelo menos um vinho antes de finalizar.');
       return;
     }
 
-    if (entrega === 'entrega' && !endereco.trim()) {
+    if (entrega === 'entrega' && !deliveryAddress) {
       setCheckoutMessage('Informe o seu endereço para entrega.');
       return;
     }
@@ -232,7 +351,7 @@ export default function CheckoutPage() {
       finalTotal,
       entrega === 'retirada' ? 'Retirada na Loja' : 'Entrega no Endereço',
       pagamento,
-      entrega === 'entrega' ? endereco : undefined,
+      entrega === 'entrega' ? deliveryAddress : undefined,
       appliedPromotion?.code,
       entrega === 'entrega' ? normalizeZipCode(cep) : undefined
     );
@@ -262,7 +381,7 @@ export default function CheckoutPage() {
       paymentMethod: isCardPayment ? 'Cartao (Link)' : 'Pix',
       installments: orderInstallments,
       deliveryType: entrega === 'retirada' ? 'Retirada na loja (-10% OFF)' : 'Entrega no endereço',
-      deliveryAddress: entrega === 'entrega' ? (order.delivery_address || endereco) : null,
+      deliveryAddress: entrega === 'entrega' ? (order.delivery_address || deliveryAddress) : null,
       deliveryZipCode: order.delivery_zip_code ? formatZipCode(order.delivery_zip_code) : null,
       deliveryZoneName: order.delivery_zone_name,
       deliveryEstimateDays: order.delivery_estimate_days,
@@ -595,12 +714,12 @@ export default function CheckoutPage() {
               <div className="flex gap-2">
                 <input
                   value={cep}
-                  onChange={(event) => {
-                    setCep(formatZipCode(event.target.value));
-                    setDeliveryZone(null);
-                    setUnsupportedZip(null);
-                  }}
+                  onChange={(event) => handleZipCodeChange(event.target.value)}
                   placeholder="CEP"
+                  inputMode="numeric"
+                  autoComplete="postal-code"
+                  maxLength={9}
+                  aria-describedby="cep-status"
                   className="min-w-0 flex-1 border-stone-200 rounded-2xl p-4 text-sm font-bold outline-none focus:border-black transition-colors"
                 />
                 <button
@@ -611,6 +730,19 @@ export default function CheckoutPage() {
                 >
                   {isCheckingDelivery ? 'Calculando...' : 'Calcular'}
                 </button>
+              </div>
+              <div id="cep-status" aria-live="polite">
+                {isLookingUpAddress && (
+                  <p className="flex items-center gap-2 text-xs font-bold text-stone-500">
+                    <span className="material-symbols-outlined animate-spin text-base" aria-hidden="true">progress_activity</span>
+                    Buscando endereço pelo CEP...
+                  </p>
+                )}
+                {addressLookupMessage && (
+                  <p role={addressLookupMessage.startsWith('CEP não encontrado') ? 'alert' : 'status'} className={`text-xs font-bold ${addressLookupMessage.startsWith('CEP não encontrado') ? 'text-red-700' : 'text-emerald-700'}`}>
+                    {addressLookupMessage}
+                  </p>
+                )}
               </div>
               {deliveryMessage && (
                 <p className={`text-xs font-bold ${deliveryZone ? 'text-emerald-700' : 'text-stone-500'}`}>
@@ -628,13 +760,61 @@ export default function CheckoutPage() {
                   Consultar atendimento pelo WhatsApp
                 </a>
               )}
-              <textarea
-                value={endereco}
-                onChange={(event) => setEndereco(event.target.value)}
-                placeholder="Rua, número, bairro e cidade para entrega..."
-                className="w-full border-stone-200 rounded-2xl p-4 text-sm outline-none focus:border-black transition-colors"
-                rows={3}
-              />
+              <fieldset disabled={isLookingUpAddress} aria-busy={isLookingUpAddress} className="grid grid-cols-1 gap-3 disabled:opacity-60 sm:grid-cols-2">
+                <label className="space-y-1 sm:col-span-2">
+                  <span className="ml-1 text-[10px] font-bold uppercase tracking-widest text-stone-400">Rua/Avenida</span>
+                  <input
+                    value={address.logradouro}
+                    onChange={(event) => handleAddressFieldChange('logradouro', event.target.value)}
+                    placeholder="Rua, avenida ou travessa"
+                    autoComplete="street-address"
+                    className="w-full rounded-2xl border-stone-200 p-4 text-sm outline-none transition-colors focus:border-black"
+                  />
+                </label>
+                <label className="space-y-1">
+                  <span className="ml-1 text-[10px] font-bold uppercase tracking-widest text-stone-400">Número</span>
+                  <input
+                    ref={numberInputRef}
+                    value={address.numero}
+                    onChange={(event) => handleAddressFieldChange('numero', event.target.value)}
+                    placeholder="Número"
+                    inputMode="numeric"
+                    autoComplete="address-line2"
+                    className="w-full rounded-2xl border-stone-200 p-4 text-sm outline-none transition-colors focus:border-black"
+                  />
+                </label>
+                <label className="space-y-1">
+                  <span className="ml-1 text-[10px] font-bold uppercase tracking-widest text-stone-400">Bairro</span>
+                  <input
+                    value={address.bairro}
+                    onChange={(event) => handleAddressFieldChange('bairro', event.target.value)}
+                    placeholder="Bairro"
+                    autoComplete="address-level3"
+                    className="w-full rounded-2xl border-stone-200 p-4 text-sm outline-none transition-colors focus:border-black"
+                  />
+                </label>
+                <label className="space-y-1">
+                  <span className="ml-1 text-[10px] font-bold uppercase tracking-widest text-stone-400">Cidade</span>
+                  <input
+                    value={address.localidade}
+                    onChange={(event) => handleAddressFieldChange('localidade', event.target.value)}
+                    placeholder="Cidade"
+                    autoComplete="address-level2"
+                    className="w-full rounded-2xl border-stone-200 p-4 text-sm outline-none transition-colors focus:border-black"
+                  />
+                </label>
+                <label className="space-y-1">
+                  <span className="ml-1 text-[10px] font-bold uppercase tracking-widest text-stone-400">Estado</span>
+                  <input
+                    value={address.uf}
+                    onChange={(event) => handleAddressFieldChange('uf', event.target.value)}
+                    placeholder="UF"
+                    autoComplete="address-level1"
+                    maxLength={2}
+                    className="w-full rounded-2xl border-stone-200 p-4 text-sm uppercase outline-none transition-colors focus:border-black"
+                  />
+                </label>
+              </fieldset>
             </div>
           )}
         </div>
