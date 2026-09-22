@@ -13,6 +13,7 @@ import {
 } from '@/lib/database/promotions';
 import { fetchDeliveryQuote } from '@/lib/database/delivery';
 import { calculateShippingFee, formatZipCode, normalizeZipCode } from '@/lib/delivery/rules';
+import { lookupCepAddress } from '@/lib/address/cep';
 import { createPixPayload, createPixQrCode, getPixConfig } from '@/lib/payments/pix';
 import {
   calculatePixDiscount,
@@ -32,13 +33,6 @@ type AddressFields = {
   bairro: string;
   localidade: string;
   uf: string;
-};
-
-type BrasilApiCepResponse = {
-  street?: string | null;
-  neighborhood?: string | null;
-  city?: string | null;
-  state?: string | null;
 };
 
 const EMPTY_ADDRESS: AddressFields = {
@@ -253,23 +247,17 @@ export default function CheckoutPage() {
     setAddressLookupMessage(null);
 
     try {
-      const response = await fetch(`https://brasilapi.com.br/api/cep/v2/${zipCode}`, {
-        signal: controller.signal,
-      });
-
-      if (!response.ok) throw new Error(`CEP lookup failed with status ${response.status}`);
-
-      const data = await response.json() as BrasilApiCepResponse;
+      const data = await lookupCepAddress(zipCode, controller.signal);
       if (addressLookupRequestRef.current !== requestId) return;
 
       setAddress((currentAddress) => ({
         ...currentAddress,
-        logradouro: data.street || '',
-        bairro: data.neighborhood || '',
-        localidade: data.city || '',
-        uf: data.state || '',
+        logradouro: data.logradouro,
+        bairro: data.bairro,
+        localidade: data.localidade,
+        uf: data.uf,
       }));
-      setAddressLookupMessage('Endereço preenchido automaticamente.');
+      setAddressLookupMessage(`Endereço preenchido automaticamente via ${data.source}.`);
 
       if (numberFocusTimeoutRef.current !== null) {
         window.clearTimeout(numberFocusTimeoutRef.current);
