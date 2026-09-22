@@ -73,6 +73,7 @@ export default function CheckoutPage() {
   const [copyMessage, setCopyMessage] = useState<string | null>(null);
   const addressLookupControllerRef = useRef<AbortController | null>(null);
   const addressLookupRequestRef = useRef(0);
+  const deliveryRequestRef = useRef(0);
   const numberInputRef = useRef<HTMLInputElement>(null);
   const numberFocusTimeoutRef = useRef<number | null>(null);
   const [successOrderId, setSuccessOrderId] = useState<string | null>(null);
@@ -189,8 +190,10 @@ export default function CheckoutPage() {
     }
   };
 
-  const handleCalculateDelivery = async () => {
-    const normalizedZip = normalizeZipCode(cep);
+  const handleCalculateDelivery = async (zipCodeOverride?: string) => {
+    const normalizedZip = normalizeZipCode(zipCodeOverride ?? cep);
+    const requestId = deliveryRequestRef.current + 1;
+    deliveryRequestRef.current = requestId;
 
     if (normalizedZip.length !== 8) {
       setDeliveryMessage('Informe um CEP com 8 dígitos.');
@@ -203,6 +206,7 @@ export default function CheckoutPage() {
     setDeliveryMessage(null);
 
     const { zone, shippingFee: nextShippingFee, error } = await fetchDeliveryQuote(normalizedZip, cartTotal);
+    if (deliveryRequestRef.current !== requestId) return;
 
     if (error) {
       setDeliveryMessage('Não foi possível calcular o frete agora.');
@@ -282,9 +286,12 @@ export default function CheckoutPage() {
     const normalizedZip = normalizeZipCode(value);
     const currentZip = normalizeZipCode(cep);
 
+    deliveryRequestRef.current += 1;
+    setIsCheckingDelivery(false);
     setCep(formatZipCode(normalizedZip));
     setDeliveryZone(null);
     setUnsupportedZip(null);
+    setDeliveryMessage(null);
     addressLookupControllerRef.current?.abort();
     setIsLookingUpAddress(false);
 
@@ -296,6 +303,7 @@ export default function CheckoutPage() {
     if (normalizedZip === currentZip) return;
 
     void lookupAddressByZipCode(normalizedZip);
+    if (cart.length > 0) void handleCalculateDelivery(normalizedZip);
   };
 
   const handleFinalizar = async () => {
@@ -712,7 +720,7 @@ export default function CheckoutPage() {
                 />
                 <button
                   type="button"
-                  onClick={handleCalculateDelivery}
+                  onClick={() => void handleCalculateDelivery()}
                   disabled={isCheckingDelivery || cart.length === 0}
                   className="rounded-2xl bg-black px-4 text-sm font-bold text-white disabled:opacity-50"
                 >
