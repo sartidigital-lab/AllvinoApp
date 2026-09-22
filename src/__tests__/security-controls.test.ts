@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { safeInternalRedirect } from '@/lib/auth/safeRedirect';
 import { checkRateLimit } from '@/lib/security/rateLimit';
@@ -39,5 +40,13 @@ describe('security controls', () => {
     expect(getPasswordPolicyError('Abcdefgh')).toContain('número');
     expect(getPasswordPolicyError('Abcdefg1')).toContain('símbolo');
     expect(getPasswordPolicyError('Abcdefg1!')).toBeNull();
+  });
+
+  it('allows CEP providers in the browser connection policy', () => {
+    const nextConfig = readFileSync('next.config.mjs', 'utf8');
+
+    expect(nextConfig).toContain("connect-src 'self'");
+    expect(nextConfig).toContain('https://brasilapi.com.br');
+    expect(nextConfig).toContain('https://viacep.com.br');
   });
 });
