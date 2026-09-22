@@ -257,7 +257,7 @@ export default function CheckoutPage() {
         localidade: data.localidade,
         uf: data.uf,
       }));
-      setAddressLookupMessage(`Endereço preenchido automaticamente via ${data.source}.`);
+      setAddressLookupMessage('Endereço preenchido automaticamente.');
 
       if (numberFocusTimeoutRef.current !== null) {
         window.clearTimeout(numberFocusTimeoutRef.current);
