@@ -8,13 +8,13 @@ import { useToast } from '@/context/ToastContext';
 import { useFavorites } from '@/context/FavoritesContext';
 import { useRecentlyViewed } from '@/context/RecentlyViewedContext';
 import { WineCardSkeleton, EmptyState, PageTransition, ProductImage } from '@/components/ui';
-import { Ban, Heart, Search, Share2, ShoppingCart, SlidersHorizontal, Star, TriangleAlert, Wine, X } from 'lucide-react';
+import { Ban, Heart, Search, Share2, ShoppingCart, SlidersHorizontal, Star, TriangleAlert, Wine as WineIcon, X } from 'lucide-react';
 import { CatalogBannerCarousel } from '@/components/catalog/CatalogBannerCarousel';
 import { WinePrice } from '@/components/catalog/WinePrice';
 import { FlashOfferCountdown } from '@/components/catalog/FlashOfferCountdown';
 import { getStockStatus } from '@/lib/catalog/stockStatus';
 import { getGrapeClassification } from '@/lib/catalog/grapes';
-import type { CatalogBanner } from '@/types/database';
+import type { CatalogBanner, CatalogProductCategory, Wine } from '@/types/database';
 
 const priceRanges = [
   { label: 'Até R$50', min: 0, max: 50 },
@@ -23,6 +23,37 @@ const priceRanges = [
   { label: 'R$200 - R$500', min: 200, max: 500 },
   { label: 'Acima de R$500', min: 500, max: Infinity },
 ];
+
+type CatalogProductCardProps = {
+  wine: Wine;
+  onAddToCart: (wine: Wine) => void;
+  onToggleFavorite: (wine: Wine) => void;
+  onShare: (wine: Wine) => void;
+  isFavorite: boolean;
+};
+
+function CatalogProductCard({ wine, onAddToCart, onToggleFavorite, onShare, isFavorite }: CatalogProductCardProps) {
+  const stock = getStockStatus(wine.stock);
+  const StockIcon = stock?.tone === 'danger' ? Ban : TriangleAlert;
+  const pixPrice = Number((wine.price * 0.95).toFixed(2));
+  const installmentPrice = Number((wine.price / 3).toFixed(2));
+
+  return (
+    <article className="w-[min(84vw,300px)] shrink-0 overflow-hidden bg-transparent transition-transform hover:-translate-y-0.5 md:w-[280px] md:rounded-brand-2xl md:border md:border-[#3c2528] md:bg-white md:shadow-[0_2px_10px_rgba(54,16,24,0.08)]">
+      <Link href={`/catalogo/${wine.id}`} className="block active:scale-[0.99]">
+        <div className="relative md:border-b md:border-stone-100 md:bg-[#fdfbf8]">
+          <ProductImage src={wine.image_url} alt={wine.name} width={300} height={400} sizes="(max-width: 767px) 84vw, 280px" className="h-52 w-full object-contain mix-blend-multiply p-3" />
+          {stock && <span className={`absolute right-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-bold ${stock.tone === 'danger' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}><StockIcon className="mr-0.5 inline h-3 w-3 align-[-2px]" aria-hidden="true" />{stock.label}</span>}
+          {wine.discount_percent && <span className="absolute right-2 top-2 rounded-md bg-[#d21f2b] px-2.5 py-1 text-[10px] font-black text-white shadow-lg shadow-red-950/20">-{wine.discount_percent}%</span>}
+          {wine.product_kind === 'kit' && <span className="absolute left-2 top-2 rounded-md bg-[#c58b31] px-2 py-1 text-[9px] font-black uppercase tracking-wide text-white">Kit · {wine.kit_item_count || 0} itens</span>}
+        </div>
+        <div className="px-3 pb-2 pt-3"><p className="text-[10px] font-bold uppercase tracking-wide text-stone-400">{wine.product_kind === 'kit' ? 'Seleção especial' : wine.type || wine.region || 'Vinho'}</p><h3 className="mt-1 min-h-10 font-serif text-[15px] font-bold leading-5 text-stone-950 line-clamp-2">{wine.name}</h3><p className="mt-2 flex items-center gap-1 text-[10px] text-stone-400"><span className="flex text-stone-300">{Array.from({ length: 5 }).map((_, index) => <Star key={index} className="h-3 w-3" />)}</span> Sem avaliações</p></div>
+      </Link>
+      <div className="grid grid-cols-2 text-xs font-medium text-[#741128] md:border-y md:border-stone-200"><button onClick={() => onToggleFavorite(wine)} type="button" className="flex min-h-9 items-center justify-center gap-1 hover:bg-[#fdf5f6] md:border-r md:border-stone-200" aria-label={isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}><Heart className={`h-4 w-4 ${isFavorite ? 'fill-current' : ''}`} />Favoritar</button><button onClick={() => onShare(wine)} type="button" className="flex min-h-9 items-center justify-center gap-1 hover:bg-[#fdf5f6]"><Share2 className="h-4 w-4" />Compartilhar</button></div>
+      <div className="space-y-2 p-3"><WinePrice wine={wine} /><p className="text-[10px] font-bold text-emerald-700">À vista <span className="text-sm font-black">R$ {pixPrice.toFixed(2).replace('.', ',')}</span> no PIX <span className="rounded bg-emerald-600 px-1 py-0.5 text-[9px] text-white">5% OFF</span></p><p className="text-[10px] font-medium text-stone-600">ou 3x de R$ {installmentPrice.toFixed(2).replace('.', ',')} sem juros</p>{wine.show_countdown && <FlashOfferCountdown endsAt={wine.promotion_ends_at} />}<button onClick={() => onAddToCart(wine)} type="button" disabled={wine.stock === 0} className="mt-1 flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#82c341] px-3 text-xs font-bold text-white shadow-sm transition hover:bg-[#6eae31] disabled:cursor-not-allowed disabled:opacity-40"><ShoppingCart className="h-4 w-4" />{wine.stock === 0 ? 'Indisponível' : 'Adicionar ao carrinho'}</button></div>
+    </article>
+  );
+}
 
 export default function CatalogoPage() {
   const { wines, isLoading, isOffline } = useWines();
@@ -40,6 +71,7 @@ export default function CatalogoPage() {
   const [selectedRegion, setSelectedRegion] = useState('');
   const [selectedPromotion, setSelectedPromotion] = useState('');
   const [banners, setBanners] = useState<CatalogBanner[]>([]);
+  const [productCategories, setProductCategories] = useState<CatalogProductCategory[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const deferredSearch = useDeferredValue(search);
 
@@ -55,6 +87,13 @@ export default function CatalogoPage() {
       .then((response) => (response.ok ? response.json() : []))
       .then((data) => {
         if (active && Array.isArray(data)) setBanners(data as CatalogBanner[]);
+      })
+      .catch(() => undefined);
+
+    fetch('/api/catalogo/categorias', { cache: 'no-store' })
+      .then((response) => (response.ok ? response.json() : []))
+      .then((data) => {
+        if (active && Array.isArray(data)) setProductCategories(data as CatalogProductCategory[]);
       })
       .catch(() => undefined);
 
@@ -119,6 +158,25 @@ export default function CatalogoPage() {
 
     return result;
   }, [wines, deferredSearch, sortBy, selectedPrice, selectedType, selectedGrape, selectedCountry, selectedRegion, selectedPromotion]);
+
+  const hasActiveCatalogFilters = Boolean(search || selectedPrice !== null || selectedType || selectedGrape || selectedCountry || selectedRegion || selectedPromotion);
+  const catalogSections = useMemo(() => {
+    const allProducts = { id: 'todos-os-produtos', title: 'Todos os produtos', slug: 'todos-os-produtos', wines: filteredWines };
+    if (hasActiveCatalogFilters) return [allProducts];
+
+    const productsById = new Map(filteredWines.map((wine) => [wine.id, wine]));
+    const managedSections = productCategories
+      .filter((category) => category.is_active)
+      .map((category) => ({
+        id: category.id,
+        title: category.title,
+        slug: category.slug,
+        wines: category.items.map((item) => productsById.get(item.product_id)).filter((wine): wine is Wine => Boolean(wine)),
+      }))
+      .filter((section) => section.wines.length > 0);
+
+    return [...managedSections, allProducts];
+  }, [filteredWines, hasActiveCatalogFilters, productCategories]);
 
   const activeFilterCount = [selectedPrice !== null, selectedType, selectedGrape, selectedCountry, selectedRegion, selectedPromotion, search].filter(Boolean).length;
 
@@ -313,84 +371,33 @@ export default function CatalogoPage() {
         </div>
       )}
 
-      {/* Content */}
+      {/* Product sections */}
       <div id="ofertas" className="mx-auto max-w-7xl scroll-mt-32 px-4 pt-6 lg:px-8">
         {!isLoading && (
           <div className="mb-3 flex items-center justify-between gap-3 text-xs font-bold text-stone-500" role="status" aria-live="polite">
-            <span>{filteredWines.length} {filteredWines.length === 1 ? 'vinho encontrado' : 'vinhos encontrados'}</span>
+            <span>{filteredWines.length} {filteredWines.length === 1 ? 'produto encontrado' : 'produtos encontrados'}</span>
             {activeFilterCount > 0 && <span className="text-brand-primary">Filtros ativos</span>}
           </div>
         )}
+        {!isLoading && catalogSections.length > 1 && (
+          <nav className="mb-6 flex gap-2 overflow-x-auto pb-1 scrollbar-hide" aria-label="Navegar pelas categorias do catálogo">
+            {catalogSections.map((section) => <a key={section.id} href={`#${section.slug}`} className="shrink-0 rounded-full border border-stone-200 bg-white px-4 py-2 text-xs font-bold text-stone-700 transition hover:border-brand-primary hover:text-brand-primary">{section.title}</a>)}
+          </nav>
+        )}
         {isLoading ? (
-          <div className="grid grid-cols-1 gap-5 min-[520px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <WineCardSkeleton key={i} />
-            ))}
-          </div>
+          <div className="flex gap-4 overflow-hidden">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="w-[min(84vw,300px)] shrink-0 md:w-[280px]"><WineCardSkeleton /></div>)}</div>
         ) : filteredWines.length === 0 ? (
-          <div className="text-center py-16">
-            <Wine className="mx-auto h-12 w-12 text-stone-200" aria-hidden="true" />
-            <p className="mt-4 font-bold text-stone-400">Nenhum vinho encontrado.</p>
-            {activeFilterCount > 0 && (
-              <button onClick={clearFilters} className="mt-2 text-sm font-bold text-brand-primary">
-                Limpar filtros
-              </button>
-            )}
-          </div>
+          <div className="py-16 text-center"><WineIcon className="mx-auto h-12 w-12 text-stone-200" aria-hidden="true" /><p className="mt-4 font-bold text-stone-400">Nenhum vinho encontrado.</p>{activeFilterCount > 0 && <button onClick={clearFilters} className="mt-2 text-sm font-bold text-brand-primary">Limpar filtros</button>}</div>
         ) : (
-          <div className="grid grid-cols-1 gap-5 min-[520px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
-            {filteredWines.map((wine) => {
-              const stock = getStockStatus(wine.stock);
-              const StockIcon = stock?.tone === 'danger' ? Ban : TriangleAlert;
-              const pixPrice = Number((wine.price * 0.95).toFixed(2));
-              const installmentPrice = Number((wine.price / 3).toFixed(2));
-              return (
-                <article key={wine.id} className="overflow-hidden bg-transparent transition-transform hover:-translate-y-0.5 md:rounded-brand-2xl md:border md:border-[#3c2528] md:bg-white md:shadow-[0_2px_10px_rgba(54,16,24,0.08)]">
-                  <Link href={`/catalogo/${wine.id}`} className="block active:scale-[0.99]">
-                    <div className="relative md:border-b md:border-stone-100 md:bg-[#fdfbf8]">
-                    <ProductImage
-                      src={wine.image_url}
-                      alt={wine.name}
-                      width={300}
-                      height={400}
-                      sizes="(max-width: 519px) 100vw, (max-width: 768px) 50vw, 320px"
-                      className="h-64 w-full object-contain mix-blend-multiply p-3 min-[520px]:h-48 sm:h-56"
-                    />
-                    {stock && (
-                      <span className={`absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${stock.tone === 'danger' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
-                        <StockIcon className="mr-0.5 inline h-3 w-3 align-[-2px]" aria-hidden="true" />
-                        {stock.label}
-                      </span>
-                    )}
-                    {wine.discount_percent && (
-                      <span className="absolute right-2 top-2 rounded-md bg-[#d21f2b] px-2.5 py-1 text-[10px] font-black text-white shadow-lg shadow-red-950/20">
-                        -{wine.discount_percent}%
-                      </span>
-                    )}
-                    {wine.product_kind === 'kit' && (
-                      <span className="absolute left-2 top-2 rounded-md bg-[#c58b31] px-2 py-1 text-[9px] font-black uppercase tracking-wide text-white">Kit · {wine.kit_item_count || 0} itens</span>
-                    )}
-                    </div>
-                    <div className="px-3 pb-2 pt-3">
-                      <p className="text-[10px] font-bold uppercase tracking-wide text-stone-400">{wine.product_kind === 'kit' ? 'Seleção especial' : wine.type || wine.region || 'Vinho'}</p>
-                      <h3 className="mt-1 min-h-10 font-serif text-[15px] font-bold leading-5 text-stone-950 line-clamp-2">{wine.name}</h3>
-                      <p className="mt-2 flex items-center gap-1 text-[10px] text-stone-400"><span className="flex text-stone-300">{Array.from({ length: 5 }).map((_, index) => <Star key={index} className="h-3 w-3" />)}</span> Sem avaliações</p>
-                    </div>
-                  </Link>
-                  <div className="grid grid-cols-2 text-xs font-medium text-[#741128] md:border-y md:border-stone-200">
-                    <button onClick={() => { toggleFavorite(wine); showToast(isFavorite(wine.id) ? 'Removido dos favoritos' : 'Adicionado aos favoritos', 'info'); }} type="button" className="flex min-h-9 items-center justify-center gap-1 hover:bg-[#fdf5f6] md:border-r md:border-stone-200" aria-label={isFavorite(wine.id) ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}><Heart className={`h-4 w-4 ${isFavorite(wine.id) ? 'fill-current' : ''}`} />Favoritar</button>
-                    <button onClick={() => { if (navigator.share) { void navigator.share({ title: wine.name, url: `${window.location.origin}/catalogo/${wine.id}` }); } else { void navigator.clipboard?.writeText(`${window.location.origin}/catalogo/${wine.id}`); showToast('Link do produto copiado.', 'success'); } }} type="button" className="flex min-h-9 items-center justify-center gap-1 hover:bg-[#fdf5f6]"><Share2 className="h-4 w-4" />Compartilhar</button>
-                  </div>
-                  <div className="space-y-2 p-3">
-                    <WinePrice wine={wine} />
-                    <p className="text-[10px] font-bold text-emerald-700">À vista <span className="text-sm font-black">R$ {pixPrice.toFixed(2).replace('.', ',')}</span> no PIX <span className="rounded bg-emerald-600 px-1 py-0.5 text-[9px] text-white">5% OFF</span></p>
-                    <p className="text-[10px] font-medium text-stone-600">ou 3x de R$ {installmentPrice.toFixed(2).replace('.', ',')} sem juros</p>
-                    {wine.show_countdown && <FlashOfferCountdown endsAt={wine.promotion_ends_at} />}
-                    <button onClick={() => { if (wine.stock > 0) { addToCart(wine); showToast(`${wine.product_kind === 'kit' ? 'Kit' : 'Vinho'} adicionado ao carrinho!`, 'success'); } }} type="button" disabled={wine.stock === 0} className="mt-1 flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#82c341] px-3 text-xs font-bold text-white shadow-sm transition hover:bg-[#6eae31] disabled:cursor-not-allowed disabled:opacity-40"><ShoppingCart className="h-4 w-4" />{wine.stock === 0 ? 'Indisponível' : 'Adicionar ao carrinho'}</button>
-                  </div>
-                </article>
-              );
-            })}
+          <div className="space-y-10">
+            {catalogSections.map((section) => (
+              <section key={section.id} id={section.slug} className="scroll-mt-36" aria-label={section.title}>
+                <div className="mb-4 flex items-end justify-between gap-4"><div><p className="text-[10px] font-black uppercase tracking-[0.24em] text-brand-primary">Catálogo Allvino</p><h2 className="mt-1 font-serif text-2xl font-bold text-stone-950">{section.title}</h2></div><span className="text-xs font-bold text-stone-400">Deslize para ver mais</span></div>
+                <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-3 scrollbar-hide lg:-mx-8 lg:px-8">
+                  {section.wines.map((wine) => <div key={wine.id} className="snap-start"><CatalogProductCard wine={wine} isFavorite={isFavorite(wine.id)} onAddToCart={(item) => { if (item.stock > 0) { addToCart(item); showToast(`${item.product_kind === 'kit' ? 'Kit' : 'Vinho'} adicionado ao carrinho!`, 'success'); } }} onToggleFavorite={(item) => { toggleFavorite(item); showToast(isFavorite(item.id) ? 'Removido dos favoritos' : 'Adicionado aos favoritos', 'info'); }} onShare={(item) => { if (navigator.share) { void navigator.share({ title: item.name, url: `${window.location.origin}/catalogo/${item.id}` }); } else { void navigator.clipboard?.writeText(`${window.location.origin}/catalogo/${item.id}`); showToast('Link do produto copiado.', 'success'); } }} /></div>)}
+                </div>
+              </section>
+            ))}
           </div>
         )}
       </div>

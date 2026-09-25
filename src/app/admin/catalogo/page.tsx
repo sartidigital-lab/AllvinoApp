@@ -10,7 +10,7 @@ import { Wine } from '@/types/database';
 import { ProductImage } from '@/components/ui';
 import { parseGrapes, serializeGrapes } from '@/lib/catalog/grapes';
 import { formatProductDescription, formatProductText } from '@/lib/catalog/productText';
-import { ProductKitsManager } from '@/components/admin/ProductKitsManager';
+import { ProductCategoriesManager } from '@/components/admin/ProductCategoriesManager';
 
 type WineForm = {
   name: string;
@@ -858,7 +858,7 @@ export default function AdminCatalogPage() {
           </>
         )}
       </AdminSection>
-      <ProductKitsManager />
+      <ProductCategoriesManager />
     </div>
   );
 }

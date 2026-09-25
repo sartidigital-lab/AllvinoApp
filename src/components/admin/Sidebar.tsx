@@ -65,6 +65,7 @@ export default function Sidebar() {
       label: 'Gestão',
       links: [
         { href: '/admin/catalogo', label: 'Catálogo', icon: 'wine_bar' },
+        { href: '/admin/kits', label: 'Kits', icon: 'inventory' },
         { href: '/admin/estoque', label: 'Estoque', icon: 'inventory_2' },
         { href: '/admin/promocoes', label: 'Promoções', icon: 'campaign' },
         { href: '/admin/notificacoes', label: 'Notificações', icon: 'notifications' },

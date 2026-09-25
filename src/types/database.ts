@@ -104,6 +104,20 @@ export type ProductKitItem = {
   quantity: number;
 };
 
+export type CatalogProductCategoryItem = {
+  product_id: string;
+  sort_order: number;
+};
+
+export type CatalogProductCategory = {
+  id: string;
+  title: string;
+  slug: string;
+  sort_order: number;
+  is_active: boolean;
+  items: CatalogProductCategoryItem[];
+};
+
 export type CatalogBannerTheme = 'wine' | 'gold' | 'forest';
 
 export type CatalogBanner = {
