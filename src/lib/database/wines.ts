@@ -67,7 +67,7 @@ export async function fetchWineByIdFromSupabase(id: string): Promise<Wine | unde
 
   const { data: product, error: productError } = await supabase
     .from('catalog_products')
-    .select('id,nome,descricao,base_price,effective_price,sku_sankhya,imagem_url,pais,regiao,tipo,uva,estoque,publicado,criado_em,promotion_id,promotion_title,promotion_slug,discount_percent')
+    .select('id,nome,descricao,base_price,effective_price,sku_sankhya,imagem_url,pais,regiao,tipo,uva,estoque,publicado,criado_em,promotion_id,promotion_title,promotion_slug,discount_percent,promotion_ends_at,show_countdown,tipo_produto,kit_item_count')
     .eq('id', id)
     .single();
 

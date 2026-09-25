@@ -1,6 +1,6 @@
-export const PIX_DISCOUNT_RATE = 0.1;
-export const MAX_CARD_INSTALLMENTS = 6;
-export const MIN_CARD_INSTALLMENT_AMOUNT = 100;
+export const PIX_DISCOUNT_RATE = 0.05;
+export const MAX_CARD_INSTALLMENTS = 3;
+export const MIN_CARD_INSTALLMENT_AMOUNT = 0;
 
 export function calculatePixDiscount(subtotal: number) {
   if (!Number.isFinite(subtotal) || subtotal <= 0) return 0;
@@ -10,8 +10,7 @@ export function calculatePixDiscount(subtotal: number) {
 export function getMaximumCardInstallments(total: number) {
   if (!Number.isFinite(total) || total <= 0) return 1;
 
-  const installmentsByMinimumAmount = Math.floor(total / MIN_CARD_INSTALLMENT_AMOUNT);
-  return Math.max(1, Math.min(MAX_CARD_INSTALLMENTS, installmentsByMinimumAmount));
+  return MAX_CARD_INSTALLMENTS;
 }
 
 export function getCardInstallmentOptions(total: number) {

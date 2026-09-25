@@ -19,12 +19,13 @@ type CampaignForm = {
   starts_at: string;
   ends_at: string;
   is_active: boolean;
+  show_countdown: boolean;
   product_ids: string[];
 };
 
 const emptyForm: CampaignForm = {
   title: '', slug: '', description: '', discount_percent: '15',
-  starts_at: '', ends_at: '', is_active: true, product_ids: [],
+  starts_at: '', ends_at: '', is_active: true, show_countdown: false, product_ids: [],
 };
 
 function slugify(value: string) {
@@ -88,6 +89,7 @@ export function ProductCampaignManager() {
       starts_at: toDatetimeLocalValue(campaign.starts_at),
       ends_at: toDatetimeLocalValue(campaign.ends_at),
       is_active: campaign.is_active,
+      show_countdown: campaign.show_countdown === true,
       product_ids: campaign.product_ids,
     });
     setIsFormOpen(true);
@@ -122,6 +124,10 @@ export function ProductCampaignManager() {
       setMessage('A data final deve ser posterior ao início.');
       return;
     }
+    if (form.show_countdown && !form.ends_at) {
+      setMessage('Para mostrar o contador, informe a data e hora de término da oferta relâmpago.');
+      return;
+    }
 
     setIsSaving(true);
     const result = await saveProductPromotionCampaign({
@@ -132,6 +138,7 @@ export function ProductCampaignManager() {
       starts_at: form.starts_at ? new Date(form.starts_at).toISOString() : null,
       ends_at: form.ends_at ? new Date(form.ends_at).toISOString() : null,
       is_active: form.is_active,
+      show_countdown: form.show_countdown,
       product_ids: form.product_ids,
     }, editing?.id);
 
@@ -193,6 +200,7 @@ export function ProductCampaignManager() {
             <label className="space-y-1"><span className="text-xs font-bold uppercase text-stone-500">Fim</span><input type="datetime-local" value={form.ends_at} onChange={(event) => setForm({ ...form, ends_at: event.target.value })} className="w-full rounded-lg border border-stone-200 bg-white p-3 text-sm font-bold" /></label>
             <label className="space-y-1 md:col-span-2"><span className="text-xs font-bold uppercase text-stone-500">Descrição</span><input value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className="w-full rounded-lg border border-stone-200 bg-white p-3 font-bold" /></label>
             <label className="flex items-center gap-3 rounded-lg border border-stone-200 bg-white p-3"><input type="checkbox" checked={form.is_active} onChange={(event) => setForm({ ...form, is_active: event.target.checked })} /><span className="text-sm font-bold">Campanha ativa</span></label>
+            <label className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-3 md:col-span-2"><input type="checkbox" checked={form.show_countdown} onChange={(event) => setForm({ ...form, show_countdown: event.target.checked })} /><span><span className="block text-sm font-bold text-[#741128]">Oferta relâmpago com contador</span><span className="block text-[10px] font-semibold text-stone-500">Exibe a contagem regressiva nos cards dos produtos até a data final.</span></span></label>
           </div>
 
           <div className="mt-5">
@@ -221,7 +229,7 @@ export function ProductCampaignManager() {
         {isLoading ? <p className="text-sm font-bold text-stone-400">Carregando campanhas...</p> : campaigns.map((campaign) => (
           <article key={campaign.id} className="rounded-2xl border border-stone-200 bg-white p-4">
             <div className="flex items-start justify-between gap-3"><div><span className="inline-flex rounded-full bg-red-50 px-2.5 py-1 text-xs font-black text-[#B91C1C]">-{campaign.discount_percent}%</span><h3 className="mt-2 font-bold text-black">{campaign.title}</h3><p className="text-xs font-bold text-stone-400">/{campaign.slug}</p></div><span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase ${campaignIsLive(campaign) ? 'bg-emerald-50 text-emerald-700' : 'bg-stone-100 text-stone-500'}`}>{campaignIsLive(campaign) ? 'No ar' : 'Inativa'}</span></div>
-            <p className="mt-3 text-xs font-bold text-stone-500">{campaign.product_ids.length} produto(s) · {campaign.ends_at ? `até ${new Date(campaign.ends_at).toLocaleDateString('pt-BR')}` : 'sem data final'}</p>
+            <p className="mt-3 text-xs font-bold text-stone-500">{campaign.product_ids.length} produto(s) · {campaign.ends_at ? `até ${new Date(campaign.ends_at).toLocaleDateString('pt-BR')}` : 'sem data final'}{campaign.show_countdown ? ' · contador ativo' : ''}</p>
             <div className="mt-4 flex gap-2"><button type="button" onClick={() => openEdit(campaign)} className="flex-1 rounded-lg border border-stone-200 py-2 text-xs font-bold hover:bg-stone-50">Editar</button><button type="button" onClick={() => handleDelete(campaign)} className="rounded-lg border border-red-100 px-3 py-2 text-xs font-bold text-red-700 hover:bg-red-50">Excluir</button></div>
           </article>
         ))}

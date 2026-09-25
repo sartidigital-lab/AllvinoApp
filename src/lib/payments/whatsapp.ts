@@ -1,6 +1,5 @@
 import {
   MAX_CARD_INSTALLMENTS,
-  MIN_CARD_INSTALLMENT_AMOUNT,
   normalizeCardInstallments,
 } from '@/lib/payments/terms';
 
@@ -54,10 +53,10 @@ export function buildCheckoutWhatsAppMessage(input: CheckoutWhatsAppMessageInput
       '*Pagamento:* Cartão de crédito via link',
       `*Parcelamento solicitado:* ${installments}x sem juros`,
       `*Valor por parcela:* ${formatCheckoutMoney(input.total / installments)}`,
-      `_Condição: até ${MAX_CARD_INSTALLMENTS}x sem juros, com parcela mínima de ${formatCheckoutMoney(MIN_CARD_INSTALLMENT_AMOUNT)}._`
+      `_Condição: até ${MAX_CARD_INSTALLMENTS}x sem juros, sem valor mínimo de pedido._`
     );
   } else {
-    lines.push('*Pagamento:* PIX — 10% de desconto aplicado, aguardando confirmação');
+    lines.push('*Pagamento:* PIX — 5% de desconto aplicado, aguardando confirmação');
   }
 
   lines.push('', `*Modalidade:* ${input.deliveryType}`);

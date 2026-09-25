@@ -59,16 +59,15 @@ describe('provisional checkout payments', () => {
     expect(buildWhatsAppUrl('55 (27) 99999-9999', message)).toMatch(/^https:\/\/wa\.me\/5527999999999\?text=/);
   });
 
-  it('limits interest-free card installments to 6 with a minimum of R$ 100 per installment', () => {
-    expect(getCardInstallmentOptions(199)).toEqual([1]);
-    expect(getCardInstallmentOptions(599)).toEqual([1, 2, 3, 4, 5]);
-    expect(getCardInstallmentOptions(650)).toEqual([1, 2, 3, 4, 5, 6]);
-    expect(normalizeCardInstallments(550, 6)).toBe(5);
-    expect(normalizeCardInstallments(900, 12)).toBe(6);
+  it('offers up to 3 interest-free card installments without a minimum order', () => {
+    expect(getCardInstallmentOptions(19.9)).toEqual([1, 2, 3]);
+    expect(getCardInstallmentOptions(599)).toEqual([1, 2, 3]);
+    expect(normalizeCardInstallments(550, 6)).toBe(3);
+    expect(normalizeCardInstallments(900, 12)).toBe(3);
   });
 
-  it('applies 10% Pix discount and includes the complete order in the WhatsApp message', () => {
-    expect(calculatePixDiscount(154.9)).toBe(15.49);
+  it('applies 5% Pix discount and includes the complete order in the WhatsApp message', () => {
+    expect(calculatePixDiscount(154.9)).toBe(7.75);
 
     const message = buildCheckoutWhatsAppMessage({
       orderId: '87654321-0000-0000-0000-000000000000',
@@ -84,16 +83,16 @@ describe('provisional checkout payments', () => {
       shippingFee: 12,
       subtotal: 150,
       discount: 15,
-      total: 147,
+      total: 147.25,
       promotionCode: null,
     });
 
-    expect(message).toContain('*Pagamento:* PIX — 10% de desconto aplicado');
+    expect(message).toContain('*Pagamento:* PIX — 5% de desconto aplicado');
     expect(message).toContain('1x Vinho PIX');
     expect(message).toContain('*Endereço:* Av. Teste, 20');
     expect(message).toContain('*Prazo:* até 3 dia(s)');
     expect(message).toContain('*Frete:* R$ 12,00');
-    expect(message).toContain('*Descontos:* - R$ 15,00');
+    expect(message).toContain('*Descontos:* - R$ 7,75');
     expect(message).toContain('*VALOR TOTAL: R$ 147,00*');
   });
 });

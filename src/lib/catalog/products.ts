@@ -10,6 +10,8 @@ export type LegacyProduct = {
   base_price?: number;
   effective_price?: number;
   discount_percent?: number | null;
+  promotion_ends_at?: string | null;
+  show_countdown?: boolean | null;
   promotion_id?: string | null;
   promotion_title?: string | null;
   promotion_slug?: string | null;
@@ -22,6 +24,8 @@ export type LegacyProduct = {
   estoque: number | null;
   publicado: boolean | null;
   criado_em: string;
+  tipo_produto?: 'wine' | 'kit' | null;
+  kit_item_count?: number | null;
 };
 
 export type CatalogProduct = {
@@ -43,6 +47,10 @@ export type CatalogProduct = {
   promotion_title: string | null;
   promotion_slug: string | null;
   discount_percent: number | null;
+  promotion_ends_at?: string | null;
+  show_countdown?: boolean | null;
+  tipo_produto?: 'wine' | 'kit' | null;
+  kit_item_count?: number | null;
 };
 
 export function mapProductToWine(product: LegacyProduct): Wine {
@@ -56,6 +64,8 @@ export function mapProductToWine(product: LegacyProduct): Wine {
     price: effectivePrice,
     original_price: originalPrice,
     discount_percent: product.discount_percent ? Number(product.discount_percent) : null,
+    promotion_ends_at: product.promotion_ends_at || null,
+    show_countdown: product.show_countdown === true,
     promotion_id: product.promotion_id || null,
     promotion_title: product.promotion_title || null,
     promotion_slug: product.promotion_slug || null,
@@ -66,6 +76,8 @@ export function mapProductToWine(product: LegacyProduct): Wine {
     category: product.pais,
     stock: Number(product.estoque ?? 0),
     product_code: product.sku_sankhya,
+    product_kind: product.tipo_produto === 'kit' ? 'kit' : 'wine',
+    kit_item_count: Number(product.kit_item_count || 0),
     published: product.publicado !== false,
     created_at: product.criado_em,
   };
@@ -91,6 +103,10 @@ export function mapCatalogProductToWine(product: CatalogProduct): Wine {
     promotion_title: product.promotion_title,
     promotion_slug: product.promotion_slug,
     discount_percent: product.discount_percent === null ? null : Number(product.discount_percent),
+    promotion_ends_at: product.promotion_ends_at || null,
+    show_countdown: product.show_countdown === true,
+    product_kind: product.tipo_produto === 'kit' ? 'kit' : 'wine',
+    kit_item_count: Number(product.kit_item_count || 0),
   };
 }
 

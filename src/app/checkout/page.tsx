@@ -19,7 +19,6 @@ import {
   calculatePixDiscount,
   getCardInstallmentOptions,
   MAX_CARD_INSTALLMENTS,
-  MIN_CARD_INSTALLMENT_AMOUNT,
   normalizeCardInstallments,
 } from '@/lib/payments/terms';
 import { buildCheckoutWhatsAppMessage, buildWhatsAppUrl } from '@/lib/payments/whatsapp';
@@ -612,7 +611,7 @@ export default function CheckoutPage() {
           )}
           {pixDiscount > 0 && (
             <div className="flex justify-between text-sm font-bold text-green-600">
-              <span>Desconto PIX (10%)</span>
+              <span>Desconto PIX (5%)</span>
               <span>- R$ {pixDiscount.toFixed(2).replace('.', ',')}</span>
             </div>
           )}
@@ -827,7 +826,7 @@ export default function CheckoutPage() {
           </select>
           {pagamento === 'Pix' ? (
             <div className="space-y-2 rounded-2xl bg-emerald-50 p-4 text-xs font-bold text-emerald-800">
-              <p>Pagamento via PIX recebe 10% de desconto adicional.</p>
+              <p>Pagamento via PIX recebe 5% de desconto adicional.</p>
               <p>Após criar o pedido, o WhatsApp será aberto com todos os detalhes. Envie a mensagem e pague pelo QR Code, copia e cola ou chave PIX.</p>
             </div>
           ) : (
@@ -847,7 +846,7 @@ export default function CheckoutPage() {
                 </select>
               </label>
               <p className="text-xs font-bold text-stone-500">
-                Até {MAX_CARD_INSTALLMENTS}x sem juros, com parcela mínima de R$ {MIN_CARD_INSTALLMENT_AMOUNT.toFixed(2).replace('.', ',')}. O pedido completo será enviado ao WhatsApp para a loja retornar o link seguro do cartão.
+                Até {MAX_CARD_INSTALLMENTS}x sem juros, sem valor mínimo de pedido. O pedido completo será enviado ao WhatsApp para a loja retornar o link seguro do cartão.
               </p>
             </div>
           )}

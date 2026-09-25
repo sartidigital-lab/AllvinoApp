@@ -19,7 +19,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from('catalog_products')
-    .select('id,nome,descricao,base_price,effective_price,sku_sankhya,imagem_url,pais,regiao,tipo,uva,estoque,publicado,criado_em,promotion_id,promotion_title,promotion_slug,discount_percent')
+    .select('id,nome,descricao,base_price,effective_price,sku_sankhya,imagem_url,pais,regiao,tipo,uva,estoque,publicado,criado_em,promotion_id,promotion_title,promotion_slug,discount_percent,promotion_ends_at,show_countdown,tipo_produto,kit_item_count')
     .order('criado_em', { ascending: false });
 
   if (error) {

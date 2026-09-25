@@ -8,9 +8,10 @@ import { useToast } from '@/context/ToastContext';
 import { useFavorites } from '@/context/FavoritesContext';
 import { useRecentlyViewed } from '@/context/RecentlyViewedContext';
 import { WineCardSkeleton, EmptyState, PageTransition, ProductImage } from '@/components/ui';
-import { Ban, Heart, Plus, Search, SlidersHorizontal, TriangleAlert, Wine, X } from 'lucide-react';
+import { Ban, Heart, Search, Share2, ShoppingCart, SlidersHorizontal, Star, TriangleAlert, Wine, X } from 'lucide-react';
 import { CatalogBannerCarousel } from '@/components/catalog/CatalogBannerCarousel';
 import { WinePrice } from '@/components/catalog/WinePrice';
+import { FlashOfferCountdown } from '@/components/catalog/FlashOfferCountdown';
 import { getStockStatus } from '@/lib/catalog/stockStatus';
 import { getGrapeClassification } from '@/lib/catalog/grapes';
 import type { CatalogBanner } from '@/types/database';
@@ -341,20 +342,19 @@ export default function CatalogoPage() {
             {filteredWines.map((wine) => {
               const stock = getStockStatus(wine.stock);
               const StockIcon = stock?.tone === 'danger' ? Ban : TriangleAlert;
+              const pixPrice = Number((wine.price * 0.95).toFixed(2));
+              const installmentPrice = Number((wine.price / 3).toFixed(2));
               return (
-                <Link
-                  key={wine.id}
-                  href={`/catalogo/${wine.id}`}
-                  className="surface-card overflow-hidden active:scale-[0.98] transition-transform"
-                >
-                  <div className="relative">
+                <article key={wine.id} className="overflow-hidden rounded-brand-2xl border border-[#3c2528] bg-white shadow-[0_2px_10px_rgba(54,16,24,0.08)] transition-transform hover:-translate-y-0.5">
+                  <Link href={`/catalogo/${wine.id}`} className="block active:scale-[0.99]">
+                    <div className="relative border-b border-stone-100 bg-[#fdfbf8]">
                     <ProductImage
                       src={wine.image_url}
                       alt={wine.name}
                       width={300}
                       height={400}
                       sizes="(max-width: 768px) 50vw, 320px"
-                      className="w-full h-48 object-contain mix-blend-multiply p-4"
+                      className="h-48 w-full object-contain mix-blend-multiply p-3 sm:h-56"
                     />
                     {stock && (
                       <span className={`absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${stock.tone === 'danger' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
@@ -363,47 +363,32 @@ export default function CatalogoPage() {
                       </span>
                     )}
                     {wine.discount_percent && (
-                      <span className="absolute left-2 top-2 rounded-full bg-brand-primary px-2.5 py-1 text-[10px] font-black text-white shadow-lg shadow-red-950/20">
+                      <span className="absolute right-2 top-2 rounded-md bg-[#7a1730] px-2.5 py-1 text-[10px] font-black text-white shadow-lg shadow-red-950/20">
                         -{wine.discount_percent}%
                       </span>
                     )}
-                  </div>
-                  <div className="p-3">
-                    <p className="text-[10px] font-bold text-stone-400 uppercase">{wine.type || wine.region}</p>
-                    <p className="font-bold text-sm line-clamp-2 mt-0.5">{wine.name}</p>
-                    <div className="flex justify-between items-center mt-2">
-                      <WinePrice wine={wine} />
-                      <div className="flex gap-1.5">
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            toggleFavorite(wine);
-                            showToast(isFavorite(wine.id) ? 'Removido dos favoritos' : 'Adicionado aos favoritos', 'info');
-                          }}
-                          type="button"
-                          aria-label={isFavorite(wine.id) ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
-                          className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center hover:bg-red-50 transition"
-                        >
-                          <Heart className={`h-4 w-4 ${isFavorite(wine.id) ? 'fill-current text-brand-primary' : 'text-stone-300'}`} aria-hidden="true" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            if (wine.stock > 0) { addToCart(wine); showToast('Vinho adicionado ao carrinho!', 'success'); }
-                          }}
-                        type="button"
-                        aria-label="Adicionar ao carrinho"
-                        disabled={wine.stock === 0}
-                        className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-primary text-white transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-30"
-                      >
-                        <Plus className="h-4 w-4" aria-hidden="true" />
-                      </button>
-                      </div>
+                    {wine.product_kind === 'kit' && (
+                      <span className="absolute left-2 top-2 rounded-md bg-[#c58b31] px-2 py-1 text-[9px] font-black uppercase tracking-wide text-white">Kit · {wine.kit_item_count || 0} itens</span>
+                    )}
                     </div>
+                    <div className="px-3 pb-2 pt-3">
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-stone-400">{wine.product_kind === 'kit' ? 'Seleção especial' : wine.type || wine.region || 'Vinho'}</p>
+                      <h3 className="mt-1 min-h-10 font-serif text-[15px] font-bold leading-5 text-stone-950 line-clamp-2">{wine.name}</h3>
+                      <p className="mt-2 flex items-center gap-1 text-[10px] text-stone-400"><span className="flex text-stone-300">{Array.from({ length: 5 }).map((_, index) => <Star key={index} className="h-3 w-3" />)}</span> Sem avaliações</p>
+                    </div>
+                  </Link>
+                  <div className="grid grid-cols-2 border-y border-stone-200 text-xs font-medium text-[#741128]">
+                    <button onClick={() => { toggleFavorite(wine); showToast(isFavorite(wine.id) ? 'Removido dos favoritos' : 'Adicionado aos favoritos', 'info'); }} type="button" className="flex min-h-9 items-center justify-center gap-1 border-r border-stone-200 hover:bg-[#fdf5f6]" aria-label={isFavorite(wine.id) ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}><Heart className={`h-4 w-4 ${isFavorite(wine.id) ? 'fill-current' : ''}`} />Favoritar</button>
+                    <button onClick={() => { if (navigator.share) { void navigator.share({ title: wine.name, url: `${window.location.origin}/catalogo/${wine.id}` }); } else { void navigator.clipboard?.writeText(`${window.location.origin}/catalogo/${wine.id}`); showToast('Link do produto copiado.', 'success'); } }} type="button" className="flex min-h-9 items-center justify-center gap-1 hover:bg-[#fdf5f6]"><Share2 className="h-4 w-4" />Compartilhar</button>
                   </div>
-                </Link>
+                  <div className="space-y-2 p-3">
+                    <WinePrice wine={wine} />
+                    <p className="text-[10px] font-bold text-emerald-700">À vista <span className="text-sm font-black">R$ {pixPrice.toFixed(2).replace('.', ',')}</span> no PIX <span className="rounded bg-emerald-600 px-1 py-0.5 text-[9px] text-white">5% OFF</span></p>
+                    <p className="text-[10px] font-medium text-stone-600">ou 3x de R$ {installmentPrice.toFixed(2).replace('.', ',')} sem juros</p>
+                    {wine.show_countdown && <FlashOfferCountdown endsAt={wine.promotion_ends_at} />}
+                    <button onClick={() => { if (wine.stock > 0) { addToCart(wine); showToast(`${wine.product_kind === 'kit' ? 'Kit' : 'Vinho'} adicionado ao carrinho!`, 'success'); } }} type="button" disabled={wine.stock === 0} className="mt-1 flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#741128] px-3 text-xs font-bold text-white transition hover:bg-[#5d0d20] disabled:cursor-not-allowed disabled:opacity-40"><ShoppingCart className="h-4 w-4" />{wine.stock === 0 ? 'Indisponível' : 'Adicionar ao carrinho'}</button>
+                  </div>
+                </article>
               );
             })}
           </div>

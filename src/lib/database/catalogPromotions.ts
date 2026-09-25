@@ -1,7 +1,7 @@
 import { createClient } from '@/utils/supabase/client';
 import type { CatalogBanner, ProductPromotionCampaign } from '@/types/database';
 
-const campaignSelect = 'id,created_at,updated_at,title,slug,description,discount_percent,starts_at,ends_at,is_active,product_promotion_items(product_id)';
+const campaignSelect = 'id,created_at,updated_at,title,slug,description,discount_percent,starts_at,ends_at,is_active,show_countdown,product_promotion_items(product_id)';
 const bannerSelect = 'id,created_at,updated_at,promotion_id,eyebrow,title,subtitle,cta_label,image_url,mobile_image_url,image_alt,theme,show_text,show_cta,show_discount_badge,sort_order,starts_at,ends_at,is_active,product_promotions(title,slug,discount_percent)';
 
 type CampaignRow = Omit<ProductPromotionCampaign, 'product_ids'> & {
@@ -27,6 +27,7 @@ function mapCampaign(row: CampaignRow): ProductPromotionCampaign {
   return {
     ...campaign,
     discount_percent: Number(campaign.discount_percent),
+    show_countdown: campaign.show_countdown === true,
     product_ids: (product_promotion_items || []).map((item) => item.product_id),
   };
 }
@@ -70,6 +71,7 @@ export async function saveProductPromotionCampaign(
     p_starts_at: payload.starts_at,
     p_ends_at: payload.ends_at,
     p_is_active: payload.is_active,
+    p_show_countdown: payload.show_countdown === true,
     p_product_ids: payload.product_ids,
   });
 

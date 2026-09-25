@@ -46,6 +46,8 @@ export function sanitizeWine(value: unknown): Wine | null {
     price: asNonNegativeNumber(input.price),
     original_price: asNonNegativeNumber(input.original_price, asNonNegativeNumber(input.price)),
     discount_percent: input.discount_percent == null ? null : asNonNegativeInteger(input.discount_percent),
+    promotion_ends_at: asNullableString(input.promotion_ends_at),
+    show_countdown: input.show_countdown === true,
     promotion_id: asNullableString(input.promotion_id),
     promotion_title: asNullableString(input.promotion_title),
     promotion_slug: asNullableString(input.promotion_slug),
@@ -56,6 +58,8 @@ export function sanitizeWine(value: unknown): Wine | null {
     category: asNullableString(input.category),
     stock: asNonNegativeInteger(input.stock),
     product_code: asNullableString(input.product_code),
+    product_kind: input.product_kind === 'kit' ? 'kit' : 'wine',
+    kit_item_count: asNonNegativeInteger(input.kit_item_count),
     published: input.published !== false,
     created_at: asString(input.created_at, new Date(0).toISOString()),
   };

@@ -6,6 +6,8 @@ export type Wine = {
   original_price?: number;
   base_price?: number | null;
   discount_percent: number | null;
+  promotion_ends_at?: string | null;
+  show_countdown?: boolean;
   promotion_id: string | null;
   promotion_title: string | null;
   promotion_slug: string | null;
@@ -16,6 +18,8 @@ export type Wine = {
   category: string | null;
   stock: number;
   product_code: string | null;
+  product_kind?: 'wine' | 'kit';
+  kit_item_count?: number;
   published: boolean;
   created_at: string;
 };
@@ -91,7 +95,13 @@ export type ProductPromotionCampaign = {
   starts_at: string | null;
   ends_at: string | null;
   is_active: boolean;
+  show_countdown?: boolean;
   product_ids: string[];
+};
+
+export type ProductKitItem = {
+  product_id: string;
+  quantity: number;
 };
 
 export type CatalogBannerTheme = 'wine' | 'gold' | 'forest';
