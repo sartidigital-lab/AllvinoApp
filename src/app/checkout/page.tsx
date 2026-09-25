@@ -115,7 +115,7 @@ export default function CheckoutPage() {
     }
   }, []);
 
-  const pickupDiscount = entrega === 'retirada' ? cartTotal * 0.1 : 0;
+  const pickupDiscount = entrega === 'retirada' ? cartTotal * 0.05 : 0;
   const promotionDiscount = appliedPromotion ? calculatePromotionDiscount(appliedPromotion, cartTotal) : 0;
   const nonPaymentDiscount = Math.min(cartTotal, pickupDiscount + promotionDiscount);
   const pixDiscount = pagamento === 'Pix'
@@ -375,7 +375,7 @@ export default function CheckoutPage() {
       })),
       paymentMethod: isCardPayment ? 'Cartao (Link)' : 'Pix',
       installments: orderInstallments,
-      deliveryType: entrega === 'retirada' ? 'Retirada na loja (-10% OFF)' : 'Entrega no endereço',
+      deliveryType: entrega === 'retirada' ? 'Retirada na loja (-5% OFF)' : 'Entrega no endereço',
       deliveryAddress: entrega === 'entrega' ? (order.delivery_address || deliveryAddress) : null,
       deliveryZipCode: order.delivery_zip_code ? formatZipCode(order.delivery_zip_code) : null,
       deliveryZoneName: order.delivery_zone_name,
@@ -701,7 +701,7 @@ export default function CheckoutPage() {
             </label>
             <label className="flex items-center gap-3 p-4 border rounded-2xl border-stone-200 cursor-pointer has-[:checked]:border-black has-[:checked]:bg-stone-50 transition">
               <input type="radio" name="entrega" value="retirada" checked={entrega === 'retirada'} onChange={() => setEntrega('retirada')} className="text-black focus:ring-0" />
-              <div className="flex-1 text-sm font-bold">Retirada na Loja <span className="text-green-600 text-[10px] ml-2">10% OFF</span></div>
+              <div className="flex-1 text-sm font-bold">Retirada na Loja <span className="text-green-600 text-[10px] ml-2">5% OFF</span></div>
             </label>
           </div>
           {entrega === 'entrega' && (

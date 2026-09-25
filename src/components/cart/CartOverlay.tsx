@@ -16,7 +16,7 @@ export function CartOverlay() {
   const panelRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
-  const discount = retirada ? cartTotal * 0.10 : 0;
+  const discount = retirada ? cartTotal * 0.05 : 0;
   const finalTotal = cartTotal - discount;
 
   useEffect(() => {
@@ -172,7 +172,7 @@ export function CartOverlay() {
           <div className="space-y-4 border-t bg-stone-50 px-6 pb-28 pt-6">
             <Checkbox
               label="Retirada na Loja"
-              description="Ganhe 10% de desconto"
+              description="Ganhe 5% de desconto"
               checked={retirada}
               onChange={(e) => setRetirada(e.target.checked)}
             />

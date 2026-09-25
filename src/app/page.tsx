@@ -60,7 +60,7 @@ export default function HomePage() {
             <span className="material-symbols-outlined mb-4 text-4xl text-green-600">storefront</span>
             <h3 className="mb-2 text-lg font-bold">Retirada na Loja</h3>
             <p className="text-sm font-bold text-stone-500">
-              Prefere buscar o seu vinho pessoalmente? Ganhe 10% de desconto imediato no momento da recolha.
+              Prefere buscar o seu vinho pessoalmente? Ganhe 5% de desconto imediato no momento da recolha.
             </p>
           </div>
         </div>

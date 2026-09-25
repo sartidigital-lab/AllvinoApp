@@ -322,7 +322,7 @@ export default function CatalogoPage() {
           </div>
         )}
         {isLoading ? (
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
+          <div className="grid grid-cols-1 gap-5 min-[520px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
               <WineCardSkeleton key={i} />
             ))}
@@ -338,23 +338,23 @@ export default function CatalogoPage() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
+          <div className="grid grid-cols-1 gap-5 min-[520px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
             {filteredWines.map((wine) => {
               const stock = getStockStatus(wine.stock);
               const StockIcon = stock?.tone === 'danger' ? Ban : TriangleAlert;
               const pixPrice = Number((wine.price * 0.95).toFixed(2));
               const installmentPrice = Number((wine.price / 3).toFixed(2));
               return (
-                <article key={wine.id} className="overflow-hidden rounded-brand-2xl border border-[#3c2528] bg-white shadow-[0_2px_10px_rgba(54,16,24,0.08)] transition-transform hover:-translate-y-0.5">
+                <article key={wine.id} className="overflow-hidden bg-transparent transition-transform hover:-translate-y-0.5 md:rounded-brand-2xl md:border md:border-[#3c2528] md:bg-white md:shadow-[0_2px_10px_rgba(54,16,24,0.08)]">
                   <Link href={`/catalogo/${wine.id}`} className="block active:scale-[0.99]">
-                    <div className="relative border-b border-stone-100 bg-[#fdfbf8]">
+                    <div className="relative md:border-b md:border-stone-100 md:bg-[#fdfbf8]">
                     <ProductImage
                       src={wine.image_url}
                       alt={wine.name}
                       width={300}
                       height={400}
-                      sizes="(max-width: 768px) 50vw, 320px"
-                      className="h-48 w-full object-contain mix-blend-multiply p-3 sm:h-56"
+                      sizes="(max-width: 519px) 100vw, (max-width: 768px) 50vw, 320px"
+                      className="h-64 w-full object-contain mix-blend-multiply p-3 min-[520px]:h-48 sm:h-56"
                     />
                     {stock && (
                       <span className={`absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${stock.tone === 'danger' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
@@ -363,7 +363,7 @@ export default function CatalogoPage() {
                       </span>
                     )}
                     {wine.discount_percent && (
-                      <span className="absolute right-2 top-2 rounded-md bg-[#7a1730] px-2.5 py-1 text-[10px] font-black text-white shadow-lg shadow-red-950/20">
+                      <span className="absolute right-2 top-2 rounded-md bg-[#d21f2b] px-2.5 py-1 text-[10px] font-black text-white shadow-lg shadow-red-950/20">
                         -{wine.discount_percent}%
                       </span>
                     )}
@@ -377,8 +377,8 @@ export default function CatalogoPage() {
                       <p className="mt-2 flex items-center gap-1 text-[10px] text-stone-400"><span className="flex text-stone-300">{Array.from({ length: 5 }).map((_, index) => <Star key={index} className="h-3 w-3" />)}</span> Sem avaliações</p>
                     </div>
                   </Link>
-                  <div className="grid grid-cols-2 border-y border-stone-200 text-xs font-medium text-[#741128]">
-                    <button onClick={() => { toggleFavorite(wine); showToast(isFavorite(wine.id) ? 'Removido dos favoritos' : 'Adicionado aos favoritos', 'info'); }} type="button" className="flex min-h-9 items-center justify-center gap-1 border-r border-stone-200 hover:bg-[#fdf5f6]" aria-label={isFavorite(wine.id) ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}><Heart className={`h-4 w-4 ${isFavorite(wine.id) ? 'fill-current' : ''}`} />Favoritar</button>
+                  <div className="grid grid-cols-2 text-xs font-medium text-[#741128] md:border-y md:border-stone-200">
+                    <button onClick={() => { toggleFavorite(wine); showToast(isFavorite(wine.id) ? 'Removido dos favoritos' : 'Adicionado aos favoritos', 'info'); }} type="button" className="flex min-h-9 items-center justify-center gap-1 hover:bg-[#fdf5f6] md:border-r md:border-stone-200" aria-label={isFavorite(wine.id) ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}><Heart className={`h-4 w-4 ${isFavorite(wine.id) ? 'fill-current' : ''}`} />Favoritar</button>
                     <button onClick={() => { if (navigator.share) { void navigator.share({ title: wine.name, url: `${window.location.origin}/catalogo/${wine.id}` }); } else { void navigator.clipboard?.writeText(`${window.location.origin}/catalogo/${wine.id}`); showToast('Link do produto copiado.', 'success'); } }} type="button" className="flex min-h-9 items-center justify-center gap-1 hover:bg-[#fdf5f6]"><Share2 className="h-4 w-4" />Compartilhar</button>
                   </div>
                   <div className="space-y-2 p-3">
@@ -386,7 +386,7 @@ export default function CatalogoPage() {
                     <p className="text-[10px] font-bold text-emerald-700">À vista <span className="text-sm font-black">R$ {pixPrice.toFixed(2).replace('.', ',')}</span> no PIX <span className="rounded bg-emerald-600 px-1 py-0.5 text-[9px] text-white">5% OFF</span></p>
                     <p className="text-[10px] font-medium text-stone-600">ou 3x de R$ {installmentPrice.toFixed(2).replace('.', ',')} sem juros</p>
                     {wine.show_countdown && <FlashOfferCountdown endsAt={wine.promotion_ends_at} />}
-                    <button onClick={() => { if (wine.stock > 0) { addToCart(wine); showToast(`${wine.product_kind === 'kit' ? 'Kit' : 'Vinho'} adicionado ao carrinho!`, 'success'); } }} type="button" disabled={wine.stock === 0} className="mt-1 flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#741128] px-3 text-xs font-bold text-white transition hover:bg-[#5d0d20] disabled:cursor-not-allowed disabled:opacity-40"><ShoppingCart className="h-4 w-4" />{wine.stock === 0 ? 'Indisponível' : 'Adicionar ao carrinho'}</button>
+                    <button onClick={() => { if (wine.stock > 0) { addToCart(wine); showToast(`${wine.product_kind === 'kit' ? 'Kit' : 'Vinho'} adicionado ao carrinho!`, 'success'); } }} type="button" disabled={wine.stock === 0} className="mt-1 flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#82c341] px-3 text-xs font-bold text-white shadow-sm transition hover:bg-[#6eae31] disabled:cursor-not-allowed disabled:opacity-40"><ShoppingCart className="h-4 w-4" />{wine.stock === 0 ? 'Indisponível' : 'Adicionar ao carrinho'}</button>
                   </div>
                 </article>
               );
