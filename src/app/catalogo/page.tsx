@@ -8,11 +8,10 @@ import { useToast } from '@/context/ToastContext';
 import { useFavorites } from '@/context/FavoritesContext';
 import { useRecentlyViewed } from '@/context/RecentlyViewedContext';
 import { WineCardSkeleton, EmptyState, PageTransition, ProductImage } from '@/components/ui';
-import { Ban, Heart, Search, Share2, ShoppingCart, SlidersHorizontal, Star, TriangleAlert, Wine as WineIcon, X } from 'lucide-react';
+import { Heart, Search, Share2, ShoppingCart, SlidersHorizontal, Star, Wine as WineIcon, X } from 'lucide-react';
 import { CatalogBannerCarousel } from '@/components/catalog/CatalogBannerCarousel';
 import { WinePrice } from '@/components/catalog/WinePrice';
 import { FlashOfferCountdown } from '@/components/catalog/FlashOfferCountdown';
-import { getStockStatus } from '@/lib/catalog/stockStatus';
 import { getGrapeClassification } from '@/lib/catalog/grapes';
 import type { CatalogBanner, CatalogProductCategory, Wine } from '@/types/database';
 
@@ -33,13 +32,14 @@ type CatalogProductCardProps = {
 };
 
 function CatalogProductCard({ wine, onAddToCart, onToggleFavorite, onShare, isFavorite }: CatalogProductCardProps) {
-  const stock = getStockStatus(wine.stock);
-  const StockIcon = stock?.tone === 'danger' ? Ban : TriangleAlert;
   const pixPrice = Number((wine.price * 0.95).toFixed(2));
   const installmentPrice = Number((wine.price / 3).toFixed(2));
-  const hasProductBadges = Boolean(stock || wine.discount_percent || wine.product_kind === 'kit');
-  const imagePadding = hasProductBadges
-    ? stock ? 'px-2 pb-2 pt-14 sm:px-3 sm:pb-3 sm:pt-14' : 'px-2 pb-2 pt-10 sm:px-3 sm:pb-3 sm:pt-10'
+  const isKit = wine.product_kind === 'kit';
+  const hasProductBadges = Boolean(wine.discount_percent || isKit);
+  // A imagem de uma garrafa avulsa preserva a mesma escala, mesmo com desconto.
+  // Kits podem ceder altura para as próprias etiquetas, pois já reúnem vários itens.
+  const imagePadding = isKit && hasProductBadges
+    ? 'px-2 pb-2 pt-10 sm:px-3 sm:pb-3 sm:pt-10'
     : 'p-2 sm:p-3';
 
   return (
@@ -47,7 +47,25 @@ function CatalogProductCard({ wine, onAddToCart, onToggleFavorite, onShare, isFa
       <Link href={`/catalogo/${wine.id}`} className="block active:scale-[0.99]">
         <div className="relative md:border-b md:border-stone-100 md:bg-[#fdfbf8]">
           <ProductImage src={wine.image_url} alt={wine.name} width={300} height={400} sizes="(max-width: 639px) calc((100vw - 3rem) / 2), (max-width: 767px) 42vw, 280px" className={`h-40 w-full object-contain mix-blend-multiply sm:h-48 md:h-52 ${imagePadding}`} />
-          {hasProductBadges && <div className="pointer-events-none absolute inset-x-2 top-2 z-10 space-y-1" aria-label="Informações do produto"><div className="flex min-h-6 items-start justify-between gap-1"><div className="min-w-0">{wine.product_kind === 'kit' && <span className="inline-flex max-w-full rounded-md bg-[#c58b31] px-2 py-1 text-[9px] font-black uppercase tracking-wide text-white shadow-sm"><span className="sm:hidden">Kit · {wine.kit_item_count || 0}</span><span className="hidden sm:inline">Kit · {wine.kit_item_count || 0} itens</span></span>}</div>{wine.discount_percent && <span className="shrink-0 rounded-md bg-[#d21f2b] px-2.5 py-1 text-[10px] font-black text-white shadow-lg shadow-red-950/20">-{wine.discount_percent}%</span>}</div>{stock && <span className={`inline-flex max-w-full items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${stock.tone === 'danger' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}><StockIcon className="mr-0.5 h-3 w-3 shrink-0" aria-hidden="true" /><span className="truncate">{stock.label}</span></span>}</div>}
+          {hasProductBadges && (
+            <div className="pointer-events-none absolute inset-x-2 top-2 z-10" aria-label="Informações do produto">
+              <div className="flex min-h-6 items-start justify-between gap-1">
+                <div className="min-w-0">
+                  {isKit && (
+                    <span className="inline-flex max-w-full rounded-md bg-[#c58b31] px-2 py-1 text-[9px] font-black uppercase tracking-wide text-white shadow-sm">
+                      <span className="sm:hidden">Kit · {wine.kit_item_count || 0}</span>
+                      <span className="hidden sm:inline">Kit · {wine.kit_item_count || 0} itens</span>
+                    </span>
+                  )}
+                </div>
+                {wine.discount_percent && (
+                  <span className="shrink-0 rounded-md bg-[#d21f2b] px-2.5 py-1 text-[10px] font-black text-white shadow-lg shadow-red-950/20">
+                    -{wine.discount_percent}%
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
         <div className="px-2.5 pb-2 pt-3 sm:px-3"><p className="truncate text-[9px] font-bold uppercase tracking-wide text-stone-400 sm:text-[10px]">{wine.product_kind === 'kit' ? 'Seleção especial' : wine.type || wine.region || 'Vinho'}</p><h3 className="mt-1 min-h-10 font-serif text-[13px] font-bold leading-4 text-stone-950 line-clamp-2 sm:text-[15px] sm:leading-5">{wine.name}</h3><p className="mt-2 flex items-center gap-1 text-[9px] text-stone-400 sm:text-[10px]"><span className="flex text-stone-300">{Array.from({ length: 5 }).map((_, index) => <Star key={index} className="h-3 w-3" />)}</span><span className="truncate">Sem avaliações</span></p></div>
       </Link>

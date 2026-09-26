@@ -155,7 +155,7 @@ export default function WineDetailPage() {
             </div>
 
             {stock && (
-              <div className={`flex items-center gap-3 p-4 rounded-xl border ${stock.tone === 'danger' ? 'text-red-600 bg-red-50 border-red-200' : 'text-amber-700 bg-amber-50 border-amber-200'}`}>
+              <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-red-600">
                 <StockIcon className="h-5 w-5" aria-hidden="true" />
                 <div>
                   <p className="font-bold text-sm">{stock.label}</p>
