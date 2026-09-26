@@ -11,6 +11,7 @@ import { CartItem, useCart } from '@/context/CartContext';
 import { OrderWithItems } from '@/types/database';
 import { fetchWinesFromSupabase } from '@/lib/database/wines';
 import { PageTransition } from '@/components/ui';
+import { COOKIE_CONSENT_PREFERENCES_EVENT } from '@/lib/privacy/cookieConsent';
 
 const statusLabels: Record<string, string> = {
   pending: 'Pendente',
@@ -325,6 +326,14 @@ export default function ContaPage() {
           <span className="material-symbols-outlined text-[18px]">support_agent</span>
           Falar com atendimento
         </a>
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new Event(COOKIE_CONSENT_PREFERENCES_EVENT))}
+          className="mt-2 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-stone-200 px-4 text-sm font-bold text-stone-800 transition hover:border-brand-primary hover:text-brand-primary"
+        >
+          <span className="material-symbols-outlined text-[18px]">cookie</span>
+          Gerenciar preferências de cookies
+        </button>
       </section>
 
       <div className="pt-4">
