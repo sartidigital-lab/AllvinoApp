@@ -79,6 +79,19 @@ export function ProductCampaignManager() {
     setMessage(null);
   };
 
+  const openFlashOffer = () => {
+    setEditing(null);
+    setForm({
+      ...emptyForm,
+      title: 'Oferta Relâmpago',
+      slug: 'oferta-relampago',
+      show_countdown: true,
+    });
+    setProductSearch('');
+    setIsFormOpen(true);
+    setMessage(null);
+  };
+
   const openEdit = (campaign: ProductPromotionCampaign) => {
     setEditing(campaign);
     setForm({
@@ -172,11 +185,9 @@ export function ProductCampaignManager() {
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#B91C1C]">Preço de catálogo</p>
           <h2 className="mt-1 text-xl font-bold text-black">Campanhas de produtos</h2>
-          <p className="mt-1 text-sm font-medium text-stone-500">Defina o percentual, o período e os itens participantes.</p>
+          <p className="mt-1 text-sm font-medium text-stone-500">Defina o percentual, o período e os produtos ou Kits participantes.</p>
         </div>
-        <button type="button" onClick={openCreate} className="admin-button bg-black px-4 text-sm text-white hover:bg-stone-800">
-          Nova campanha
-        </button>
+        <div className="flex flex-wrap gap-2"><button type="button" onClick={openFlashOffer} className="admin-button bg-[#B91C1C] px-4 text-sm text-white hover:bg-[#8f1515]">Oferta relâmpago</button><button type="button" onClick={openCreate} className="admin-button bg-black px-4 text-sm text-white hover:bg-stone-800">Nova campanha</button></div>
       </div>
 
       {message && <AdminNotice>{message}</AdminNotice>}
@@ -212,7 +223,7 @@ export function ProductCampaignManager() {
               {filteredProducts.map((product) => (
                 <label key={product.id} className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition ${form.product_ids.includes(product.id) ? 'border-[#B91C1C] bg-red-50' : 'border-stone-200 bg-white hover:border-stone-400'}`}>
                   <input type="checkbox" checked={form.product_ids.includes(product.id)} onChange={() => toggleProduct(product.id)} />
-                  <span className="min-w-0"><span className="block truncate text-sm font-bold text-black">{product.name}</span><span className="block truncate text-[10px] font-bold uppercase text-stone-400">{product.product_code || 'Sem SKU'} · {product.published ? 'Publicado' : 'Oculto'}</span></span>
+                  <span className="min-w-0"><span className="block truncate text-sm font-bold text-black">{product.name}</span><span className="block truncate text-[10px] font-bold uppercase text-stone-400">{product.product_kind === 'kit' ? 'Kit' : 'SKU avulso'} · {product.product_code || 'Sem SKU'} · {product.published ? 'Publicado' : 'Oculto'}</span></span>
                 </label>
               ))}
             </div>

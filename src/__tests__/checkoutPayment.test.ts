@@ -73,7 +73,7 @@ describe('provisional checkout payments', () => {
       orderId: '87654321-0000-0000-0000-000000000000',
       customerName: 'Cliente PIX',
       customerPhone: '27988888888',
-      items: [{ name: 'Vinho PIX', quantity: 1, unitPrice: 150 }],
+      items: [{ name: 'Vinho PIX', quantity: 1, unitPrice: 154.9 }],
       paymentMethod: 'Pix',
       deliveryType: 'Entrega no endereço',
       deliveryAddress: 'Av. Teste, 20',
@@ -81,9 +81,9 @@ describe('provisional checkout payments', () => {
       deliveryZoneName: 'Vitória',
       deliveryEstimateDays: 3,
       shippingFee: 12,
-      subtotal: 150,
-      discount: 15,
-      total: 147.25,
+      subtotal: 154.9,
+      discount: 7.75,
+      total: 159.15,
       promotionCode: null,
     });
 
@@ -93,6 +93,6 @@ describe('provisional checkout payments', () => {
     expect(message).toContain('*Prazo:* até 3 dia(s)');
     expect(message).toContain('*Frete:* R$ 12,00');
     expect(message).toContain('*Descontos:* - R$ 7,75');
-    expect(message).toContain('*VALOR TOTAL: R$ 147,00*');
+    expect(message).toContain('*VALOR TOTAL: R$ 159,15*');
   });
 });

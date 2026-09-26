@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useDeferredValue, useEffect } from 'react';
+import { useState, useMemo, useDeferredValue, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useWines } from '@/hooks/useWines';
 import { useCart } from '@/context/CartContext';
@@ -39,20 +39,52 @@ function CatalogProductCard({ wine, onAddToCart, onToggleFavorite, onShare, isFa
   const installmentPrice = Number((wine.price / 3).toFixed(2));
 
   return (
-    <article className="w-[min(84vw,300px)] shrink-0 overflow-hidden bg-transparent transition-transform hover:-translate-y-0.5 md:w-[280px] md:rounded-brand-2xl md:border md:border-[#3c2528] md:bg-white md:shadow-[0_2px_10px_rgba(54,16,24,0.08)]">
+    <article className="w-[calc((100vw-3rem)/2)] min-w-[138px] shrink-0 overflow-hidden bg-transparent transition-transform hover:-translate-y-0.5 sm:w-[min(42vw,220px)] md:w-[280px] md:rounded-brand-2xl md:border md:border-[#3c2528] md:bg-white md:shadow-[0_2px_10px_rgba(54,16,24,0.08)]">
       <Link href={`/catalogo/${wine.id}`} className="block active:scale-[0.99]">
         <div className="relative md:border-b md:border-stone-100 md:bg-[#fdfbf8]">
-          <ProductImage src={wine.image_url} alt={wine.name} width={300} height={400} sizes="(max-width: 767px) 84vw, 280px" className="h-52 w-full object-contain mix-blend-multiply p-3" />
+          <ProductImage src={wine.image_url} alt={wine.name} width={300} height={400} sizes="(max-width: 639px) calc((100vw - 3rem) / 2), (max-width: 767px) 42vw, 280px" className="h-40 w-full object-contain mix-blend-multiply p-2 sm:h-48 md:h-52 md:p-3" />
           {stock && <span className={`absolute right-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-bold ${stock.tone === 'danger' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}><StockIcon className="mr-0.5 inline h-3 w-3 align-[-2px]" aria-hidden="true" />{stock.label}</span>}
           {wine.discount_percent && <span className="absolute right-2 top-2 rounded-md bg-[#d21f2b] px-2.5 py-1 text-[10px] font-black text-white shadow-lg shadow-red-950/20">-{wine.discount_percent}%</span>}
           {wine.product_kind === 'kit' && <span className="absolute left-2 top-2 rounded-md bg-[#c58b31] px-2 py-1 text-[9px] font-black uppercase tracking-wide text-white">Kit · {wine.kit_item_count || 0} itens</span>}
         </div>
-        <div className="px-3 pb-2 pt-3"><p className="text-[10px] font-bold uppercase tracking-wide text-stone-400">{wine.product_kind === 'kit' ? 'Seleção especial' : wine.type || wine.region || 'Vinho'}</p><h3 className="mt-1 min-h-10 font-serif text-[15px] font-bold leading-5 text-stone-950 line-clamp-2">{wine.name}</h3><p className="mt-2 flex items-center gap-1 text-[10px] text-stone-400"><span className="flex text-stone-300">{Array.from({ length: 5 }).map((_, index) => <Star key={index} className="h-3 w-3" />)}</span> Sem avaliações</p></div>
+        <div className="px-2.5 pb-2 pt-3 sm:px-3"><p className="text-[9px] font-bold uppercase tracking-wide text-stone-400 sm:text-[10px]">{wine.product_kind === 'kit' ? 'Seleção especial' : wine.type || wine.region || 'Vinho'}</p><h3 className="mt-1 min-h-10 font-serif text-[13px] font-bold leading-4 text-stone-950 line-clamp-2 sm:text-[15px] sm:leading-5">{wine.name}</h3><p className="mt-2 flex items-center gap-1 text-[9px] text-stone-400 sm:text-[10px]"><span className="flex text-stone-300">{Array.from({ length: 5 }).map((_, index) => <Star key={index} className="h-3 w-3" />)}</span><span className="truncate">Sem avaliações</span></p></div>
       </Link>
-      <div className="grid grid-cols-2 text-xs font-medium text-[#741128] md:border-y md:border-stone-200"><button onClick={() => onToggleFavorite(wine)} type="button" className="flex min-h-9 items-center justify-center gap-1 hover:bg-[#fdf5f6] md:border-r md:border-stone-200" aria-label={isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}><Heart className={`h-4 w-4 ${isFavorite ? 'fill-current' : ''}`} />Favoritar</button><button onClick={() => onShare(wine)} type="button" className="flex min-h-9 items-center justify-center gap-1 hover:bg-[#fdf5f6]"><Share2 className="h-4 w-4" />Compartilhar</button></div>
-      <div className="space-y-2 p-3"><WinePrice wine={wine} /><p className="text-[10px] font-bold text-emerald-700">À vista <span className="text-sm font-black">R$ {pixPrice.toFixed(2).replace('.', ',')}</span> no PIX <span className="rounded bg-emerald-600 px-1 py-0.5 text-[9px] text-white">5% OFF</span></p><p className="text-[10px] font-medium text-stone-600">ou 3x de R$ {installmentPrice.toFixed(2).replace('.', ',')} sem juros</p>{wine.show_countdown && <FlashOfferCountdown endsAt={wine.promotion_ends_at} />}<button onClick={() => onAddToCart(wine)} type="button" disabled={wine.stock === 0} className="mt-1 flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#82c341] px-3 text-xs font-bold text-white shadow-sm transition hover:bg-[#6eae31] disabled:cursor-not-allowed disabled:opacity-40"><ShoppingCart className="h-4 w-4" />{wine.stock === 0 ? 'Indisponível' : 'Adicionar ao carrinho'}</button></div>
+      <div className="grid grid-cols-2 text-[10px] font-medium text-[#741128] sm:text-xs md:border-y md:border-stone-200"><button onClick={() => onToggleFavorite(wine)} type="button" className="flex min-h-9 items-center justify-center gap-1 hover:bg-[#fdf5f6] md:border-r md:border-stone-200" aria-label={isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}><Heart className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${isFavorite ? 'fill-current' : ''}`} /><span className="hidden sm:inline">Favoritar</span></button><button onClick={() => onShare(wine)} type="button" className="flex min-h-9 items-center justify-center gap-1 hover:bg-[#fdf5f6]"><Share2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" /><span className="hidden sm:inline">Compartilhar</span></button></div>
+      <div className="space-y-2 p-2.5 sm:p-3"><WinePrice wine={wine} /><p className="text-[9px] font-bold text-emerald-700 sm:text-[10px]">À vista <span className="text-xs font-black sm:text-sm">R$ {pixPrice.toFixed(2).replace('.', ',')}</span> no PIX <span className="rounded bg-emerald-600 px-1 py-0.5 text-[8px] text-white sm:text-[9px]">5% OFF</span></p><p className="text-[9px] font-medium text-stone-600 sm:text-[10px]">ou 3x de R$ {installmentPrice.toFixed(2).replace('.', ',')} sem juros</p>{wine.show_countdown && <FlashOfferCountdown endsAt={wine.promotion_ends_at} />}<button onClick={() => onAddToCart(wine)} type="button" disabled={wine.stock === 0} className="mt-1 flex min-h-10 w-full items-center justify-center gap-1 rounded-lg bg-[#82c341] px-2 text-[10px] font-bold text-white shadow-sm transition hover:bg-[#6eae31] disabled:cursor-not-allowed disabled:opacity-40 sm:gap-2 sm:px-3 sm:text-xs"><ShoppingCart className="h-3.5 w-3.5 sm:h-4 sm:w-4" />{wine.stock === 0 ? 'Indisponível' : <><span className="sm:hidden">Adicionar</span><span className="hidden sm:inline">Adicionar ao carrinho</span></>}</button></div>
     </article>
   );
+}
+
+type CatalogProductRowProps = Omit<CatalogProductCardProps, 'wine' | 'isFavorite'> & {
+  wines: Wine[];
+  getIsFavorite: (id: string) => boolean;
+  label: string;
+};
+
+function CatalogProductRow({ wines, getIsFavorite, label, onAddToCart, onToggleFavorite, onShare }: CatalogProductRowProps) {
+  const rowRef = useRef<HTMLDivElement>(null);
+  const [pageCount, setPageCount] = useState(1);
+  const [activePage, setActivePage] = useState(0);
+
+  useEffect(() => {
+    const row = rowRef.current;
+    if (!row) return;
+    const updatePages = () => {
+      const width = Math.max(row.clientWidth, 1);
+      setPageCount(Math.max(1, Math.ceil(row.scrollWidth / width)));
+    };
+    updatePages();
+    const observer = new ResizeObserver(updatePages);
+    observer.observe(row);
+    return () => observer.disconnect();
+  }, [wines.length]);
+
+  return <div>
+    <div ref={rowRef} onScroll={(event) => setActivePage(Math.min(pageCount - 1, Math.max(0, Math.round(event.currentTarget.scrollLeft / Math.max(event.currentTarget.clientWidth, 1)))))} className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-3 scrollbar-hide lg:-mx-8 lg:gap-4 lg:px-8" aria-label={label}>
+      {wines.map((wine) => <div key={wine.id} className="snap-start"><CatalogProductCard wine={wine} isFavorite={getIsFavorite(wine.id)} onAddToCart={onAddToCart} onToggleFavorite={onToggleFavorite} onShare={onShare} /></div>)}
+    </div>
+    {pageCount > 1 && <div className="flex items-center justify-center gap-1.5 pb-1 pt-0.5 md:hidden" aria-label="Indicador de rolagem horizontal"><span className="mr-1 text-[10px] font-bold text-stone-400">Deslize</span>{Array.from({ length: pageCount }).map((_, index) => <span key={index} className={`h-1.5 rounded-full transition-all ${index === activePage ? 'w-5 bg-brand-primary' : 'w-1.5 bg-stone-300'}`} aria-hidden="true" />)}</div>}
+  </div>;
 }
 
 export default function CatalogoPage() {
@@ -385,19 +417,22 @@ export default function CatalogoPage() {
           </nav>
         )}
         {isLoading ? (
-          <div className="flex gap-4 overflow-hidden">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="w-[min(84vw,300px)] shrink-0 md:w-[280px]"><WineCardSkeleton /></div>)}</div>
+          <div className="flex gap-3 overflow-hidden md:gap-4">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="w-[calc((100vw-3rem)/2)] min-w-[138px] shrink-0 sm:w-[min(42vw,220px)] md:w-[280px]"><WineCardSkeleton /></div>)}</div>
         ) : filteredWines.length === 0 ? (
           <div className="py-16 text-center"><WineIcon className="mx-auto h-12 w-12 text-stone-200" aria-hidden="true" /><p className="mt-4 font-bold text-stone-400">Nenhum vinho encontrado.</p>{activeFilterCount > 0 && <button onClick={clearFilters} className="mt-2 text-sm font-bold text-brand-primary">Limpar filtros</button>}</div>
         ) : (
           <div className="space-y-10">
-            {catalogSections.map((section) => (
-              <section key={section.id} id={section.slug} className="scroll-mt-36" aria-label={section.title}>
-                <div className="mb-4 flex items-end justify-between gap-4"><div><p className="text-[10px] font-black uppercase tracking-[0.24em] text-brand-primary">Catálogo Allvino</p><h2 className="mt-1 font-serif text-2xl font-bold text-stone-950">{section.title}</h2></div><span className="text-xs font-bold text-stone-400">Deslize para ver mais</span></div>
-                <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-3 scrollbar-hide lg:-mx-8 lg:px-8">
-                  {section.wines.map((wine) => <div key={wine.id} className="snap-start"><CatalogProductCard wine={wine} isFavorite={isFavorite(wine.id)} onAddToCart={(item) => { if (item.stock > 0) { addToCart(item); showToast(`${item.product_kind === 'kit' ? 'Kit' : 'Vinho'} adicionado ao carrinho!`, 'success'); } }} onToggleFavorite={(item) => { toggleFavorite(item); showToast(isFavorite(item.id) ? 'Removido dos favoritos' : 'Adicionado aos favoritos', 'info'); }} onShare={(item) => { if (navigator.share) { void navigator.share({ title: item.name, url: `${window.location.origin}/catalogo/${item.id}` }); } else { void navigator.clipboard?.writeText(`${window.location.origin}/catalogo/${item.id}`); showToast('Link do produto copiado.', 'success'); } }} /></div>)}
+            {catalogSections.map((section) => {
+              const rows = section.slug === 'todos-os-produtos'
+                ? Array.from({ length: Math.ceil(section.wines.length / 8) }, (_, index) => section.wines.slice(index * 8, (index + 1) * 8))
+                : [section.wines];
+              return <section key={section.id} id={section.slug} className="scroll-mt-36" aria-label={section.title}>
+                <div className="mb-4 flex items-end justify-between gap-4"><div><p className="text-[10px] font-black uppercase tracking-[0.24em] text-brand-primary">Catálogo Allvino</p><h2 className="mt-1 font-serif text-2xl font-bold text-stone-950">{section.title}</h2></div><span className="hidden text-xs font-bold text-stone-400 md:inline">Deslize para ver mais</span></div>
+                <div className="space-y-5">
+                  {rows.map((row, index) => <CatalogProductRow key={`${section.id}-${index}`} wines={row} label={`${section.title}, faixa ${index + 1}`} getIsFavorite={isFavorite} onAddToCart={(item) => { if (item.stock > 0) { addToCart(item); showToast(`${item.product_kind === 'kit' ? 'Kit' : 'Vinho'} adicionado ao carrinho!`, 'success'); } }} onToggleFavorite={(item) => { toggleFavorite(item); showToast(isFavorite(item.id) ? 'Removido dos favoritos' : 'Adicionado aos favoritos', 'info'); }} onShare={(item) => { if (navigator.share) { void navigator.share({ title: item.name, url: `${window.location.origin}/catalogo/${item.id}` }); } else { void navigator.clipboard?.writeText(`${window.location.origin}/catalogo/${item.id}`); showToast('Link do produto copiado.', 'success'); } }} />)}
                 </div>
-              </section>
-            ))}
+              </section>;
+            })}
           </div>
         )}
       </div>
