@@ -12,7 +12,7 @@ import {
   normalizePromotionCode,
 } from '@/lib/database/promotions';
 import { fetchDeliveryQuote } from '@/lib/database/delivery';
-import { calculateShippingFee, formatZipCode, normalizeZipCode } from '@/lib/delivery/rules';
+import { calculateShippingFee, formatZipCode, normalizeZipCode, PICKUP_SCHEDULE_NOTICE } from '@/lib/delivery/rules';
 import { lookupCepAddress } from '@/lib/address/cep';
 import { createPixPayload, createPixQrCode, getPixConfig } from '@/lib/payments/pix';
 import {
@@ -701,7 +701,7 @@ export default function CheckoutPage() {
             </label>
             <label className="flex items-center gap-3 p-4 border rounded-2xl border-stone-200 cursor-pointer has-[:checked]:border-black has-[:checked]:bg-stone-50 transition">
               <input type="radio" name="entrega" value="retirada" checked={entrega === 'retirada'} onChange={() => setEntrega('retirada')} className="text-black focus:ring-0" />
-              <div className="flex-1 text-sm font-bold">Retirada na Loja <span className="text-green-600 text-[10px] ml-2">5% OFF</span></div>
+              <div className="flex-1"><p className="text-sm font-bold">Retirada na Loja <span className="ml-2 text-[10px] text-green-600">5% OFF</span></p><p className="mt-1 text-xs font-medium leading-5 text-stone-500">{PICKUP_SCHEDULE_NOTICE}</p></div>
             </label>
           </div>
           {entrega === 'entrega' && (

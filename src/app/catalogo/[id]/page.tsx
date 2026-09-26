@@ -12,7 +12,7 @@ import { ArrowLeft, Ban, Grape, Heart, MapPin, ShoppingCart, TriangleAlert, Truc
 import { getStockStatus } from '@/lib/catalog/stockStatus';
 import { getGrapeClassification, parseGrapes } from '@/lib/catalog/grapes';
 import { fetchDeliveryQuote } from '@/lib/database/delivery';
-import { formatZipCode, normalizeZipCode } from '@/lib/delivery/rules';
+import { formatZipCode, normalizeZipCode, PICKUP_SCHEDULE_NOTICE } from '@/lib/delivery/rules';
 
 function formatMoney(value: number) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -78,6 +78,7 @@ export default function WineDetailPage() {
 
   const stock = getStockStatus(wine.stock);
   const StockIcon = stock?.tone === 'danger' ? Ban : TriangleAlert;
+  const hasPromotionalPrice = Boolean(wine.discount_percent && wine.base_price && wine.base_price > wine.price);
   const grapeClassification = getGrapeClassification(wine.grape);
   const grapes = parseGrapes(wine.grape);
 
@@ -147,10 +148,14 @@ export default function WineDetailPage() {
                   {wine.discount_percent}% OFF · {wine.promotion_title}
                 </span>
               )}
-              {wine.discount_percent && wine.base_price && wine.base_price > wine.price && (
-                <p className="text-sm font-bold text-stone-400 line-through">{formatMoney(wine.base_price)}</p>
+              {hasPromotionalPrice ? (
+                <div className="space-y-1">
+                  <p className="text-sm font-bold text-stone-400">DE <span className="line-through">{formatMoney(wine.base_price!)}</span></p>
+                  <p className="text-3xl font-bold text-brand-primary">POR {formatMoney(wine.price)}</p>
+                </div>
+              ) : (
+                <p className="text-3xl font-bold text-brand-primary">{formatMoney(wine.price)}</p>
               )}
-              <p className="text-3xl font-bold text-brand-primary">{formatMoney(wine.price)}</p>
               <p className="mt-1 text-xs text-stone-400">Preço para pedidos online</p>
             </div>
 
@@ -215,7 +220,7 @@ export default function WineDetailPage() {
               {deliveryQuote && <p role="status" className="mt-3 text-xs font-semibold text-stone-600">{deliveryQuote}</p>}
             </section>
             <aside className="rounded-brand-xl border border-emerald-200 bg-emerald-50/60 p-4">
-              <div className="flex items-start gap-3"><MapPin className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" aria-hidden="true" /><div><p className="font-bold text-emerald-950">Retire na loja e ganhe <span className="text-emerald-700">5% de desconto</span></p><p className="mt-1 text-xs font-bold text-emerald-800">Comprando até às 19h30</p><address className="mt-2 not-italic text-xs leading-5 text-emerald-950/80">Rua Goiânia, 339 - Itapuã, Vila Velha - ES, 29101-780</address></div></div>
+              <div className="flex items-start gap-3"><MapPin className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" aria-hidden="true" /><div><p className="font-bold text-emerald-950">Retire na loja e ganhe <span className="text-emerald-700">5% de desconto</span></p><p className="mt-1 text-xs font-bold text-emerald-800">Comprando até às 19h30</p><p className="mt-2 text-xs leading-5 text-emerald-950/80">{PICKUP_SCHEDULE_NOTICE}</p><address className="mt-2 not-italic text-xs leading-5 text-emerald-950/80">Rua Goiânia, 339 - Itapuã, Vila Velha - ES, 29101-780</address></div></div>
             </aside>
             <a href="/catalogo" className="block text-center text-sm font-bold text-stone-400 hover:text-brand-primary transition">
               Continuar comprando

@@ -1,5 +1,7 @@
 import type { DeliveryZone } from '@/types/database';
 
+export const PICKUP_SCHEDULE_NOTICE = 'Não fazemos retiradas de pedidos na loja aos sábados, domingos e feriados. Caso seu pedido seja realizado nestes dias, a retirada poderá ser agendada com nosso atendimento para o próximo dia útil.';
+
 export function normalizeZipCode(value: string) {
   return value.replace(/\D/g, '').slice(0, 8);
 }

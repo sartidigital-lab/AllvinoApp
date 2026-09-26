@@ -7,6 +7,7 @@ import { Button, Checkbox, EmptyState, IconButton, ProductImage } from '@/compon
 import { usePathname } from 'next/navigation';
 import { X } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { PICKUP_SCHEDULE_NOTICE } from '@/lib/delivery/rules';
 
 export function CartOverlay() {
   const { cart, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, cartTotal } = useCart();
@@ -176,6 +177,7 @@ export function CartOverlay() {
               checked={retirada}
               onChange={(e) => setRetirada(e.target.checked)}
             />
+            <p className="text-xs leading-5 text-stone-500">{PICKUP_SCHEDULE_NOTICE}</p>
             
             <div className="flex justify-between text-xl font-bold">
               <span>Total</span> 
