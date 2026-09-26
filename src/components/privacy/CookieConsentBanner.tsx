@@ -111,7 +111,9 @@ export function CookieConsentBanner() {
       )}
 
       {consent && !showPreferences && (
-        <button type="button" onClick={() => setShowPreferences(true)} className="fixed bottom-4 left-4 z-[650] min-h-10 rounded-full border border-brand-border bg-white px-4 text-xs font-bold text-brand-ink shadow-brand-md hover:bg-brand-surface-elevated">Preferências de cookies</button>
+        <button type="button" onClick={() => setShowPreferences(true)} aria-label="Gerenciar preferências de cookies" title="Preferências de cookies" className="fixed bottom-[calc(6.5rem+env(safe-area-inset-bottom))] left-4 z-[80] flex h-12 w-12 items-center justify-center rounded-full border border-brand-border bg-white text-brand-ink shadow-brand-md transition hover:bg-brand-surface-elevated" >
+          <span className="material-symbols-outlined text-[22px]" aria-hidden="true">cookie</span>
+        </button>
       )}
     </>
   );
