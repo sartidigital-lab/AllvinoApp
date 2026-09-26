@@ -63,6 +63,7 @@ export function mapProductToWine(product: LegacyProduct): Wine {
     description: product.descricao,
     price: effectivePrice,
     original_price: originalPrice,
+    base_price: originalPrice,
     discount_percent: product.discount_percent ? Number(product.discount_percent) : null,
     promotion_ends_at: product.promotion_ends_at || null,
     show_countdown: product.show_countdown === true,

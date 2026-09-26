@@ -78,7 +78,8 @@ export default function WineDetailPage() {
 
   const stock = getStockStatus(wine.stock);
   const StockIcon = stock?.tone === 'danger' ? Ban : TriangleAlert;
-  const hasPromotionalPrice = Boolean(wine.discount_percent && wine.base_price && wine.base_price > wine.price);
+  const regularPrice = wine.base_price ?? wine.original_price ?? wine.price;
+  const hasPromotionalPrice = Boolean(wine.discount_percent && regularPrice > wine.price);
   const grapeClassification = getGrapeClassification(wine.grape);
   const grapes = parseGrapes(wine.grape);
 
@@ -150,7 +151,7 @@ export default function WineDetailPage() {
               )}
               {hasPromotionalPrice ? (
                 <div className="space-y-1">
-                  <p className="text-sm font-bold text-stone-400">DE <span className="line-through">{formatMoney(wine.base_price!)}</span></p>
+                  <p className="text-sm font-bold text-stone-400">DE <span className="line-through">{formatMoney(regularPrice)}</span></p>
                   <p className="text-3xl font-bold text-brand-primary">POR {formatMoney(wine.price)}</p>
                 </div>
               ) : (

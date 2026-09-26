@@ -28,6 +28,7 @@ describe('catalog promotion pricing', () => {
     const wine = mapProductToWine(product);
     expect(wine.price).toBe(75);
     expect(wine.original_price).toBe(100);
+    expect(wine.base_price).toBe(100);
     expect(wine.discount_percent).toBe(25);
     expect(wine.promotion_slug).toBe('selecao-especial');
   });
