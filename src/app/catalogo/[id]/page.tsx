@@ -123,31 +123,18 @@ export default function WineDetailPage() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-6">
-        <div className="grid lg:grid-cols-[minmax(0,1fr)_420px] gap-8">
-          <div className="surface-card flex items-center justify-center p-8">
-            <ProductImage src={wine.image_url} alt={wine.name} width={600} height={800} priority sizes="(max-width: 1024px) 100vw, 60vw" className="w-full max-h-[500px] object-contain mix-blend-multiply" />
+        <div className="grid items-start lg:grid-cols-[minmax(0,1fr)_420px] gap-8">
+          <div className="surface-card flex items-center justify-center p-8 lg:sticky lg:top-24 lg:h-[calc(100dvh-12rem)] lg:min-h-[400px]">
+            <ProductImage src={wine.image_url} alt={wine.name} width={600} height={800} priority sizes="(max-width: 1024px) 100vw, 60vw" className="w-full max-h-[500px] object-contain mix-blend-multiply lg:h-full lg:max-h-none" />
           </div>
 
-          <div className="space-y-6">
+          <div className="flex flex-col gap-6">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400">
                 {wine.category || wine.type} · {wine.region || 'Região não informada'}
               </p>
               <h1 className="font-serif text-3xl font-bold mt-2">{wine.name}</h1>
-              {wine.description && (
-                <p className="mt-3 text-stone-500 text-sm leading-relaxed">{wine.description}</p>
-              )}
             </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              {wine.type && productAttribute(Wine, 'Tipo', wine.type)}
-              {grapeClassification && productAttribute(Grape, grapeClassification === 'Blend' ? 'Estilo' : 'Uva', grapeClassification)}
-              {wine.region && productAttribute(MapPin, 'Região', wine.region)}
-              {wine.category && productAttribute(MapPin, 'País', wine.category)}
-            </div>
-            {grapeClassification === 'Blend' && grapes.length > 0 && (
-              <p className="text-xs font-medium text-stone-500">Uvas: {grapes.join(', ')}</p>
-            )}
 
             <div className="border-t border-stone-100 pt-6">
               {wine.discount_percent && (
@@ -175,6 +162,20 @@ export default function WineDetailPage() {
                 </div>
               )}
             </div>
+
+            {wine.description && (
+              <p className="text-stone-500 text-sm leading-relaxed">{wine.description}</p>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              {wine.type && productAttribute(Wine, 'Tipo', wine.type)}
+              {grapeClassification && productAttribute(Grape, grapeClassification === 'Blend' ? 'Estilo' : 'Uva', grapeClassification)}
+              {wine.region && productAttribute(MapPin, 'Região', wine.region)}
+              {wine.category && productAttribute(MapPin, 'País', wine.category)}
+            </div>
+            {grapeClassification === 'Blend' && grapes.length > 0 && (
+              <p className="text-xs font-medium text-stone-500">Uvas: {grapes.join(', ')}</p>
+            )}
 
             {stock && (
               <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-red-600">
