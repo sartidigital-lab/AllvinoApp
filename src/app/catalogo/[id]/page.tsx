@@ -11,6 +11,7 @@ import { useParams } from 'next/navigation';
 import { ArrowLeft, Ban, Grape, Heart, MapPin, ShoppingCart, TriangleAlert, Truck, Wine, type LucideIcon } from 'lucide-react';
 import { getStockStatus } from '@/lib/catalog/stockStatus';
 import { getGrapeClassification, parseGrapes } from '@/lib/catalog/grapes';
+import { getKitUnitPrice } from '@/components/catalog/WinePrice';
 import { fetchDeliveryQuote } from '@/lib/database/delivery';
 import { formatZipCode, normalizeZipCode, PICKUP_SCHEDULE_NOTICE } from '@/lib/delivery/rules';
 
@@ -80,6 +81,10 @@ export default function WineDetailPage() {
   const StockIcon = stock?.tone === 'danger' ? Ban : TriangleAlert;
   const regularPrice = wine.base_price ?? wine.original_price ?? wine.price;
   const hasPromotionalPrice = Boolean(wine.discount_percent && regularPrice > wine.price);
+  const isKit = wine.product_kind === 'kit';
+  const kitUnitPrice = isKit ? getKitUnitPrice(wine.price, wine.kit_item_count) : null;
+  const pixPrice = Number((wine.price * 0.95).toFixed(2));
+  const kitPixUnitPrice = isKit ? getKitUnitPrice(pixPrice, wine.kit_item_count) : null;
   const grapeClassification = getGrapeClassification(wine.grape);
   const grapes = parseGrapes(wine.grape);
 
@@ -157,7 +162,17 @@ export default function WineDetailPage() {
               ) : (
                 <p className="text-3xl font-bold text-brand-primary">{formatMoney(wine.price)}</p>
               )}
+              {kitUnitPrice !== null && (
+                <p className="mt-2 text-sm font-semibold text-stone-600"><span className="mr-1 text-xs font-bold uppercase tracking-wide text-stone-400">No cartão</span>{formatMoney(kitUnitPrice)} por garrafa</p>
+              )}
               <p className="mt-1 text-xs text-stone-400">Preço para pedidos online</p>
+              {kitPixUnitPrice !== null && (
+                <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50/70 p-3">
+                  <div className="flex items-center gap-2 text-xs font-bold text-emerald-800"><span>À vista no PIX</span><span className="rounded bg-emerald-600 px-1.5 py-0.5 text-[9px] text-white">5% OFF</span></div>
+                  <p className="mt-1 text-lg font-black text-emerald-800">{formatMoney(pixPrice)}</p>
+                  <p className="text-sm font-semibold text-emerald-700">{formatMoney(kitPixUnitPrice)} por garrafa</p>
+                </div>
+              )}
             </div>
 
             {stock && (

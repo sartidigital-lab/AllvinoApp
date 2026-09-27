@@ -4,6 +4,15 @@ export function formatMoney(value: number) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+export function getKitUnitPrice(totalPrice: number, itemCount?: number | null) {
+  const total = Number(totalPrice);
+  const quantity = Number(itemCount);
+
+  if (!Number.isFinite(total) || !Number.isInteger(quantity) || quantity < 1) return null;
+
+  return Math.round((total / quantity + Number.EPSILON) * 100) / 100;
+}
+
 export function WinePrice({ wine, compact = false, reserveSpace = false }: { wine: Wine; compact?: boolean; reserveSpace?: boolean }) {
   const originalPrice = wine.original_price ?? wine.base_price ?? wine.price;
   const hasPromotion = Boolean(wine.discount_percent && originalPrice > wine.price);
