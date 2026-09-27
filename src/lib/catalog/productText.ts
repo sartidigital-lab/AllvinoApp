@@ -19,6 +19,5 @@ export function formatProductDescription(value: string): string {
   const compact = value.trim().replace(/\s+/g, ' ');
   if (!compact) return '';
 
-  const normalized = compact.toLocaleLowerCase('pt-BR');
-  return `${normalized.charAt(0).toLocaleUpperCase('pt-BR')}${normalized.slice(1)}`;
+  return `${compact.charAt(0).toLocaleUpperCase('pt-BR')}${compact.slice(1)}`;
 }

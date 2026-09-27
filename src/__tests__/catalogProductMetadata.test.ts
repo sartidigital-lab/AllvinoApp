@@ -6,7 +6,7 @@ describe('catalog product metadata', () => {
   it('normalizes product-facing text without touching product codes', () => {
     expect(formatProductText('  VINHO   TINTO  RESERVA ')).toBe('Vinho Tinto Reserva');
     expect(formatProductText('vale   dos vinhedos')).toBe('Vale dos Vinhedos');
-    expect(formatProductDescription('  VINHO COMPLETO E ELEGANTE. ')).toBe('Vinho completo e elegante.');
+    expect(formatProductDescription('  Vinho COMPLETO e Elegante. ')).toBe('Vinho COMPLETO e Elegante.');
   });
 
   it('stores grapes as tags and classifies multiple grapes as a blend', () => {

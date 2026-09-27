@@ -163,7 +163,7 @@ export default function WineDetailPage() {
                 <p className="text-3xl font-bold text-brand-primary">{formatMoney(wine.price)}</p>
               )}
               {kitUnitPrice !== null && (
-                <p className="mt-2 text-sm font-semibold text-stone-600"><span className="mr-1 text-xs font-bold uppercase tracking-wide text-stone-400">No cartão</span>{formatMoney(kitUnitPrice)} por garrafa</p>
+                <p className="mt-2 flex flex-wrap items-baseline gap-x-1.5 text-sm font-semibold text-stone-600"><span className="text-xs font-bold uppercase tracking-wide text-stone-400">Cartão de crédito</span><span>{formatMoney(kitUnitPrice)} por garrafa</span></p>
               )}
               <p className="mt-1 text-xs text-stone-400">Preço para pedidos online</p>
               {kitPixUnitPrice !== null && (
