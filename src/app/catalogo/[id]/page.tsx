@@ -81,10 +81,11 @@ export default function WineDetailPage() {
   const StockIcon = stock?.tone === 'danger' ? Ban : TriangleAlert;
   const regularPrice = wine.base_price ?? wine.original_price ?? wine.price;
   const hasPromotionalPrice = Boolean(wine.discount_percent && regularPrice > wine.price);
-  const isKit = wine.product_kind === 'kit';
-  const kitUnitPrice = isKit ? getKitUnitPrice(wine.price, wine.kit_item_count) : null;
+  // A composição é a fonte de verdade: alguns registros legados não trazem o
+  // tipo do produto, mas ainda possuem os itens do Kit no catálogo público.
+  const kitUnitPrice = getKitUnitPrice(wine.price, wine.kit_item_count);
   const pixPrice = Number((wine.price * 0.95).toFixed(2));
-  const kitPixUnitPrice = isKit ? getKitUnitPrice(pixPrice, wine.kit_item_count) : null;
+  const kitPixUnitPrice = getKitUnitPrice(pixPrice, wine.kit_item_count);
   const grapeClassification = getGrapeClassification(wine.grape);
   const grapes = parseGrapes(wine.grape);
 
