@@ -1,4 +1,4 @@
-const CACHE_NAME = 'allvino-offline-v1';
+const CACHE_NAME = 'allvino-offline-v2';
 const OFFLINE_PAGE = '/offline.html';
 
 self.addEventListener('install', (event) => {

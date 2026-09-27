@@ -36,8 +36,23 @@ export function FirstVisitExperience() {
   const previousFocus = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
+    let removeServiceWorkerListener: (() => void) | undefined;
     if ('serviceWorker' in navigator && window.isSecureContext) {
-      navigator.serviceWorker.register('/sw.js').catch(() => undefined);
+      const hadController = Boolean(navigator.serviceWorker.controller);
+      let reloadedAfterUpdate = false;
+      const reloadAfterUpdate = () => {
+        if (!hadController || reloadedAfterUpdate) return;
+        reloadedAfterUpdate = true;
+        window.location.reload();
+      };
+
+      navigator.serviceWorker.addEventListener('controllerchange', reloadAfterUpdate);
+      navigator.serviceWorker
+        .register('/sw.js', { updateViaCache: 'none' })
+        .then((registration) => registration.update())
+        .catch(() => undefined);
+
+      removeServiceWorkerListener = () => navigator.serviceWorker.removeEventListener('controllerchange', reloadAfterUpdate);
     }
 
     try {
@@ -59,6 +74,7 @@ export function FirstVisitExperience() {
     window.addEventListener('beforeinstallprompt', onInstallPrompt);
     window.addEventListener('appinstalled', onInstalled);
     return () => {
+      removeServiceWorkerListener?.();
       window.removeEventListener('beforeinstallprompt', onInstallPrompt);
       window.removeEventListener('appinstalled', onInstalled);
     };
