@@ -77,8 +77,13 @@ export type Promotion = {
   description: string | null;
   discount_type: 'percent' | 'fixed';
   discount_value: number;
+  scope: 'store' | 'selected_products';
   min_subtotal: number;
+  min_item_quantity: number | null;
+  requires_first_purchase: boolean;
   max_discount: number | null;
+  applicable_product_ids: string[];
+  custom_rule: string | null;
   starts_at: string | null;
   ends_at: string | null;
   is_active: boolean;

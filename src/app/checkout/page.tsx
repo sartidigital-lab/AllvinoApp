@@ -5,10 +5,12 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { CurrentUser, getCurrentUserFast } from '@/lib/auth/currentUser';
-import { createOrder } from '@/lib/database/orders';
+import { createOrder, getUserOrders } from '@/lib/database/orders';
 import {
   calculatePromotionDiscount,
   fetchActivePromotionByCode,
+  getPromotionBottleCount,
+  getPromotionEligibleSubtotal,
   normalizePromotionCode,
 } from '@/lib/database/promotions';
 import { fetchDeliveryQuote } from '@/lib/database/delivery';
@@ -116,7 +118,7 @@ export default function CheckoutPage() {
   }, []);
 
   const pickupDiscount = entrega === 'retirada' ? cartTotal * 0.05 : 0;
-  const promotionDiscount = appliedPromotion ? calculatePromotionDiscount(appliedPromotion, cartTotal) : 0;
+  const promotionDiscount = appliedPromotion ? calculatePromotionDiscount(appliedPromotion, cart) : 0;
   const nonPaymentDiscount = Math.min(cartTotal, pickupDiscount + promotionDiscount);
   const pixDiscount = pagamento === 'Pix'
     ? Math.min(calculatePixDiscount(cartTotal), cartTotal - nonPaymentDiscount)
@@ -160,7 +162,45 @@ export default function CheckoutPage() {
       return;
     }
 
-    const nextDiscount = calculatePromotionDiscount(promotion, cartTotal);
+    if (promotion.requires_first_purchase) {
+      if (!user) {
+        setPromotionMessage('Entre na sua conta para validar este cupom de primeira compra.');
+        setAppliedPromotion(null);
+        setIsCheckingPromotion(false);
+        return;
+      }
+
+      const { orders, error: ordersError } = await getUserOrders(user.id, 1);
+      if (ordersError) {
+        setPromotionMessage('Não foi possível validar o histórico de compras agora.');
+        setAppliedPromotion(null);
+        setIsCheckingPromotion(false);
+        return;
+      }
+
+      if (orders.length > 0) {
+        setPromotionMessage('Este cupom é válido somente para a primeira compra.');
+        setAppliedPromotion(null);
+        setIsCheckingPromotion(false);
+        return;
+      }
+    }
+
+    if (promotion.min_item_quantity && getPromotionBottleCount(cart) < promotion.min_item_quantity) {
+      setPromotionMessage(`Cupom válido a partir de ${promotion.min_item_quantity} garrafa(s) no carrinho.`);
+      setAppliedPromotion(null);
+      setIsCheckingPromotion(false);
+      return;
+    }
+
+    if (promotion.scope === 'selected_products' && getPromotionEligibleSubtotal(promotion, cart) <= 0) {
+      setPromotionMessage('Este cupom é válido somente para os produtos selecionados pela campanha.');
+      setAppliedPromotion(null);
+      setIsCheckingPromotion(false);
+      return;
+    }
+
+    const nextDiscount = calculatePromotionDiscount(promotion, cart);
     if (nextDiscount <= 0) {
       setPromotionMessage(`Cupom válido para pedidos a partir de R$ ${promotion.min_subtotal.toFixed(2).replace('.', ',')}.`);
       setAppliedPromotion(null);

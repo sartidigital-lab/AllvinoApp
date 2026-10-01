@@ -2,6 +2,8 @@ import { Promotion } from '@/types/database';
 import { createClient } from '@/utils/supabase/client';
 import {
   calculatePromotionDiscount,
+  getPromotionBottleCount,
+  getPromotionEligibleSubtotal,
   isPromotionCurrentlyActive,
   normalizePromotionCode,
 } from '@/lib/promotions/rules';
@@ -12,7 +14,13 @@ export type PromotionDiscount = {
   promotion: Promotion;
   discount: number;
 };
-export { calculatePromotionDiscount, isPromotionCurrentlyActive, normalizePromotionCode };
+export {
+  calculatePromotionDiscount,
+  getPromotionBottleCount,
+  getPromotionEligibleSubtotal,
+  isPromotionCurrentlyActive,
+  normalizePromotionCode,
+};
 
 export async function fetchPromotions(): Promise<{ promotions: Promotion[]; error: Error | null }> {
   const supabase = createClient();
@@ -20,7 +28,7 @@ export async function fetchPromotions(): Promise<{ promotions: Promotion[]; erro
   try {
     const { data, error } = await supabase
       .from('promotions')
-      .select('id,created_at,updated_at,code,title,description,discount_type,discount_value,min_subtotal,max_discount,starts_at,ends_at,is_active')
+      .select('id,created_at,updated_at,code,title,description,discount_type,discount_value,scope,min_subtotal,min_item_quantity,requires_first_purchase,max_discount,applicable_product_ids,custom_rule,starts_at,ends_at,is_active')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -44,7 +52,7 @@ export async function fetchActivePromotionByCode(code: string): Promise<{
   try {
     const { data, error } = await supabase
       .from('promotions')
-      .select('id,created_at,updated_at,code,title,description,discount_type,discount_value,min_subtotal,max_discount,starts_at,ends_at,is_active')
+      .select('id,created_at,updated_at,code,title,description,discount_type,discount_value,scope,min_subtotal,min_item_quantity,requires_first_purchase,max_discount,applicable_product_ids,custom_rule,starts_at,ends_at,is_active')
       .eq('code', normalizedCode)
       .maybeSingle();
 
@@ -84,7 +92,7 @@ export async function savePromotion(
       : supabase.from('promotions').insert(normalizedPayload);
 
     const { data, error } = await query
-      .select('id,created_at,updated_at,code,title,description,discount_type,discount_value,min_subtotal,max_discount,starts_at,ends_at,is_active')
+      .select('id,created_at,updated_at,code,title,description,discount_type,discount_value,scope,min_subtotal,min_item_quantity,requires_first_purchase,max_discount,applicable_product_ids,custom_rule,starts_at,ends_at,is_active')
       .single();
 
     if (error) throw error;

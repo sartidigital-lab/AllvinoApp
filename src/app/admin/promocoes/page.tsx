@@ -8,7 +8,8 @@ import {
   PromotionPayload,
   savePromotion,
 } from '@/lib/database/promotions';
-import { Promotion } from '@/types/database';
+import { fetchWinesFromSupabase } from '@/lib/database/wines';
+import { Promotion, Wine } from '@/types/database';
 import { AdminNotice, AdminPageHeader, AdminStatCard } from '@/components/admin/AdminPrimitives';
 import { ProductCampaignManager } from '@/components/admin/ProductCampaignManager';
 import { CatalogBannerManager } from '@/components/admin/CatalogBannerManager';
@@ -19,8 +20,13 @@ type PromotionForm = {
   description: string;
   discount_type: 'percent' | 'fixed';
   discount_value: string;
+  scope: 'store' | 'selected_products';
   min_subtotal: string;
+  min_item_quantity: string;
+  requires_first_purchase: boolean;
   max_discount: string;
+  applicable_product_ids: string[];
+  custom_rule: string;
   starts_at: string;
   ends_at: string;
   is_active: boolean;
@@ -32,8 +38,13 @@ const emptyForm: PromotionForm = {
   description: '',
   discount_type: 'percent',
   discount_value: '10',
+  scope: 'store',
   min_subtotal: '0',
+  min_item_quantity: '',
+  requires_first_purchase: false,
   max_discount: '',
+  applicable_product_ids: [],
+  custom_rule: '',
   starts_at: '',
   ends_at: '',
   is_active: true,
@@ -55,8 +66,13 @@ function toForm(promotion: Promotion): PromotionForm {
     description: promotion.description || '',
     discount_type: promotion.discount_type,
     discount_value: String(promotion.discount_value),
+    scope: promotion.scope,
     min_subtotal: String(promotion.min_subtotal),
+    min_item_quantity: promotion.min_item_quantity ? String(promotion.min_item_quantity) : '',
+    requires_first_purchase: promotion.requires_first_purchase,
     max_discount: promotion.max_discount ? String(promotion.max_discount) : '',
+    applicable_product_ids: promotion.applicable_product_ids || [],
+    custom_rule: promotion.custom_rule || '',
     starts_at: formatDateTime(promotion.starts_at),
     ends_at: formatDateTime(promotion.ends_at),
     is_active: promotion.is_active,
@@ -70,8 +86,13 @@ function toPayload(form: PromotionForm): PromotionPayload {
     description: form.description.trim() || null,
     discount_type: form.discount_type,
     discount_value: Number(form.discount_value),
+    scope: form.scope,
     min_subtotal: Number(form.min_subtotal || 0),
+    min_item_quantity: form.min_item_quantity ? Number(form.min_item_quantity) : null,
+    requires_first_purchase: form.requires_first_purchase,
     max_discount: form.max_discount ? Number(form.max_discount) : null,
+    applicable_product_ids: form.scope === 'selected_products' ? form.applicable_product_ids : [],
+    custom_rule: form.custom_rule.trim() || null,
     starts_at: form.starts_at ? new Date(form.starts_at).toISOString() : null,
     ends_at: form.ends_at ? new Date(form.ends_at).toISOString() : null,
     is_active: form.is_active,
@@ -88,6 +109,7 @@ function isActiveNow(promotion: Promotion) {
 
 export default function AdminPromotionsPage() {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [products, setProducts] = useState<Wine[]>([]);
   const [form, setForm] = useState<PromotionForm>(emptyForm);
   const [editingPromotion, setEditingPromotion] = useState<Promotion | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -95,6 +117,7 @@ export default function AdminPromotionsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [search, setSearch] = useState('');
   const [message, setMessage] = useState<string | null>(null);
+  const [productSearch, setProductSearch] = useState('');
 
   const loadPromotions = async () => {
     setIsLoading(true);
@@ -112,7 +135,17 @@ export default function AdminPromotionsPage() {
 
   useEffect(() => {
     loadPromotions();
+    fetchWinesFromSupabase({ usePublicCache: false, includeUnpublished: true })
+      .then(setProducts)
+      .catch(() => setMessage('Não foi possível carregar os produtos para as regras de seleção.'));
   }, []);
+
+  const filteredProducts = useMemo(() => {
+    const term = productSearch.trim().toLowerCase();
+    if (!term) return products;
+    return products.filter((product) => [product.name, product.product_code, product.type]
+      .filter(Boolean).some((value) => value!.toLowerCase().includes(term)));
+  }, [products, productSearch]);
 
   const filteredPromotions = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -141,6 +174,7 @@ export default function AdminPromotionsPage() {
     setEditingPromotion(null);
     setForm(emptyForm);
     setIsFormOpen(true);
+    setProductSearch('');
     setMessage(null);
   };
 
@@ -148,6 +182,7 @@ export default function AdminPromotionsPage() {
     setEditingPromotion(promotion);
     setForm(toForm(promotion));
     setIsFormOpen(true);
+    setProductSearch('');
     setMessage(null);
   };
 
@@ -169,6 +204,21 @@ export default function AdminPromotionsPage() {
 
     if (payload.discount_value <= 0 || payload.min_subtotal < 0) {
       setMessage('Informe valores válidos para desconto e pedido mínimo.');
+      return;
+    }
+
+    if (payload.min_item_quantity !== null && (!Number.isInteger(payload.min_item_quantity) || payload.min_item_quantity < 1)) {
+      setMessage('A quantidade mínima de garrafas deve ser um número inteiro maior que zero.');
+      return;
+    }
+
+    if (payload.scope === 'selected_products' && payload.applicable_product_ids.length === 0) {
+      setMessage('Selecione pelo menos um produto para este cupom.');
+      return;
+    }
+
+    if (payload.starts_at && payload.ends_at && new Date(payload.ends_at) < new Date(payload.starts_at)) {
+      setMessage('A data final não pode ser anterior à data inicial.');
       return;
     }
 
@@ -205,6 +255,26 @@ export default function AdminPromotionsPage() {
 
     await loadPromotions();
     setMessage('Promoção excluída.');
+  };
+
+  const togglePromotion = async (promotion: Promotion) => {
+    const { id, created_at, updated_at, ...payload } = promotion;
+    const { error } = await savePromotion({ ...payload, is_active: !promotion.is_active }, id);
+    if (error) {
+      setMessage('Não foi possível alterar o status do cupom.');
+      return;
+    }
+    await loadPromotions();
+    setMessage(`Cupom ${promotion.is_active ? 'desabilitado' : 'habilitado'}.`);
+  };
+
+  const toggleSelectedProduct = (productId: string) => {
+    setForm((current) => ({
+      ...current,
+      applicable_product_ids: current.applicable_product_ids.includes(productId)
+        ? current.applicable_product_ids.filter((id) => id !== productId)
+        : [...current.applicable_product_ids, productId],
+    }));
   };
 
   return (
@@ -325,6 +395,17 @@ export default function AdminPromotionsPage() {
               />
             </label>
             <label className="space-y-1">
+              <span className="text-xs font-bold uppercase text-stone-400">Onde aplicar</span>
+              <select
+                value={form.scope}
+                onChange={(event) => setForm({ ...form, scope: event.target.value as PromotionForm['scope'] })}
+                className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black"
+              >
+                <option value="store">Toda a loja</option>
+                <option value="selected_products">Produtos selecionados</option>
+              </select>
+            </label>
+            <label className="space-y-1">
               <span className="text-xs font-bold uppercase text-stone-400">Pedido mínimo</span>
               <input
                 type="number"
@@ -332,6 +413,18 @@ export default function AdminPromotionsPage() {
                 step="0.01"
                 value={form.min_subtotal}
                 onChange={(event) => setForm({ ...form, min_subtotal: event.target.value })}
+                className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black"
+              />
+            </label>
+            <label className="space-y-1">
+              <span className="text-xs font-bold uppercase text-stone-400">Mínimo de garrafas</span>
+              <input
+                type="number"
+                min="1"
+                step="1"
+                value={form.min_item_quantity}
+                onChange={(event) => setForm({ ...form, min_item_quantity: event.target.value })}
+                placeholder="Opcional"
                 className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black"
               />
             </label>
@@ -374,7 +467,59 @@ export default function AdminPromotionsPage() {
                 className="w-full resize-none rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black"
               />
             </label>
+            <label className="space-y-1 md:col-span-2">
+              <span className="text-xs font-bold uppercase text-stone-400">Regra personalizada</span>
+              <textarea
+                value={form.custom_rule}
+                onChange={(event) => setForm({ ...form, custom_rule: event.target.value })}
+                rows={3}
+                placeholder="Ex.: válido para participantes do Clube Allvino."
+                className="w-full resize-none rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black"
+              />
+              <span className="block text-xs font-medium text-stone-400">Use para registrar condições comerciais adicionais e combinar as regras acima.</span>
+            </label>
+            <label className="flex items-center gap-3 rounded-lg border border-stone-200 p-3 md:col-span-2">
+              <input
+                type="checkbox"
+                checked={form.requires_first_purchase}
+                onChange={(event) => setForm({ ...form, requires_first_purchase: event.target.checked })}
+              />
+              <span>
+                <span className="block text-sm font-bold text-black">Somente primeira compra</span>
+                <span className="block text-xs font-medium text-stone-400">O sistema verifica o histórico do cliente ao concluir o pedido.</span>
+              </span>
+            </label>
           </div>
+
+          {form.scope === 'selected_products' && (
+            <section className="space-y-3 rounded-xl border border-stone-200 bg-stone-50 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h3 className="font-bold text-black">Produtos elegíveis</h3>
+                  <p className="text-xs font-medium text-stone-500">O desconto incide apenas sobre estes itens.</p>
+                </div>
+                <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-[#B91C1C]">{form.applicable_product_ids.length} selecionado(s)</span>
+              </div>
+              <input
+                value={productSearch}
+                onChange={(event) => setProductSearch(event.target.value)}
+                placeholder="Buscar produto"
+                className="w-full rounded-lg border border-stone-200 bg-white p-3 text-sm font-bold outline-none focus:border-black"
+              />
+              <div className="grid max-h-60 gap-2 overflow-y-auto sm:grid-cols-2">
+                {filteredProducts.map((product) => (
+                  <label key={product.id} className="flex cursor-pointer items-center gap-3 rounded-lg border border-stone-200 bg-white p-3 text-sm font-bold text-stone-700">
+                    <input
+                      type="checkbox"
+                      checked={form.applicable_product_ids.includes(product.id)}
+                      onChange={() => toggleSelectedProduct(product.id)}
+                    />
+                    <span className="min-w-0 truncate">{product.name}</span>
+                  </label>
+                ))}
+              </div>
+            </section>
+          )}
 
           <div className="flex justify-end gap-3">
             <button type="button" onClick={closeForm} className="rounded-lg border border-stone-200 px-4 py-2.5 font-bold text-stone-600 hover:bg-stone-50">
@@ -425,6 +570,9 @@ export default function AdminPromotionsPage() {
                         <p className="font-bold text-black">{discountLabel}</p>
                         <p className="text-xs font-bold text-stone-400">
                           Min. {formatMoney(promotion.min_subtotal)}
+                          {promotion.min_item_quantity ? ` | ${promotion.min_item_quantity} garrafa(s)` : ''}
+                          {promotion.requires_first_purchase ? ' | 1ª compra' : ''}
+                          {promotion.scope === 'selected_products' ? ` | ${promotion.applicable_product_ids.length} produto(s)` : ''}
                           {promotion.max_discount ? ` | teto ${formatMoney(promotion.max_discount)}` : ''}
                         </p>
                       </td>
@@ -439,6 +587,14 @@ export default function AdminPromotionsPage() {
                       </td>
                       <td className="p-4">
                         <div className="flex justify-center gap-2">
+                          <button
+                            onClick={() => togglePromotion(promotion)}
+                            className={`p-1 ${promotion.is_active ? 'text-amber-600 hover:text-amber-800' : 'text-emerald-600 hover:text-emerald-800'}`}
+                            title={promotion.is_active ? 'Desabilitar cupom' : 'Habilitar cupom'}
+                            aria-label={promotion.is_active ? `Desabilitar ${promotion.code}` : `Habilitar ${promotion.code}`}
+                          >
+                            <span className="material-symbols-outlined">{promotion.is_active ? 'pause_circle' : 'play_circle'}</span>
+                          </button>
                           <button onClick={() => openEditForm(promotion)} className="p-1 text-blue-500 hover:text-blue-700" title="Editar">
                             <span className="material-symbols-outlined">edit</span>
                           </button>
