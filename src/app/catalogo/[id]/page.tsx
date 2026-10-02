@@ -14,6 +14,7 @@ import { getGrapeClassification, parseGrapes } from '@/lib/catalog/grapes';
 import { getKitUnitPrice } from '@/components/catalog/WinePrice';
 import { fetchDeliveryQuote } from '@/lib/database/delivery';
 import { formatZipCode, normalizeZipCode, PICKUP_SCHEDULE_NOTICE } from '@/lib/delivery/rules';
+import { ProductReviews } from '@/components/catalog/ProductReviews';
 
 function formatMoney(value: number) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -245,6 +246,8 @@ export default function WineDetailPage() {
             </a>
           </div>
         </div>
+
+        <ProductReviews productId={wine.id} />
 
         {relatedWines.length > 0 && (
           <div className="mt-12">
