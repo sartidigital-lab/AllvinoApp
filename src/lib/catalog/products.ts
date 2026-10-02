@@ -7,6 +7,7 @@ export type LegacyProduct = {
   nome: string;
   descricao: string | null;
   preco: number;
+  preco_original?: number | null;
   base_price?: number;
   effective_price?: number;
   discount_percent?: number | null;
@@ -54,7 +55,7 @@ export type CatalogProduct = {
 };
 
 export function mapProductToWine(product: LegacyProduct): Wine {
-  const originalPrice = Number(product.base_price ?? product.preco);
+  const originalPrice = Number(product.base_price ?? product.preco_original ?? product.preco);
   const effectivePrice = Number(product.effective_price ?? product.preco);
 
   return {
@@ -112,11 +113,18 @@ export function mapCatalogProductToWine(product: CatalogProduct): Wine {
 }
 
 export function mapWineToProduct(wineData: Partial<Wine>) {
+  const normalPrice = wineData.promotion_id
+    ? (wineData.original_price ?? wineData.price)
+    : (wineData.price ?? wineData.original_price);
+
   return {
     nome: wineData.name === undefined ? undefined : formatProductText(wineData.name),
     descricao: wineData.description === undefined ? undefined : wineData.description === null ? null : formatProductDescription(wineData.description),
     sku_sankhya: wineData.product_code,
-    preco: wineData.original_price ?? wineData.price,
+    // A campaign's price is calculated by catalog_products and must never be
+    // written back as the product's normal "POR" price.
+    preco: normalPrice,
+    preco_original: wineData.original_price === undefined ? undefined : wineData.original_price,
     imagem_url: wineData.image_url,
     pais: wineData.category === undefined ? undefined : wineData.category === null ? null : formatProductText(wineData.category),
     regiao: wineData.region === undefined ? undefined : wineData.region === null ? null : formatProductText(wineData.region),

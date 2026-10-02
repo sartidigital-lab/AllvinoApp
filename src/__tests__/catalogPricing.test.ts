@@ -33,9 +33,52 @@ describe('catalog promotion pricing', () => {
     expect(wine.promotion_slug).toBe('selecao-especial');
   });
 
+  it('preserves the campaign POR calculated from the original DE price for kits', () => {
+    const wine = mapProductToWine({
+      ...product,
+      nome: 'Kit Calicanto',
+      preco: 963.48,
+      base_price: 1139.4,
+      effective_price: 888.73,
+      discount_percent: 22,
+    });
+
+    expect(wine.original_price).toBe(1139.4);
+    expect(wine.price).toBe(888.73);
+    expect(wine.discount_percent).toBe(22);
+  });
+
   it('never writes a promotional price over the base product price', () => {
     const wine = mapProductToWine(product);
     expect(mapWineToProduct(wine).preco).toBe(100);
+  });
+
+  it('preserves separate DE and POR prices when an admin updates a product', () => {
+    const savedProduct = mapWineToProduct({
+      price: 100,
+      original_price: 140,
+      promotion_id: null,
+    });
+
+    expect(savedProduct.preco).toBe(100);
+    expect(savedProduct.preco_original).toBe(140);
+  });
+
+  it('uses the stored DE price when mapping raw products for the admin editor', () => {
+    const wine = mapProductToWine({
+      ...product,
+      base_price: undefined,
+      effective_price: undefined,
+      preco: 100,
+      preco_original: 140,
+      promotion_id: null,
+      promotion_title: null,
+      promotion_slug: null,
+      discount_percent: null,
+    });
+
+    expect(wine.price).toBe(100);
+    expect(wine.original_price).toBe(140);
   });
 
   it('falls back to the base product price outside a campaign', () => {

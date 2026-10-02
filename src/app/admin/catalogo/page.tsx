@@ -15,6 +15,7 @@ import { ProductCategoriesManager } from '@/components/admin/ProductCategoriesMa
 type WineForm = {
   name: string;
   description: string;
+  original_price: string;
   price: string;
   product_code: string;
   image_url: string;
@@ -29,6 +30,7 @@ type WineForm = {
 const emptyForm: WineForm = {
   name: '',
   description: '',
+  original_price: '',
   price: '',
   product_code: '',
   image_url: '',
@@ -114,6 +116,7 @@ function toForm(wine: Wine): WineForm {
   return {
     name: wine.name,
     description: wine.description || '',
+    original_price: String(wine.original_price ?? wine.base_price ?? wine.price),
     price: String(wine.price),
     product_code: wine.product_code || '',
     image_url: wine.image_url || '',
@@ -132,6 +135,7 @@ function toPayload(form: WineForm): Partial<Wine> {
   return {
     name: formatProductText(form.name),
     description: formatProductDescription(form.description) || null,
+    original_price: Number(form.original_price),
     price: Number(form.price),
     product_code: form.product_code.trim() || null,
     image_url: form.image_url.trim() || null,
@@ -378,8 +382,13 @@ export default function AdminCatalogPage() {
       return;
     }
 
-    if (!form.price || Number(form.price) < 0) {
-      setMessage('Informe um preço válido.');
+    if (!form.original_price || Number(form.original_price) < 0 || !form.price || Number(form.price) < 0) {
+      setMessage('Informe preços “De” e “Por” válidos.');
+      return;
+    }
+
+    if (Number(form.original_price) < Number(form.price)) {
+      setMessage('O preço “De” não pode ser menor que o preço “Por”.');
       return;
     }
 
@@ -568,8 +577,14 @@ export default function AdminCatalogPage() {
               <input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} onBlur={() => setForm((current) => ({ ...current, name: formatProductText(current.name) }))} className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black" />
             </label>
             <label className="space-y-1">
-              <span className="text-xs font-bold uppercase text-stone-400">Preço</span>
+              <span className="text-xs font-bold uppercase text-stone-400">Preço De</span>
+              <input type="number" min="0" step="0.01" value={form.original_price} onChange={(event) => setForm({ ...form, original_price: event.target.value })} className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black" />
+              <p className="text-[10px] font-bold text-stone-400">Base usada pelas campanhas.</p>
+            </label>
+            <label className="space-y-1">
+              <span className="text-xs font-bold uppercase text-stone-400">Preço Por</span>
               <input type="number" min="0" step="0.01" value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} className="w-full rounded-lg border border-stone-200 p-3 text-sm font-bold outline-none focus:border-black" />
+              <p className="text-[10px] font-bold text-stone-400">Preço normal sem campanha.</p>
             </label>
             <label className="space-y-1">
               <span className="text-xs font-bold uppercase text-stone-400">Código estoque</span>
