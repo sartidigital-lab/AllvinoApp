@@ -1,8 +1,7 @@
 import { AppChrome } from '../components/layout/AppChrome';
 import { FirstVisitExperience } from '../components/onboarding/FirstVisitExperience';
-import { WhatsAppButton } from '../components/layout/WhatsAppButton';
 import { PushSubscriptionManager } from '../components/push/PushSubscriptionManager';
-import { CookieConsentBanner } from '../components/privacy/CookieConsentBanner';
+import { CustomerOnlyExperience } from '../components/layout/CustomerOnlyExperience';
 import { CartProvider } from '../context/CartContext';
 import { ToastProvider } from '../context/ToastContext';
 import { FavoritesProvider } from '../context/FavoritesContext';
@@ -36,10 +35,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <CartProvider>
                 <AppChrome />
                 {children}
-                <WhatsAppButton />
+                <CustomerOnlyExperience />
                 <FirstVisitExperience />
                 <PushSubscriptionManager />
-                <CookieConsentBanner />
               </CartProvider>
             </FavoritesProvider>
           </RecentlyViewedProvider>
