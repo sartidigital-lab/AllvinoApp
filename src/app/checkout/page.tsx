@@ -110,6 +110,11 @@ export default function CheckoutPage() {
     fetchUser();
   }, []);
 
+  useEffect(() => {
+    const couponCode = new URLSearchParams(window.location.search).get('cupom');
+    if (couponCode) setPromotionCode(normalizePromotionCode(couponCode));
+  }, []);
+
   useEffect(() => () => {
     addressLookupControllerRef.current?.abort();
     if (numberFocusTimeoutRef.current !== null) {

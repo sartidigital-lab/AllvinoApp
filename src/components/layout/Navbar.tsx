@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Heart, LayoutGrid, User } from 'lucide-react';
+import { Heart, LayoutGrid, Ticket, User } from 'lucide-react';
 
 export function Navbar() {
   const pathname = usePathname();
@@ -10,6 +10,7 @@ export function Navbar() {
   const navItems = [
     { href: '/catalogo', icon: LayoutGrid, label: 'Catálogo', match: pathname?.startsWith('/catalogo') },
     { href: '/favoritos', icon: Heart, label: 'Favoritos', match: pathname?.startsWith('/favoritos') },
+    { href: '/cupons', icon: Ticket, label: 'Cupons', match: pathname?.startsWith('/cupons') },
     { href: '/conta', icon: User, label: 'Conta', match: pathname?.startsWith('/conta') },
   ];
 

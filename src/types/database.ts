@@ -89,6 +89,25 @@ export type Promotion = {
   is_active: boolean;
 };
 
+export type CustomerCoupon = Pick<
+  Promotion,
+  | 'id'
+  | 'code'
+  | 'title'
+  | 'description'
+  | 'discount_type'
+  | 'discount_value'
+  | 'scope'
+  | 'min_subtotal'
+  | 'min_item_quantity'
+  | 'requires_first_purchase'
+  | 'max_discount'
+  | 'custom_rule'
+  | 'ends_at'
+> & {
+  selected_product_count: number;
+};
+
 export type ProductPromotionCampaign = {
   id: string;
   created_at: string;
