@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Copy, Sparkles, Ticket, Wine } from 'lucide-react';
+import { Copy, Ticket, Wine } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { PageTransition } from '@/components/ui';
 import { getCurrentUserFast } from '@/lib/auth/currentUser';
@@ -31,6 +31,14 @@ function getRequirements(coupon: CustomerCoupon) {
   }
   if (coupon.max_discount) requirements.push(`Desconto máximo de ${formatMoney(coupon.max_discount)}`);
   return requirements;
+}
+
+function getCouponTitle(coupon: CustomerCoupon) {
+  return coupon.requires_first_purchase ? 'Primeira Compra' : coupon.title;
+}
+
+function shouldShowCustomRule(customRule: string | null) {
+  return Boolean(customRule) && customRule.trim().toLocaleLowerCase('pt-BR') !== 'válido para clientes sem compra allvino';
 }
 
 export default function CouponsPage() {
@@ -80,10 +88,7 @@ export default function CouponsPage() {
     <PageTransition>
       <main className="mx-auto max-w-xl space-y-6 px-5 pb-32 pt-8">
         <header className="rounded-3xl bg-[#741128] p-6 text-white shadow-lg shadow-red-950/10">
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-rose-200">
-            <Sparkles className="h-4 w-4" aria-hidden="true" /> Benefícios Allvino
-          </div>
-          <h1 className="mt-3 font-serif text-3xl font-bold">Meus cupons</h1>
+          <h1 className="font-serif text-3xl font-bold">Meus cupons</h1>
           <p className="mt-2 text-sm leading-6 text-rose-100">Confira seus benefícios disponíveis e use-os no próximo pedido.</p>
         </header>
 
@@ -111,7 +116,7 @@ export default function CouponsPage() {
                 <div className="flex items-start justify-between gap-4 bg-[#FDF7F2] p-5">
                   <div className="min-w-0">
                     <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#B91C1C]">Cupom disponível</p>
-                    <h2 className="mt-1 text-xl font-bold text-black">{coupon.title}</h2>
+                    <h2 className="mt-1 text-xl font-bold text-black">{getCouponTitle(coupon)}</h2>
                     {coupon.description && <p className="mt-1 text-sm leading-6 text-stone-600">{coupon.description}</p>}
                   </div>
                   <span className="shrink-0 rounded-xl bg-[#741128] px-3 py-2 text-sm font-black text-white">{getDiscountLabel(coupon)}</span>
@@ -134,7 +139,7 @@ export default function CouponsPage() {
                     {getRequirements(coupon).map((requirement) => (
                       <li key={requirement} className="flex gap-2"><Wine className="mt-0.5 h-4 w-4 shrink-0 text-[#B91C1C]" aria-hidden="true" />{requirement}</li>
                     ))}
-                    {coupon.custom_rule && <li className="rounded-xl bg-stone-50 px-3 py-2 text-xs leading-5 text-stone-500">{coupon.custom_rule}</li>}
+                    {shouldShowCustomRule(coupon.custom_rule) && <li className="rounded-xl bg-stone-50 px-3 py-2 text-xs leading-5 text-stone-500">{coupon.custom_rule}</li>}
                     <li className="text-xs font-medium text-stone-400">
                       {coupon.ends_at ? `Válido até ${new Date(coupon.ends_at).toLocaleDateString('pt-BR')}.` : 'Sem data de encerramento.'}
                     </li>
