@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/client';
+import { getBrowserSession } from '@/lib/auth/browserSession';
 
 const OWNER_KEY = 'allvino:push-owner:v1';
 
@@ -18,9 +18,8 @@ export async function registerPushSubscription(): Promise<'subscribed' | 'login-
   if (!window.isSecureContext || !('serviceWorker' in navigator) || !('PushManager' in window) ||
       !('Notification' in window) || Notification.permission !== 'granted') return 'unavailable';
 
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return 'login-required';
+  const session = await getBrowserSession();
+  if (!session) return 'login-required';
 
   const response = await fetch('/api/push/config', { cache: 'no-store' });
   if (!response.ok) return 'unavailable';
@@ -34,7 +33,7 @@ export async function registerPushSubscription(): Promise<'subscribed' | 'login-
   const currentKey = subscription?.options.applicationServerKey;
   const sameKey = currentKey && requestedKey.length === currentKey.byteLength &&
     requestedKey.every((value, index) => value === new Uint8Array(currentKey)[index]);
-  if (subscription && (savedOwner && savedOwner !== user.id || !sameKey)) {
+  if (subscription && (savedOwner && savedOwner !== session.user.id || !sameKey)) {
     await subscription.unsubscribe();
     subscription = null;
   }
@@ -52,7 +51,7 @@ export async function registerPushSubscription(): Promise<'subscribed' | 'login-
     saveResponse = await save(subscription);
   }
   if (!saveResponse.ok) throw new Error('Não foi possível salvar a assinatura de notificações.');
-  window.localStorage.setItem(OWNER_KEY, user.id);
+  window.localStorage.setItem(OWNER_KEY, session.user.id);
   return 'subscribed';
 }
 

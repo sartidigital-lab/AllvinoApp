@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { createClient } from '@/utils/supabase/admin-client';
 import {
   deleteCatalogBanner,
   fetchCatalogBanners,
@@ -146,22 +146,13 @@ export function CatalogBannerManager() {
     setMessage(null);
 
     try {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      const { data: { session: refreshedSession } } = await supabase.auth.refreshSession();
-      const accessToken = (refreshedSession || session)?.access_token;
-      if (!accessToken) {
-        setMessage('Sessão expirada. Entre novamente para enviar imagens.');
-        return;
-      }
-
       const uploadData = new FormData();
       uploadData.append('file', file);
       uploadData.append('productName', form.title || 'banner');
       uploadData.append('assetType', 'banner');
       const response = await fetch('/api/admin/produtos/imagem', {
         method: 'POST', credentials: 'include',
-        headers: { Authorization: `Bearer ${accessToken}` }, body: uploadData,
+        body: uploadData,
       });
       const payload = await response.json().catch(() => ({})) as { publicUrl?: string; error?: string };
       if (!response.ok || !payload.publicUrl) {

@@ -9,7 +9,7 @@ import {
   isCatalogBannerCurrentlyActive,
   saveCatalogBanner,
 } from '@/lib/database/banners';
-import { createClient } from '@/utils/supabase/client';
+import { createClient } from '@/utils/supabase/admin-client';
 import { fetchWinesFromSupabase } from '@/lib/database/wines';
 import { Wine } from '@/types/database';
 
@@ -59,17 +59,12 @@ function isHexColor(value: string) {
 }
 
 async function uploadBannerImage(file: File, title: string, kind: 'desktop' | 'mobile') {
-  const supabase = createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) throw new Error('Sessão expirada. Entre novamente para enviar imagens.');
-
   const body = new FormData();
   body.append('file', file);
   body.append('productName', `banner-${kind}-${title}`);
   const response = await fetch('/api/admin/produtos/imagem', {
     method: 'POST',
     credentials: 'include',
-    headers: { Authorization: `Bearer ${session.access_token}` },
     body,
   });
   const data = await response.json().catch(() => ({}));

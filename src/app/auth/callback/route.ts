@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '../../../utils/supabase/server'
+import { createBffAuthClient } from '@/utils/supabase/bff-server'
 import { safeInternalRedirect } from '@/lib/auth/safeRedirect'
 
 export async function GET(request: Request) {
@@ -8,7 +8,7 @@ export async function GET(request: Request) {
   const next = safeInternalRedirect(searchParams.get('next'))
 
   if (code) {
-    const supabase = await createClient()
+    const supabase = await createBffAuthClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     
     if (!error) {

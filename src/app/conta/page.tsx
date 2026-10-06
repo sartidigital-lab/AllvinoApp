@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/utils/supabase/client';
 import { PushPreferences } from '@/components/push/PushPreferences';
 import { unregisterPushSubscription } from '@/lib/push/client';
 import { CurrentUser, getCurrentUserFast } from '@/lib/auth/currentUser';
@@ -12,6 +11,7 @@ import { OrderWithItems } from '@/types/database';
 import { fetchWinesFromSupabase } from '@/lib/database/wines';
 import { PageTransition } from '@/components/ui';
 import { COOKIE_CONSENT_PREFERENCES_EVENT } from '@/lib/privacy/cookieConsent';
+import { announceAuthStateChange } from '@/lib/auth/browserSession';
 
 const statusLabels: Record<string, string> = {
   pending: 'Pendente',
@@ -132,8 +132,8 @@ export default function ContaPage() {
   const fazerLogout = async () => {
     if (confirm('Deseja realmente sair da sua conta?')) {
       await unregisterPushSubscription().catch(() => undefined);
-      const supabase = createClient();
-      await supabase.auth.signOut();
+      await fetch('/api/auth/logout', { method: 'POST' });
+      announceAuthStateChange();
       router.replace('/?login=true');
     }
   };

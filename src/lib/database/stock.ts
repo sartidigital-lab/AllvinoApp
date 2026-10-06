@@ -1,5 +1,5 @@
 import { StockImport, StockLevel } from '@/types/database';
-import { createClient } from '@/utils/supabase/client';
+import { createClient } from '@/utils/supabase/admin-client';
 
 export type StockLevelInput = {
   product_code: string;

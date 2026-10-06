@@ -1,6 +1,6 @@
 "use client";
 
-import { createClient } from '@/utils/supabase/client';
+import { createClient } from '@/utils/supabase/admin-client';
 import { useEffect, useMemo, useState } from 'react';
 import { AdminNotice, AdminPageHeader, AdminStatCard } from '@/components/admin/AdminPrimitives';
 

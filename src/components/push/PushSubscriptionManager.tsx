@@ -1,12 +1,11 @@
 'use client';
 
 import { useEffect } from 'react';
-import { createClient } from '@/utils/supabase/client';
 import { registerPushSubscription } from '@/lib/push/client';
+import { AUTH_STATE_EVENT } from '@/lib/auth/browserSession';
 
 export function PushSubscriptionManager() {
   useEffect(() => {
-    const supabase = createClient();
     let active = true;
     let busy = false;
     const sync = async () => {
@@ -21,12 +20,11 @@ export function PushSubscriptionManager() {
       }
     };
     void sync();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN') window.setTimeout(() => void sync(), 0);
-    });
+    const onAuthChange = () => window.setTimeout(() => void sync(), 0);
+    window.addEventListener(AUTH_STATE_EVENT, onAuthChange);
     return () => {
       active = false;
-      subscription.unsubscribe();
+      window.removeEventListener(AUTH_STATE_EVENT, onAuthChange);
     };
   }, []);
   return null;

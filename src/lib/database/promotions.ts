@@ -1,5 +1,6 @@
 import { Promotion } from '@/types/database';
 import { createClient } from '@/utils/supabase/client';
+import { createBffClient } from '@/utils/supabase/bff-client';
 import {
   calculatePromotionDiscount,
   getPromotionBottleCount,
@@ -23,7 +24,7 @@ export {
 };
 
 export async function fetchPromotions(): Promise<{ promotions: Promotion[]; error: Error | null }> {
-  const supabase = createClient();
+  const supabase = createBffClient();
 
   try {
     const { data, error } = await supabase
@@ -74,7 +75,7 @@ export async function savePromotion(
   payload: PromotionPayload,
   id?: string
 ): Promise<{ promotion: Promotion | null; error: Error | null }> {
-  const supabase = createClient();
+  const supabase = createBffClient();
 
   try {
     const normalizedPayload = {
@@ -105,7 +106,7 @@ export async function savePromotion(
 }
 
 export async function deletePromotion(id: string) {
-  const supabase = createClient();
+  const supabase = createBffClient();
   const { error } = await supabase.from('promotions').delete().eq('id', id);
   return !error;
 }

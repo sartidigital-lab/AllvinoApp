@@ -5,7 +5,7 @@ import { AdminEmptyState, AdminNotice, AdminPageHeader, AdminSection, AdminStatC
 import { createWine, deleteWine, fetchWinesFromSupabase, toggleWinePublished, updateWine } from '@/lib/database/wines';
 import { fetchStockLevelByCode, fetchStockLevelsByCodes, importStockLevels, normalizeProductCode, parseStockRows, saveManualStockLevel } from '@/lib/database/stock';
 import { readStockImportRows } from '@/lib/stock/importFile';
-import { createClient } from '@/utils/supabase/client';
+import { createClient } from '@/utils/supabase/admin-client';
 import { Wine } from '@/types/database';
 import { ProductImage } from '@/components/ui';
 import { parseGrapes, serializeGrapes } from '@/lib/catalog/grapes';
@@ -327,20 +327,6 @@ export default function AdminCatalogPage() {
     setMessage(null);
 
     try {
-      const supabase = createClient();
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const {
-        data: { session: refreshedSession },
-      } = await supabase.auth.refreshSession();
-      const activeSession = refreshedSession || session;
-
-      if (!activeSession?.access_token) {
-        setMessage('Sessão expirada. Entre novamente para enviar imagens.');
-        return;
-      }
-
       const uploadData = new FormData();
       uploadData.append('file', file);
       uploadData.append('productName', form.name || editingWine?.name || 'produto');
@@ -348,9 +334,6 @@ export default function AdminCatalogPage() {
       const response = await fetch('/api/admin/produtos/imagem', {
         method: 'POST',
         credentials: 'include',
-        headers: {
-          Authorization: `Bearer ${activeSession.access_token}`,
-        },
         body: uploadData,
       });
       const responseText = await response.text();

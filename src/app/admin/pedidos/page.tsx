@@ -1,7 +1,7 @@
 "use client";
 
 import { AdminEmptyState, AdminNotice, AdminPageHeader, AdminSection, AdminStatCard, AdminStatusBadge } from '@/components/admin/AdminPrimitives';
-import { createClient } from '@/utils/supabase/client';
+import { createClient } from '@/utils/supabase/admin-client';
 import { useEffect, useMemo, useState } from 'react';
 
 type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'delivered' | 'cancelled';

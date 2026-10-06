@@ -3,7 +3,7 @@
 import { DragEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { AdminEmptyState, AdminNotice, AdminPageHeader, AdminStatCard, AdminStatusBadge } from '@/components/admin/AdminPrimitives';
-import { createClient } from '@/utils/supabase/client';
+import { createClient } from '@/utils/supabase/admin-client';
 import { CustomerCrmCard, CustomerCrmPriority, CustomerCrmStage } from '@/types/database';
 
 type CustomerOrder = {

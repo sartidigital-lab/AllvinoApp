@@ -2,11 +2,11 @@
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { useEffect, useState, type FormEvent } from 'react'
-import { createClient } from '../../utils/supabase/client'
 import { safeInternalRedirect } from '@/lib/auth/safeRedirect'
 import { getPasswordPolicyError } from '@/lib/auth/passwordPolicy'
 import { formatCpf, formatPhone, getLocalToday, isValidCpf, isValidPhone, onlyDigits } from '@/lib/auth/customerRegistration'
 import { Modal, ModalHeader, ModalBody, Input, Button, Checkbox } from '@/components/ui'
+import { announceAuthStateChange } from '@/lib/auth/browserSession'
 
 type AuthMode = 'login' | 'signup'
 
@@ -31,8 +31,6 @@ export function AuthModal() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
-
-  const supabase = createClient()
 
   useEffect(() => {
     setMode(requestedMode)
@@ -67,19 +65,21 @@ export function AuthModal() {
         window.setTimeout(() => reject(new Error('Tempo esgotado. Verifique sua conexão e tente novamente.')), 15000)
       })
 
-      const { error: loginError } = await Promise.race([
-        supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password,
+      const response = await Promise.race([
+        fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email.trim(), password }),
         }),
         timeout,
       ])
-
-      if (loginError) {
-        setError(loginError.message)
+      const payload = await response.json().catch(() => ({})) as { error?: string }
+      if (!response.ok) {
+        setError(payload.error || 'E-mail ou senha inválidos.')
         return
       }
 
+      announceAuthStateChange()
       closeModal()
       router.replace(redirectTo)
       router.refresh()
@@ -135,32 +135,33 @@ export function AuthModal() {
     }
 
     try {
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
-        options: {
-          data: {
-            nome_completo: name.trim(),
-            cpf: onlyDigits(cpf),
-            telefone: onlyDigits(phone),
-            whatsapp: onlyDigits(resolvedWhatsapp),
-            whatsapp_mesmo_telefone: whatsappSamePhone,
-            data_nascimento: birthDate || null,
-          },
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
-        },
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+          name: name.trim(),
+          cpf: onlyDigits(cpf),
+          phone: onlyDigits(phone),
+          whatsapp: onlyDigits(resolvedWhatsapp),
+          whatsappSamePhone,
+          birthDate: birthDate || null,
+          redirectTo,
+        }),
       })
-
-      if (signUpError) {
-        setError(signUpError.message)
+      const payload = await response.json().catch(() => ({})) as { error?: string; requiresEmailConfirmation?: boolean }
+      if (!response.ok) {
+        setError(payload.error || 'Não foi possível criar o cadastro agora.')
         return
       }
 
-      if (!data.session) {
+      if (payload.requiresEmailConfirmation) {
         setNotice('Cadastro criado. Verifique seu e-mail para confirmar a conta e continuar.')
         return
       }
 
+      announceAuthStateChange()
       closeModal()
       router.replace(redirectTo)
       router.refresh()
@@ -183,12 +184,14 @@ export function AuthModal() {
     }
 
     try {
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/recuperar-senha`,
+      const response = await fetch('/api/auth/recover', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
       })
-
-      if (resetError) {
-        setError(resetError.message)
+      const payload = await response.json().catch(() => ({})) as { error?: string }
+      if (!response.ok) {
+        setError(payload.error || 'Não foi possível solicitar a redefinição agora.')
         return
       }
 
@@ -201,14 +204,18 @@ export function AuthModal() {
   }
 
   const handleGoogleLogin = async () => {
-    const { error: oauthError } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
-      },
+    setError(null)
+    const response = await fetch('/api/auth/oauth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ redirectTo }),
     })
-
-    if (oauthError) setError(oauthError.message)
+    const payload = await response.json().catch(() => ({})) as { error?: string; url?: string }
+    if (!response.ok || !payload.url) {
+      setError(payload.error || 'Não foi possível iniciar a autenticação Google.')
+      return
+    }
+    window.location.assign(payload.url)
   }
 
   return (

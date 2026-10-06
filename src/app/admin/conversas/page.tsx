@@ -3,7 +3,8 @@
 import { FormEvent, Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AdminEmptyState, AdminNotice, AdminPageHeader, AdminStatusBadge } from '@/components/admin/AdminPrimitives';
-import { createClient } from '@/utils/supabase/client';
+import { createClient } from '@/utils/supabase/admin-client';
+import { getBrowserSession } from '@/lib/auth/browserSession';
 import {
   CustomerConversation,
   CustomerConversationMessage,
@@ -329,9 +330,12 @@ function AdminConversasContent() {
     }
 
     const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const session = await getBrowserSession().catch(() => null);
+    if (!session) {
+      setMessage('Sua sessão expirou. Entre novamente para enviar a mensagem.');
+      setIsSending(false);
+      return;
+    }
     const sentAt = new Date().toISOString();
 
     const { data, error } = await supabase
@@ -341,7 +345,7 @@ function AdminConversasContent() {
         direction,
         body: draft.trim(),
         sent_at: sentAt,
-        created_by: user?.id || null,
+        created_by: session.user.id,
       })
       .select(messageSelect)
       .single();

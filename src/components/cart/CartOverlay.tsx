@@ -6,8 +6,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Button, Checkbox, EmptyState, IconButton, ProductImage } from '@/components/ui';
 import { usePathname } from 'next/navigation';
 import { X } from 'lucide-react';
-import { createClient } from '@/utils/supabase/client';
 import { PICKUP_SCHEDULE_NOTICE } from '@/lib/delivery/rules';
+import { AUTH_STATE_EVENT, getBrowserSession } from '@/lib/auth/browserSession';
 
 export function CartOverlay() {
   const { cart, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, cartTotal } = useCart();
@@ -25,20 +25,20 @@ export function CartOverlay() {
   }, [pathname, setIsCartOpen]);
 
   useEffect(() => {
-    const supabase = createClient();
     let active = true;
-
-    supabase.auth.getUser().then(({ data }) => {
-      if (active) setIsAuthenticated(Boolean(data.user));
-    });
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (active) setIsAuthenticated(Boolean(session?.user));
-    });
+    const refreshSession = () => {
+      void getBrowserSession()
+        .then((session) => { if (active) setIsAuthenticated(Boolean(session?.user)); })
+        .catch(() => { if (active) setIsAuthenticated(false); });
+    };
+    refreshSession();
+    window.addEventListener(AUTH_STATE_EVENT, refreshSession);
+    window.addEventListener('focus', refreshSession);
 
     return () => {
       active = false;
-      listener.subscription.unsubscribe();
+      window.removeEventListener(AUTH_STATE_EVENT, refreshSession);
+      window.removeEventListener('focus', refreshSession);
     };
   }, []);
 

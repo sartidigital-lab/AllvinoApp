@@ -2,9 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { createClient } from '@/utils/supabase/client';
 import { unregisterPushSubscription } from '@/lib/push/client';
 import { useState, useEffect } from 'react';
+import { announceAuthStateChange, getBrowserSession } from '@/lib/auth/browserSession';
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -14,10 +14,9 @@ export default function Sidebar() {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserName(user.user_metadata?.nome_completo || 'Admin');
+      const session = await getBrowserSession().catch(() => null);
+      if (session) {
+        setUserName(session.user.name || 'Admin');
       }
     };
     fetchUser();
@@ -40,8 +39,8 @@ export default function Sidebar() {
 
   const handleLogout = async () => {
     await unregisterPushSubscription().catch(() => undefined);
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await fetch('/api/auth/logout', { method: 'POST' });
+    announceAuthStateChange();
     router.replace('/?login=true');
   };
 

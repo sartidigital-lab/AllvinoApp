@@ -1,5 +1,6 @@
 import { DeliveryZone } from '@/types/database';
 import { createClient } from '@/utils/supabase/client';
+import { createBffClient } from '@/utils/supabase/bff-client';
 import { calculateShippingFee, normalizeZipCode } from '@/lib/delivery/rules';
 
 export type DeliveryZonePayload = Omit<DeliveryZone, 'id' | 'created_at' | 'updated_at'>;
@@ -8,7 +9,7 @@ const deliveryZoneSelect =
   'id,created_at,updated_at,name,zip_start,zip_end,fee,free_shipping_min_subtotal,estimate_days,is_active';
 
 export async function fetchDeliveryZones(): Promise<{ zones: DeliveryZone[]; error: Error | null }> {
-  const supabase = createClient();
+  const supabase = createBffClient();
 
   try {
     const { data, error } = await supabase
@@ -66,7 +67,7 @@ export async function saveDeliveryZone(
   payload: DeliveryZonePayload,
   id?: string
 ): Promise<{ zone: DeliveryZone | null; error: Error | null }> {
-  const supabase = createClient();
+  const supabase = createBffClient();
   const normalizedPayload = {
     ...payload,
     zip_start: normalizeZipCode(payload.zip_start),
@@ -91,7 +92,7 @@ export async function saveDeliveryZone(
 }
 
 export async function deleteDeliveryZone(id: string) {
-  const supabase = createClient();
+  const supabase = createBffClient();
   const { error } = await supabase.from('delivery_zones').delete().eq('id', id);
   return !error;
 }

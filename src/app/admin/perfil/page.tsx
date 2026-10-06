@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { AdminNotice, AdminPageHeader, AdminSection } from '@/components/admin/AdminPrimitives';
-import { createClient } from '@/utils/supabase/client';
+import { getBrowserSession } from '@/lib/auth/browserSession';
 
 export default function AdminProfilePage() {
   const [name, setName] = useState('');
@@ -12,10 +12,9 @@ export default function AdminProfilePage() {
 
   useEffect(() => {
     const loadProfile = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      setName(String(user?.user_metadata?.nome_completo || ''));
-      setEmail(user?.email || '');
+      const session = await getBrowserSession().catch(() => null);
+      setName(session?.user.name || '');
+      setEmail(session?.user.email || '');
     };
 
     loadProfile();
@@ -32,12 +31,12 @@ export default function AdminProfilePage() {
 
     setIsSaving(true);
     setMessage(null);
-    const supabase = createClient();
-    const { error } = await supabase.auth.updateUser({
-      data: { nome_completo: normalizedName },
+    const response = await fetch('/api/auth/profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: normalizedName }),
     });
-
-    setMessage(error ? 'Não foi possível atualizar o perfil.' : 'Perfil atualizado com sucesso.');
+    setMessage(response.ok ? 'Perfil atualizado com sucesso.' : 'Não foi possível atualizar o perfil.');
     setIsSaving(false);
   };
 

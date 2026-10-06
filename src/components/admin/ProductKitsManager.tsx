@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { createClient } from '@/utils/supabase/admin-client';
 import { fetchWinesFromSupabase } from '@/lib/database/wines';
 import { fetchStockLevelByCode, normalizeProductCode, saveManualStockLevel } from '@/lib/database/stock';
 import { ProductImage } from '@/components/ui';
@@ -92,13 +92,8 @@ export function ProductKitsManager() {
     if (!allowedImageTypes.includes(file.type)) { setMessage('Envie uma imagem PNG, JPG, JPEG ou WebP.'); return; }
     setIsUploading(true); setMessage(null);
     try {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      const { data: { session: refreshed } } = await supabase.auth.refreshSession();
-      const token = (refreshed || session)?.access_token;
-      if (!token) { setMessage('Sessão expirada. Entre novamente para enviar imagens.'); return; }
       const body = new FormData(); body.append('file', file); body.append('productName', form.name || 'kit');
-      const response = await fetch('/api/admin/produtos/imagem', { method: 'POST', credentials: 'include', headers: { Authorization: `Bearer ${token}` }, body });
+      const response = await fetch('/api/admin/produtos/imagem', { method: 'POST', credentials: 'include', body });
       const payload = await response.json().catch(() => ({})) as { publicUrl?: string; error?: string };
       if (!response.ok || !payload.publicUrl) { setMessage(payload.error || 'Não foi possível enviar a imagem.'); return; }
       setForm((current) => ({ ...current, image_url: payload.publicUrl! }));

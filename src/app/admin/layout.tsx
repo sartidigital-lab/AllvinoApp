@@ -1,9 +1,9 @@
 "use client";
 
 import Sidebar from '@/components/admin/Sidebar';
-import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { getBrowserSession } from '@/lib/auth/browserSession';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -12,17 +12,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     const checkAuth = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
+      const session = await getBrowserSession().catch(() => null);
+      if (!session) {
         router.replace('/?login=true&redirectTo=/admin');
         return;
       }
-
-      const { data: isAdmin, error: adminError } = await supabase.rpc('is_admin');
-
-      if (adminError || isAdmin !== true) {
+      if (!session.isAdmin) {
         setIsDenied(true);
         return;
       }

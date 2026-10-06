@@ -1,26 +1,14 @@
 import { NextResponse } from 'next/server';
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import sharp from 'sharp';
 import { checkRateLimitDistributed, getClientKey, rateLimitResponse } from '@/lib/security/rateLimit';
 import { auditSecurityEvent } from '@/lib/security/audit';
+import { isSameOrigin } from '@/lib/push/subscription';
+import { createClient } from '@/utils/supabase/server';
 
 const allowedImageTypes = new Set(['image/png', 'image/jpeg', 'image/webp']);
 const maxImageBytes = 5 * 1024 * 1024;
-
-function slugify(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '') || 'produto';
-}
-
-function getExtension(file: File) {
-  if (file.type === 'image/png') return 'png';
-  if (file.type === 'image/webp') return 'webp';
-  return 'jpg';
-}
+const maxImagePixels = 40_000_000;
+const maxImageDimension = 4096;
 
 async function hasValidImageSignature(file: File) {
   const bytes = new Uint8Array(await file.slice(0, 12).arrayBuffer());
@@ -34,43 +22,42 @@ async function hasValidImageSignature(file: File) {
   );
 }
 
-function getBearerToken(request: Request) {
-  const authorization = request.headers.get('authorization') || '';
-  const match = authorization.match(/^Bearer\s+(.+)$/i);
-  return match?.[1] || null;
-}
+async function normalizeImage(file: File) {
+  const input = Buffer.from(await file.arrayBuffer());
+  const image = sharp(input, { limitInputPixels: maxImagePixels, failOn: 'error' }).rotate();
+  const metadata = await image.metadata();
 
-function createTokenClient(accessToken: string) {
-  return createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      auth: {
-        autoRefreshToken: false,
-        detectSessionInUrl: false,
-        persistSession: false,
-      },
-      global: {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      },
-    }
-  );
+  if (!metadata.width || !metadata.height) {
+    throw new Error('Image dimensions are unavailable.');
+  }
+
+  const buffer = await image
+    .resize({
+      width: maxImageDimension,
+      height: maxImageDimension,
+      fit: 'inside',
+      withoutEnlargement: true,
+    })
+    .webp({ quality: 85, effort: 4 })
+    .toBuffer();
+
+  if (buffer.length === 0 || buffer.length > maxImageBytes) {
+    throw new Error('Normalized image exceeds the size limit.');
+  }
+
+  return buffer;
 }
 
 export async function POST(request: Request) {
-  const accessToken = getBearerToken(request);
-
-  if (!accessToken) {
-    return NextResponse.json({ error: 'Token de acesso ausente. Entre novamente e tente subir a imagem outra vez.' }, { status: 401 });
+  if (!isSameOrigin(request)) {
+    return NextResponse.json({ error: 'Origem inválida.' }, { status: 403 });
   }
 
-  const supabase = createTokenClient(accessToken);
+  const supabase = await createClient();
   const {
     data: { user },
     error: userError,
-  } = await supabase.auth.getUser(accessToken);
+  } = await supabase.auth.getUser();
 
   if (userError || !user) {
     return NextResponse.json({ error: 'Não autenticado. Entre novamente e tente subir a imagem outra vez.' }, { status: 401 });
@@ -94,7 +81,6 @@ export async function POST(request: Request) {
 
   const file = formData.get('file');
   const assetType = formData.get('assetType') === 'banner' ? 'banner' : 'product';
-  const assetName = String(formData.get('productName') || (assetType === 'banner' ? 'banner' : 'produto')).slice(0, 120);
 
   if (!(file instanceof File)) {
     return NextResponse.json({ error: 'Arquivo não enviado.' }, { status: 400 });
@@ -112,13 +98,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'O conteudo do arquivo nao corresponde a uma imagem valida.' }, { status: 400 });
   }
 
-  const filePath = `${assetType === 'banner' ? 'banners/' : ''}${Date.now()}-${slugify(assetName)}.${getExtension(file)}`;
+  let normalizedImage: Buffer;
+  try {
+    normalizedImage = await normalizeImage(file);
+  } catch {
+    auditSecurityEvent(`admin.${assetType}-image.rejected`, { userId: user.id, reason: 'invalid_or_unsafe_image' });
+    return NextResponse.json({ error: 'A imagem nao pode ser processada com seguranca.' }, { status: 400 });
+  }
+
+  const filePath = `${assetType === 'banner' ? 'banners/' : ''}${crypto.randomUUID()}.webp`;
   const { error: uploadError } = await supabase.storage
     .from('produtos')
-    .upload(filePath, file, {
+    .upload(filePath, normalizedImage, {
       cacheControl: '31536000',
       upsert: false,
-      contentType: file.type,
+      contentType: 'image/webp',
     });
 
   if (uploadError) {

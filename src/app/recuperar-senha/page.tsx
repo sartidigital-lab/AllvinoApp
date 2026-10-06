@@ -1,14 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/utils/supabase/client'
 import { getPasswordPolicyError } from '@/lib/auth/passwordPolicy'
+import { getBrowserSession, announceAuthStateChange } from '@/lib/auth/browserSession'
 
 export default function RecuperarSenhaPage() {
   const router = useRouter()
-  const supabase = useMemo(() => createClient(), [])
   const [password, setPassword] = useState('')
   const [confirmation, setConfirmation] = useState('')
   const [loading, setLoading] = useState(false)
@@ -19,13 +18,13 @@ export default function RecuperarSenhaPage() {
 
   useEffect(() => {
     const checkRecoverySession = async () => {
-      const { data } = await supabase.auth.getSession()
-      setReady(Boolean(data.session))
+      const session = await getBrowserSession().catch(() => null)
+      setReady(Boolean(session))
       setCheckingSession(false)
     }
 
     checkRecoverySession()
-  }, [supabase.auth])
+  }, [])
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
@@ -44,14 +43,20 @@ export default function RecuperarSenhaPage() {
     }
 
     setLoading(true)
-    const { error: updateError } = await supabase.auth.updateUser({ password })
+    const response = await fetch('/api/auth/password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    })
+    const payload = await response.json().catch(() => ({})) as { error?: string }
     setLoading(false)
 
-    if (updateError) {
-      setError(updateError.message)
+    if (!response.ok) {
+      setError(payload.error || 'Não foi possível atualizar a senha.')
       return
     }
 
+    announceAuthStateChange()
     setMessage('Senha atualizada com sucesso. Você já pode continuar usando sua conta.')
     setPassword('')
     setConfirmation('')

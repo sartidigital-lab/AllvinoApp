@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/client';
+import { createClient } from '@/utils/supabase/admin-client';
 import type { CatalogBanner, ProductPromotionCampaign } from '@/types/database';
 
 const campaignSelect = 'id,created_at,updated_at,title,slug,description,discount_percent,starts_at,ends_at,is_active,show_countdown,product_promotion_items(product_id)';

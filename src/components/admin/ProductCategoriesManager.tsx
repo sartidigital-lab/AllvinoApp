@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { createClient } from '@/utils/supabase/admin-client';
 import { fetchWinesFromSupabase } from '@/lib/database/wines';
 import { AdminNotice } from '@/components/admin/AdminPrimitives';
 import type { CatalogProductCategory, Wine } from '@/types/database';

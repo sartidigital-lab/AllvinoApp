@@ -6,6 +6,7 @@ import { CartProvider } from '../context/CartContext';
 import { ToastProvider } from '../context/ToastContext';
 import { FavoritesProvider } from '../context/FavoritesContext';
 import { RecentlyViewedProvider } from '../context/RecentlyViewedContext';
+import { connection } from 'next/server';
 import './globals.css';
 
 export const metadata = {
@@ -21,7 +22,11 @@ export const metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // The Proxy creates one CSP nonce per request. Rendering dynamically is
+  // required so Next can attach that nonce to its framework and page scripts.
+  await connection();
+
   return (
     <html lang="pt-BR">
       <head>

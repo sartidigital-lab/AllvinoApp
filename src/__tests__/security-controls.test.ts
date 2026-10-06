@@ -44,9 +44,40 @@ describe('security controls', () => {
 
   it('allows CEP providers in the browser connection policy', () => {
     const nextConfig = readFileSync('next.config.mjs', 'utf8');
+    const proxy = readFileSync('src/proxy.ts', 'utf8');
 
-    expect(nextConfig).toContain("connect-src 'self'");
-    expect(nextConfig).toContain('https://brasilapi.com.br');
-    expect(nextConfig).toContain('https://viacep.com.br');
+    expect(nextConfig).toContain('Strict-Transport-Security');
+    expect(proxy).toContain("connect-src 'self'");
+    expect(proxy).toContain('https://brasilapi.com.br');
+    expect(proxy).toContain('https://viacep.com.br');
+    expect(proxy).toContain("'strict-dynamic'");
+    expect(proxy).not.toContain("script-src 'self' 'unsafe-inline'");
+    expect(readFileSync('src/app/layout.tsx', 'utf8')).toContain('await connection()');
+  });
+
+  it('keeps the Supabase BFF limited to authenticated admin data routes', () => {
+    const bff = readFileSync('src/app/api/bff/supabase/route.ts', 'utf8');
+    const upload = readFileSync('src/app/api/admin/produtos/imagem/route.ts', 'utf8');
+
+    expect(bff).toContain('adminTables');
+    expect(bff).toContain("rpc('is_admin')");
+    expect(bff).toContain('isSameOrigin');
+    expect(upload).toContain('isSameOrigin');
+    expect(upload).not.toContain('Bearer ');
+  });
+
+  it('keeps authentication tokens out of browser JavaScript', () => {
+    const browserClient = readFileSync('src/utils/supabase/client.ts', 'utf8');
+    const serverClient = readFileSync('src/utils/supabase/server.ts', 'utf8');
+    const authModal = readFileSync('src/components/auth/AuthModal.tsx', 'utf8');
+    const callback = readFileSync('src/app/auth/callback/route.ts', 'utf8');
+
+    expect(browserClient).not.toContain('createBrowserClient');
+    expect(browserClient).toContain('persistSession: false');
+    expect(serverClient).toContain('httpOnly: true');
+    expect(readFileSync('src/proxy.ts', 'utf8')).toContain("cookie.name.startsWith('sb-')");
+    expect(authModal).toContain("'/api/auth/login'");
+    expect(authModal).not.toContain('supabase.auth.');
+    expect(callback).toContain('createBffAuthClient');
   });
 });

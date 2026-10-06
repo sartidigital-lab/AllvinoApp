@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/client';
+import { createBffClient } from '@/utils/supabase/bff-client';
 import { LegacyProduct, mapProductToWine, mapWineToProduct } from '@/lib/catalog/products';
 import { Wine } from '@/types/database';
 
@@ -32,7 +33,7 @@ export async function fetchWinesFromSupabase(options: { usePublicCache?: boolean
     }
   }
 
-  const supabase = createClient();
+  const supabase = options.includeUnpublished ? createBffClient() : createClient();
 
   let productsQuery = supabase
     .from('produtos')
@@ -90,7 +91,7 @@ export async function fetchWineByIdFromSupabase(id: string): Promise<Wine | unde
 }
 
 export async function createWine(wineData: Partial<Wine>): Promise<Wine | null> {
-  const supabase = createClient();
+  const supabase = createBffClient();
   try {
     const { data: product, error: productError } = await supabase
       .from('produtos')
@@ -114,7 +115,7 @@ export async function createWine(wineData: Partial<Wine>): Promise<Wine | null> 
 }
 
 export async function updateWine(id: string, wineData: Partial<Wine>): Promise<Wine | null> {
-  const supabase = createClient();
+  const supabase = createBffClient();
   try {
     const { data: product, error: productError } = await supabase
       .from('produtos')
@@ -139,7 +140,7 @@ export async function updateWine(id: string, wineData: Partial<Wine>): Promise<W
 }
 
 export async function toggleWinePublished(id: string, published: boolean): Promise<Wine | null> {
-  const supabase = createClient();
+  const supabase = createBffClient();
   try {
     const { data: product, error: productError } = await supabase
       .from('produtos')
@@ -164,7 +165,7 @@ export async function toggleWinePublished(id: string, published: boolean): Promi
 }
 
 export async function deleteWine(id: string): Promise<boolean> {
-  const supabase = createClient();
+  const supabase = createBffClient();
   try {
     const { error: productError } = await supabase
       .from('produtos')
