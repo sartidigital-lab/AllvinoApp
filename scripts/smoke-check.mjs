@@ -46,7 +46,7 @@ const checks = [
   },
   {
     file: 'src/app/checkout/page.tsx',
-    includes: ['5527992770952', 'O pedido completo será enviado ao WhatsApp da loja', 'GERAR PIX E ENVIAR PEDIDO', 'Pedido realizado', 'createOrder', 'calculatePixDiscount', 'getCardInstallmentOptions', 'fetchActivePromotionByCode', 'fetchDeliveryQuote', 'Consultar atendimento pelo WhatsApp', 'Cupom', 'CEP'],
+    includes: ['createOrder', 'createPaymentCheckout', 'checkout seguro da Stone/Pagar.me', 'IR PARA PAGAMENTO PIX', 'IR PARA PAGAMENTO SEGURO', 'calculatePixDiscount', 'getCardInstallmentOptions', 'fetchActivePromotionByCode', 'fetchDeliveryQuote', 'Consultar atendimento pelo WhatsApp', 'Cupom', 'CEP'],
   },
   {
     file: 'src/app/conta/page.tsx',

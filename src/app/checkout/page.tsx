@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { CurrentUser, getCurrentUserFast } from '@/lib/auth/currentUser';
 import { createOrder } from '@/lib/database/orders';
@@ -14,14 +12,13 @@ import {
 import { fetchDeliveryQuote } from '@/lib/database/delivery';
 import { calculateShippingFee, formatZipCode, normalizeZipCode, PICKUP_SCHEDULE_NOTICE } from '@/lib/delivery/rules';
 import { lookupCepAddress } from '@/lib/address/cep';
-import { createPixPayload, createPixQrCode, getPixConfig } from '@/lib/payments/pix';
 import {
   calculatePixDiscount,
   getCardInstallmentOptions,
   MAX_CARD_INSTALLMENTS,
   normalizeCardInstallments,
 } from '@/lib/payments/terms';
-import { buildCheckoutWhatsAppMessage, buildWhatsAppUrl } from '@/lib/payments/whatsapp';
+import { createPaymentCheckout } from '@/lib/database/payments';
 import { DeliveryZone, Promotion } from '@/types/database';
 
 const SALES_WHATSAPP_NUMBER = '5527992770952';
@@ -69,35 +66,11 @@ export default function CheckoutPage() {
   const [isCheckingPromotion, setIsCheckingPromotion] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
-  const [copyMessage, setCopyMessage] = useState<string | null>(null);
   const addressLookupControllerRef = useRef<AbortController | null>(null);
   const addressLookupRequestRef = useRef(0);
   const deliveryRequestRef = useRef(0);
   const numberInputRef = useRef<HTMLInputElement>(null);
   const numberFocusTimeoutRef = useRef<number | null>(null);
-  const [successOrderId, setSuccessOrderId] = useState<string | null>(null);
-  const [successSummary, setSuccessSummary] = useState<{
-    total: number;
-    subtotal: number;
-    discount: number;
-    promotionCode: string | null;
-    shippingFee: number;
-    zipCode: string | null;
-    zoneName: string | null;
-    estimateDays: number | null;
-    payment: string;
-    installments: number | null;
-    paymentProvider: string;
-    paymentStatus: string;
-    paymentUrl: string | null;
-    pixKey: string | null;
-    pixPayload: string | null;
-    pixQrCode: string | null;
-    whatsappUrl: string;
-    whatsappOpened: boolean;
-    delivery: string;
-    address: string | null;
-  } | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -178,15 +151,6 @@ export default function CheckoutPage() {
     setAppliedPromotion(null);
     setPromotionCode('');
     setPromotionMessage(null);
-  };
-
-  const copyPixValue = async (value: string, successMessage: string) => {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopyMessage(successMessage);
-    } catch {
-      setCopyMessage('Não foi possível copiar automaticamente. Selecione o valor e copie manualmente.');
-    }
   };
 
   const handleCalculateDelivery = async (zipCodeOverride?: string) => {
@@ -329,15 +293,7 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (pagamento === 'Pix' && !getPixConfig().key) {
-      setCheckoutMessage('O pagamento via PIX ainda não está configurado. Escolha cartão ou fale com a loja.');
-      return;
-    }
-
     const isCardPayment = pagamento === 'Cartao (Link)';
-    const whatsappWindow = window.open('about:blank', '_blank');
-    if (whatsappWindow) whatsappWindow.opener = null;
-
     setIsLoading(true);
 
     const { order, error } = await createOrder(
@@ -352,221 +308,29 @@ export default function CheckoutPage() {
     );
 
     if (error || !order) {
-      whatsappWindow?.close();
       setCheckoutMessage(error?.message || 'Erro ao criar pedido. Tente novamente.');
       setIsLoading(false);
       return;
     }
 
-    const subtotal = order.subtotal_amount ?? cartTotal;
-    const orderDiscount = order.discount_amount || 0;
-    const orderShippingFee = order.shipping_fee || 0;
     const orderInstallments = isCardPayment
       ? normalizeCardInstallments(order.total_amount, installments)
       : 1;
-    const msg = buildCheckoutWhatsAppMessage({
-      orderId: order.id,
-      customerName: user.name,
-      customerPhone: user.phone,
-      items: order.order_items.map((item) => ({
-        name: item.product_name || 'Produto',
-        quantity: item.quantity,
-        unitPrice: item.unit_price,
-      })),
-      paymentMethod: isCardPayment ? 'Cartao (Link)' : 'Pix',
-      installments: orderInstallments,
-      deliveryType: entrega === 'retirada' ? 'Retirada na loja (-5% OFF)' : 'Entrega no endereço',
-      deliveryAddress: entrega === 'entrega' ? (order.delivery_address || deliveryAddress) : null,
-      deliveryZipCode: order.delivery_zip_code ? formatZipCode(order.delivery_zip_code) : null,
-      deliveryZoneName: order.delivery_zone_name,
-      deliveryEstimateDays: order.delivery_estimate_days,
-      shippingFee: orderShippingFee,
-      subtotal,
-      discount: orderDiscount,
-      total: order.total_amount,
-      promotionCode: order.promotion_code,
-    });
+    const { paymentUrl, error: paymentError } = await createPaymentCheckout(
+      order.id,
+      isCardPayment ? 'Cartao (Link)' : 'Pix',
+      orderInstallments
+    );
 
-    const link = buildWhatsAppUrl(SALES_WHATSAPP_NUMBER, msg);
-    if (whatsappWindow) {
-      whatsappWindow.location.href = link;
+    if (paymentError || !paymentUrl) {
+      setCheckoutMessage(paymentError?.message || 'Não foi possível iniciar o pagamento. Tente novamente.');
+      setIsLoading(false);
+      return;
     }
 
-    const pixPayload = pagamento === 'Pix' ? createPixPayload(order.total_amount) : null;
-    const pixQrCode = pixPayload
-      ? await createPixQrCode(pixPayload).catch(() => null)
-      : null;
     clearCart();
-    setSuccessOrderId(order.id);
-    setSuccessSummary({
-      total: order.total_amount,
-      subtotal,
-      discount: orderDiscount,
-      promotionCode: order.promotion_code,
-      shippingFee: orderShippingFee,
-      zipCode: order.delivery_zip_code,
-      zoneName: order.delivery_zone_name,
-      estimateDays: order.delivery_estimate_days,
-      payment: order.payment_method || pagamento,
-      installments: isCardPayment ? orderInstallments : null,
-      paymentProvider: order.payment_provider,
-      paymentStatus: order.payment_status,
-      paymentUrl: order.payment_url,
-      pixKey: pagamento === 'Pix' ? getPixConfig().key : null,
-      pixPayload,
-      pixQrCode,
-      whatsappUrl: link,
-      whatsappOpened: whatsappWindow !== null,
-      delivery: order.delivery_type,
-      address: order.delivery_address,
-    });
-    setIsLoading(false);
+    window.location.assign(paymentUrl);
   };
-
-  if (successOrderId && successSummary) {
-    return (
-      <main className="max-w-xl mx-auto px-5 pt-10 pb-32">
-        <div className="rounded-3xl border border-emerald-100 bg-white p-8 text-center shadow-sm space-y-5">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
-            <span className="material-symbols-outlined text-4xl">check</span>
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold font-serif text-black">Pedido realizado</h1>
-            <p className="mt-2 text-sm font-bold text-stone-500">
-              {successSummary.payment === 'Pix'
-                ? successSummary.whatsappOpened
-                  ? 'Abrimos o pedido no WhatsApp da Allvino. Envie a mensagem e faça o pagamento pelo QR Code, código copia e cola ou chave PIX.'
-                  : 'O navegador bloqueou o WhatsApp. Use o botão abaixo para enviar os detalhes do pedido e depois faça o pagamento via PIX.'
-                : successSummary.whatsappOpened
-                  ? 'Abrimos o pedido no WhatsApp da Allvino. A loja enviará o link de pagamento do cartão por lá.'
-                  : 'O navegador bloqueou a abertura do WhatsApp. Use o botão abaixo para enviar o pedido e receber o link do cartão.'}
-            </p>
-          </div>
-          <p className="rounded-2xl bg-stone-50 px-4 py-3 text-xs font-bold uppercase tracking-widest text-stone-500">
-            Pedido #{successOrderId.slice(0, 8)}
-          </p>
-          <div className="space-y-2 rounded-2xl bg-stone-50 p-4 text-left text-sm">
-            <div className="flex justify-between gap-4">
-              <span className="font-bold text-stone-500">Pagamento</span>
-              <span className="font-bold text-black">{successSummary.payment}</span>
-            </div>
-            {successSummary.installments && (
-              <div className="flex justify-between gap-4">
-                <span className="font-bold text-stone-500">Parcelamento solicitado</span>
-                <span className="font-bold text-black">{successSummary.installments}x</span>
-              </div>
-            )}
-            <div className="flex justify-between gap-4">
-              <span className="font-bold text-stone-500">Status pagamento</span>
-              <span className="text-right font-bold text-black">
-                {successSummary.paymentProvider} / {successSummary.paymentStatus}
-              </span>
-            </div>
-            <div className="flex justify-between gap-4">
-              <span className="font-bold text-stone-500">Entrega</span>
-              <span className="font-bold text-black">{successSummary.delivery}</span>
-            </div>
-            {successSummary.address && (
-              <div className="flex justify-between gap-4">
-                <span className="font-bold text-stone-500">Endereço</span>
-                <span className="text-right font-bold text-black">{successSummary.address}</span>
-              </div>
-            )}
-            {successSummary.zipCode && (
-              <div className="flex justify-between gap-4">
-                <span className="font-bold text-stone-500">CEP</span>
-                <span className="font-bold text-black">{formatZipCode(successSummary.zipCode)}</span>
-              </div>
-            )}
-            {successSummary.zoneName && (
-              <div className="flex justify-between gap-4">
-                <span className="font-bold text-stone-500">Prazo</span>
-                <span className="text-right font-bold text-black">
-                  {successSummary.zoneName}
-                  {successSummary.estimateDays ? `, até ${successSummary.estimateDays} dia(s)` : ''}
-                </span>
-              </div>
-            )}
-            {successSummary.delivery === 'Entrega no Endereco' && (
-              <div className="flex justify-between gap-4">
-                <span className="font-bold text-stone-500">Frete</span>
-                <span className="font-bold text-black">
-                  {successSummary.shippingFee > 0
-                    ? `R$ ${successSummary.shippingFee.toFixed(2).replace('.', ',')}`
-                    : 'Grátis'}
-                </span>
-              </div>
-            )}
-            {successSummary.discount > 0 && (
-              <div className="flex justify-between gap-4 text-emerald-700">
-                <span className="font-bold">
-                  Desconto{successSummary.promotionCode ? ` (${successSummary.promotionCode})` : ''}
-                </span>
-                <span className="font-bold">- R$ {successSummary.discount.toFixed(2).replace('.', ',')}</span>
-              </div>
-            )}
-            {successSummary.paymentUrl && (
-              <a
-                href={successSummary.paymentUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="block rounded-xl border border-stone-200 px-3 py-2 text-center text-xs font-bold text-stone-700"
-              >
-                Abrir link de pagamento
-              </a>
-            )}
-            {successSummary.payment === 'Pix' && successSummary.pixPayload && (
-              <div className="space-y-3 rounded-xl border border-emerald-100 bg-emerald-50 p-4">
-                <p className="text-xs font-bold uppercase tracking-widest text-emerald-800">Pagamento via PIX</p>
-                {successSummary.pixQrCode && (
-                  <Image src={successSummary.pixQrCode} alt="QR Code para pagamento via PIX" width={224} height={224} unoptimized className="mx-auto h-56 w-56 rounded-lg bg-white p-2" />
-                )}
-                <p className="break-all rounded-lg bg-white p-3 text-[11px] font-bold text-stone-600">{successSummary.pixPayload}</p>
-                <p className="text-center text-xs font-bold text-emerald-800">Chave PIX: {successSummary.pixKey}</p>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <button
-                    type="button"
-                    onClick={() => copyPixValue(successSummary.pixPayload!, 'Código PIX copia e cola copiado.')}
-                    className="rounded-xl bg-emerald-700 px-3 py-3 text-xs font-bold text-white"
-                  >
-                    Copiar código PIX
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => copyPixValue(successSummary.pixKey!, 'Chave PIX copiada.')}
-                    className="rounded-xl border border-emerald-200 bg-white px-3 py-3 text-xs font-bold text-emerald-800"
-                  >
-                    Copiar chave PIX
-                  </button>
-                </div>
-                {copyMessage && <p role="status" className="text-center text-xs font-bold text-emerald-800">{copyMessage}</p>}
-              </div>
-            )}
-            <div className="flex justify-between gap-4 border-t border-stone-200 pt-2 text-base">
-              <span className="font-bold text-black">Total</span>
-              <span className="font-bold text-black">R$ {successSummary.total.toFixed(2).replace('.', ',')}</span>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 gap-3">
-            <a
-              href={successSummary.whatsappUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="rounded-2xl bg-emerald-600 py-4 text-sm font-bold text-white"
-            >
-              Abrir pedido no WhatsApp
-            </a>
-            <Link href="/conta" className="rounded-brand-2xl bg-brand-primary py-4 text-sm font-bold text-white">
-              Ver meus pedidos
-            </Link>
-            <Link href="/catalogo" className="rounded-2xl border border-stone-200 py-4 text-sm font-bold text-stone-600">
-              Continuar comprando
-            </Link>
-          </div>
-        </div>
-      </main>
-    );
-  }
 
   return (
     <main className="max-w-xl mx-auto px-5 pt-8 pb-32 space-y-8 animate-in fade-in duration-300">
@@ -822,12 +586,12 @@ export default function CheckoutPage() {
             className="w-full border-stone-200 rounded-2xl p-4 text-sm outline-none focus:border-black transition-colors font-bold"
           >
             <option value="Pix">Pix (Rápido e Seguro)</option>
-            <option value="Cartao (Link)">Cartão de Crédito (Link de Pagamento)</option>
+            <option value="Cartao (Link)">Cartão de Crédito</option>
           </select>
           {pagamento === 'Pix' ? (
             <div className="space-y-2 rounded-2xl bg-emerald-50 p-4 text-xs font-bold text-emerald-800">
               <p>Pagamento via PIX recebe 5% de desconto adicional.</p>
-              <p>Após criar o pedido, o WhatsApp será aberto com todos os detalhes. Envie a mensagem e pague pelo QR Code, copia e cola ou chave PIX.</p>
+              <p>Você será direcionado ao checkout seguro da Stone/Pagar.me para gerar e pagar o PIX. A confirmação é automática.</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -846,7 +610,7 @@ export default function CheckoutPage() {
                 </select>
               </label>
               <p className="text-xs font-bold text-stone-500">
-                Até {MAX_CARD_INSTALLMENTS}x sem juros, sem valor mínimo de pedido. O pedido completo será enviado ao WhatsApp para a loja retornar o link seguro do cartão.
+                Até {MAX_CARD_INSTALLMENTS}x sem juros, sem valor mínimo de pedido. Você será direcionado ao checkout seguro da Stone/Pagar.me; não coletamos dados do seu cartão.
               </p>
             </div>
           )}
@@ -861,13 +625,13 @@ export default function CheckoutPage() {
         )}
         <p className="text-center text-sm font-bold text-stone-500">
           {pagamento === 'Pix'
-            ? 'O pedido será registrado e aberto no WhatsApp antes da geração do PIX.'
-            : 'O pedido completo será enviado ao WhatsApp da loja.'}
+            ? 'O pedido será registrado e você seguirá para o PIX dinâmico.'
+            : 'O pedido será registrado e você seguirá para o checkout seguro.'}
         </p>
         <button
           onClick={handleFinalizar}
           disabled={isLoading}
-          className="flex w-full items-center justify-center gap-3 rounded-3xl bg-brand-whatsapp py-5 text-lg font-bold text-white shadow-xl shadow-emerald-900/20 transition-transform hover:bg-brand-whatsapp-hover active:scale-95 disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-3 rounded-3xl bg-brand-primary py-5 text-lg font-bold text-white shadow-xl shadow-brand-primary/20 transition-transform hover:bg-brand-primary-dark active:scale-95 disabled:opacity-50"
         >
           {pagamento === 'Pix' ? (
             <span className="material-symbols-outlined text-[26px]">qr_code_2</span>
@@ -879,8 +643,8 @@ export default function CheckoutPage() {
           {isLoading
             ? 'PROCESSANDO...'
             : pagamento === 'Pix'
-              ? 'GERAR PIX E ENVIAR PEDIDO'
-              : 'SOLICITAR LINK NO WHATSAPP'}
+              ? 'IR PARA PAGAMENTO PIX'
+              : 'IR PARA PAGAMENTO SEGURO'}
         </button>
       </div>
     </main>
