@@ -17,10 +17,26 @@ where id in ('produtos', 'wine-images');
 drop policy if exists "Public can read published wines" on public.wines;
 drop policy if exists "wines_public_read" on public.wines;
 
-create policy "Public can read active published wines"
-  on public.wines for select
-  to anon, authenticated
-  using (ativo = true and publicado = true);
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'wines' and column_name = 'ativo'
+  ) then
+    execute $policy$
+      create policy "Public can read active published wines"
+        on public.wines for select to anon, authenticated
+        using (ativo = true and publicado = true)
+    $policy$;
+  else
+    execute $policy$
+      create policy "Public can read active published wines"
+        on public.wines for select to anon, authenticated
+        using (publicado = true)
+    $policy$;
+  end if;
+end;
+$$;
 
 -- These RPCs are never valid for anonymous callers. Their internal checks stay
 -- in place as a second authorization layer for authenticated sessions.
@@ -37,7 +53,13 @@ revoke execute on function public.create_order_with_stock_reservation(
 
 revoke execute on function public.mark_manual_payment_paid(uuid) from public, anon;
 revoke execute on function public.reserve_product_stock_for_order(uuid) from public, anon;
-revoke execute on function public.set_updated_at() from public, anon, authenticated;
+do $$
+begin
+  if to_regprocedure('public.set_updated_at()') is not null then
+    execute 'revoke execute on function public.set_updated_at() from public, anon, authenticated';
+  end if;
+end;
+$$;
 
 grant execute on function public.create_order_with_stock_reservation(
   jsonb,

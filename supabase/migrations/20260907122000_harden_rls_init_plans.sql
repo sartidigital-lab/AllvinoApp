@@ -32,53 +32,52 @@ create policy "Users can read items from own orders"
     )
   );
 
-drop policy if exists "wine_analytics_admin_read" on public.wine_analytics;
-create policy "wine_analytics_admin_read"
-  on public.wine_analytics for select to authenticated
-  using (
-    exists (
-      select 1
-      from public.admin_users au
-      where au.id = (select auth.uid())
-        and au.ativo = true
-    )
-  );
+-- These analytics tables exist only in older installations.
+do $$
+begin
+  if to_regclass('public.wine_analytics') is not null then
+    execute 'drop policy if exists "wine_analytics_admin_read" on public.wine_analytics';
+    execute $policy$
+      create policy "wine_analytics_admin_read"
+        on public.wine_analytics for select to authenticated
+        using (exists (
+          select 1 from public.admin_users au
+          where au.id = (select auth.uid()) and au.ativo = true
+        ))
+    $policy$;
+    execute 'drop policy if exists "wine_analytics_admin_delete" on public.wine_analytics';
+    execute $policy$
+      create policy "wine_analytics_admin_delete"
+        on public.wine_analytics for delete to authenticated
+        using (exists (
+          select 1 from public.admin_users au
+          where au.id = (select auth.uid()) and au.ativo = true
+        ))
+    $policy$;
+  end if;
 
-drop policy if exists "wine_analytics_admin_delete" on public.wine_analytics;
-create policy "wine_analytics_admin_delete"
-  on public.wine_analytics for delete to authenticated
-  using (
-    exists (
-      select 1
-      from public.admin_users au
-      where au.id = (select auth.uid())
-        and au.ativo = true
-    )
-  );
-
-drop policy if exists "catalog_history_admin_insert" on public.catalog_history;
-create policy "catalog_history_admin_insert"
-  on public.catalog_history for insert to authenticated
-  with check (
-    exists (
-      select 1
-      from public.admin_users au
-      where au.id = (select auth.uid())
-        and au.ativo = true
-    )
-  );
-
-drop policy if exists "catalog_history_admin_read" on public.catalog_history;
-create policy "catalog_history_admin_read"
-  on public.catalog_history for select to authenticated
-  using (
-    exists (
-      select 1
-      from public.admin_users au
-      where au.id = (select auth.uid())
-        and au.ativo = true
-    )
-  );
+  if to_regclass('public.catalog_history') is not null then
+    execute 'drop policy if exists "catalog_history_admin_insert" on public.catalog_history';
+    execute $policy$
+      create policy "catalog_history_admin_insert"
+        on public.catalog_history for insert to authenticated
+        with check (exists (
+          select 1 from public.admin_users au
+          where au.id = (select auth.uid()) and au.ativo = true
+        ))
+    $policy$;
+    execute 'drop policy if exists "catalog_history_admin_read" on public.catalog_history';
+    execute $policy$
+      create policy "catalog_history_admin_read"
+        on public.catalog_history for select to authenticated
+        using (exists (
+          select 1 from public.admin_users au
+          where au.id = (select auth.uid()) and au.ativo = true
+        ))
+    $policy$;
+  end if;
+end;
+$$;
 
 -- The legacy catalog is no longer used by the application and has no client grants.
 drop policy if exists "wines_admin_all" on public.wines;

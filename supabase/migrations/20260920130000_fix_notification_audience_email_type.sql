@@ -66,7 +66,7 @@ begin
   )
   select
     account.id as user_id,
-    coalesce(nullif(account.raw_user_meta_data ->> 'nome_completo', ''), nullif(profile.nome::text, ''), split_part(account.email::text, '@', 1), 'Usuário sem nome')::text as user_name,
+    coalesce(nullif(account.raw_user_meta_data ->> 'nome_completo', ''), split_part(account.email::text, '@', 1), 'Usuário sem nome')::text as user_name,
     account.email::text as user_email,
     account.created_at as registered_at,
     coalesce(subscription.device_count, 0) > 0 as notifications_enabled,
@@ -78,7 +78,6 @@ begin
     bottle_summary.average_bottle_price,
     order_summary.average_order_ticket
   from auth.users as account
-  left join public.perfis as profile on profile.id = account.id
   left join order_stats as order_summary on order_summary.user_id = account.id
   left join bottle_stats as bottle_summary on bottle_summary.user_id = account.id
   left join subscription_stats as subscription on subscription.user_id = account.id
