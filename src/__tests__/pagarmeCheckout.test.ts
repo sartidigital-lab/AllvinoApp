@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
 
-import { buildPagarmePaymentLinkPayload } from '@/lib/payments/pagarme';
+import { buildPagarmePaymentLinkPayload, createPagarmePaymentLink } from '@/lib/payments/pagarme';
 import { mapPagarmeWebhookStatus, verifyPagarmeWebhookSignature } from '@/lib/payments/pagarmeWebhook';
 
 describe('Pagar.me hosted checkout', () => {
@@ -49,6 +49,39 @@ describe('Pagar.me hosted checkout', () => {
           { number: 3, total: 33000 },
         ],
       },
+    });
+  });
+
+  it('captures sanitized provider diagnostics when payment-link creation fails', async () => {
+    vi.stubEnv('PAGARME_SECRET_KEY', 'sk_test_do_not_log');
+    vi.stubEnv('PAGARME_BASE_URL', 'https://api.pagar.me/core/v5');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      errors: [{
+        code: 'invalid_parameter',
+        parameter: 'payment_settings.credit_card_settings',
+        message: 'Invalid value for customer teste@example.com, document 12345678901',
+      }],
+    }), {
+      status: 422,
+      headers: { 'x-request-id': 'req_test_123' },
+    })));
+
+    await expect(createPagarmePaymentLink({
+      orderId: '12345678-0000-4000-8000-000000000000',
+      amountCents: 33000,
+      paymentMethod: 'credit_card',
+      installments: 3,
+    })).rejects.toMatchObject({
+      name: 'PagarmePaymentLinkError',
+      message: 'Não foi possível criar o checkout de pagamento.',
+      httpStatus: 422,
+      errorCode: 'invalid_parameter',
+      requestId: 'req_test_123',
+      providerErrors: [{
+        code: 'invalid_parameter',
+        parameter: 'payment_settings.credit_card_settings',
+        message: 'Invalid value for customer [email], document [number]',
+      }],
     });
   });
 

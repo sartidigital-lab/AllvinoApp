@@ -17,6 +17,34 @@ type PagarmePaymentLinkResponse = {
   errors?: unknown;
 };
 
+type PagarmeErrorDetail = {
+  code: string | null;
+  type: string | null;
+  parameter: string | null;
+  message: string | null;
+};
+
+export class PagarmePaymentLinkError extends Error {
+  readonly httpStatus: number;
+  readonly errorCode: string;
+  readonly requestId: string | null;
+  readonly providerErrors: PagarmeErrorDetail[];
+
+  constructor(options: {
+    httpStatus: number;
+    errorCode: string;
+    requestId: string | null;
+    providerErrors: PagarmeErrorDetail[];
+  }) {
+    super('Não foi possível criar o checkout de pagamento.');
+    this.name = 'PagarmePaymentLinkError';
+    this.httpStatus = options.httpStatus;
+    this.errorCode = options.errorCode;
+    this.requestId = options.requestId;
+    this.providerErrors = options.providerErrors;
+  }
+}
+
 const DEFAULT_LINK_EXPIRATION_MINUTES = 30;
 
 function getPositiveInteger(value: string | undefined, fallback: number) {
@@ -87,9 +115,32 @@ function getPagarmeConfig() {
   return { secretKey, baseUrl: baseUrl.replace(/\/$/, '') };
 }
 
-function getPagarmeError(payload: PagarmePaymentLinkResponse) {
-  if (typeof payload.message === 'string' && payload.message.trim()) return payload.message;
-  return 'Não foi possível criar o checkout de pagamento.';
+function safeProviderText(value: unknown, maxLength = 240): string | null {
+  if (typeof value !== 'string' || !value.trim()) return null;
+
+  return value
+    .replace(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/g, '[email]')
+    .replace(/(?:\+?\d[\s().-]*){8,}/g, '[number]')
+    .replace(/\b\d{11,14}\b/g, '[number]')
+    .replace(/[\r\n\t]+/g, ' ')
+    .trim()
+    .slice(0, maxLength);
+}
+
+function readProviderErrors(value: unknown): PagarmeErrorDetail[] {
+  const entries = Array.isArray(value) ? value : value && typeof value === 'object' ? [value] : [];
+
+  return entries.slice(0, 5).flatMap((entry) => {
+    if (!entry || typeof entry !== 'object') return [];
+    const detail = entry as Record<string, unknown>;
+    const code = safeProviderText(detail.code ?? detail.error_code, 100);
+    const type = safeProviderText(detail.type ?? detail.category, 100);
+    const parameter = safeProviderText(detail.parameter ?? detail.param ?? detail.field, 100);
+    const message = safeProviderText(detail.message ?? detail.description);
+
+    if (!code && !type && !parameter && !message) return [];
+    return [{ code, type, parameter, message }];
+  });
 }
 
 export async function createPagarmePaymentLink(input: PagarmePaymentLinkInput) {
@@ -109,7 +160,23 @@ export async function createPagarmePaymentLink(input: PagarmePaymentLinkInput) {
 
   const payload = await response.json().catch(() => ({})) as PagarmePaymentLinkResponse;
   if (!response.ok || !payload.id || !payload.url) {
-    throw new Error(getPagarmeError(payload));
+    const providerErrors = readProviderErrors(payload.errors);
+    if (providerErrors.length === 0) {
+      const message = safeProviderText(payload.message);
+      if (message) providerErrors.push({ code: null, type: null, parameter: null, message });
+    }
+    const responseCode = providerErrors.find((error) => error.code)?.code;
+    const errorCode = responseCode || `PAGARME_HTTP_${response.status}`;
+    const requestId = response.headers.get('x-request-id')
+      || response.headers.get('request-id')
+      || response.headers.get('x-pagarme-request-id');
+
+    throw new PagarmePaymentLinkError({
+      httpStatus: response.status,
+      errorCode,
+      requestId: safeProviderText(requestId, 160),
+      providerErrors,
+    });
   }
 
   return {

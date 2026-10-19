@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { createClient } from '@/utils/supabase/server';
-import { createPagarmePaymentLink } from '@/lib/payments/pagarme';
+import { createPagarmePaymentLink, PagarmePaymentLinkError } from '@/lib/payments/pagarme';
 import { auditSecurityEvent } from '@/lib/security/audit';
 import { checkRateLimitDistributed, getClientKey, rateLimitResponse } from '@/lib/security/rateLimit';
 
@@ -82,6 +82,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ paymentUrl: transaction.provider_payment_url });
   }
 
+  let failureStage = 'create_payment_link';
+  let providerPaymentLinkId: string | null = null;
   try {
     const paymentLink = await createPagarmePaymentLink({
       orderId: order.id,
@@ -89,6 +91,8 @@ export async function POST(request: Request) {
       paymentMethod: method,
       installments,
     });
+    providerPaymentLinkId = paymentLink.id;
+    failureStage = 'persist_payment_link';
     const { error: completeError } = await admin.rpc('complete_pagarme_payment', {
       p_transaction_id: transaction.id,
       p_status: 'waiting_payment',
@@ -103,14 +107,40 @@ export async function POST(request: Request) {
     auditSecurityEvent('payment.checkout_created', { userId: user.id, orderId, method });
     return NextResponse.json({ paymentUrl: paymentLink.url });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Falha desconhecida ao criar o checkout.';
-    await admin.rpc('complete_pagarme_payment', {
+    const providerError = error instanceof PagarmePaymentLinkError ? error : null;
+    const errorCode = providerError?.errorCode
+      || (failureStage === 'persist_payment_link' ? 'PAYMENT_LINK_PERSIST_FAILED' : 'PAYMENT_LINK_REQUEST_FAILED');
+    const diagnostic = {
+      event: 'pagarme.checkout_failed',
+      transactionId: transaction.id,
+      orderId,
+      method,
+      failureStage,
+      errorCode,
+      providerHttpStatus: providerError?.httpStatus ?? null,
+      providerRequestId: providerError?.requestId ?? null,
+      providerErrors: providerError?.providerErrors ?? [],
+      providerPaymentLinkId,
+      errorName: error instanceof Error ? error.name : 'UnknownError',
+    };
+    console.error(JSON.stringify(diagnostic));
+
+    const { error: failureUpdateError } = await admin.rpc('complete_pagarme_payment', {
       p_transaction_id: transaction.id,
       p_status: 'failed',
-      p_error_message: message.slice(0, 500),
+      p_error_code: errorCode,
+      p_error_message: 'Não foi possível criar o checkout de pagamento.',
       p_provider_updated_at: new Date().toISOString(),
     });
-    auditSecurityEvent('payment.checkout_failed', { userId: user.id, orderId, method });
+    if (failureUpdateError) {
+      console.error(JSON.stringify({
+        event: 'pagarme.checkout_failure_persist_failed',
+        transactionId: transaction.id,
+        orderId,
+        errorCode: failureUpdateError.code ?? null,
+      }));
+    }
+    auditSecurityEvent('payment.checkout_failed', { userId: user.id, orderId, method, errorCode });
     return NextResponse.json({ error: 'Não foi possível abrir o checkout de pagamento. Tente novamente.' }, { status: 502 });
   }
 }
