@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
 
-import { buildPagarmePaymentLinkPayload, createPagarmePaymentLink } from '@/lib/payments/pagarme';
+import { buildPagarmePaymentLinkPayload, createPagarmePaymentLink, PagarmePaymentLinkError } from '@/lib/payments/pagarme';
 import { mapPagarmeWebhookStatus, verifyPagarmeWebhookSignature } from '@/lib/payments/pagarmeWebhook';
 
 describe('Pagar.me hosted checkout', () => {
@@ -99,15 +99,16 @@ describe('Pagar.me hosted checkout', () => {
       },
     }), { status: 400 })));
 
-    const error = await createPagarmePaymentLink({
+    let caughtError: unknown;
+    await createPagarmePaymentLink({
       orderId: '12345678-0000-4000-8000-000000000000',
       amountCents: 33000,
       paymentMethod: 'credit_card',
       installments: 3,
-    }).catch((cause: unknown) => cause as {
-      providerErrors: Array<{ code: string | null; type: string | null; parameter: string | null; message: string | null }>;
-    });
+    }).catch((cause: unknown) => { caughtError = cause; });
 
+    expect(caughtError).toBeInstanceOf(PagarmePaymentLinkError);
+    const error = caughtError as PagarmePaymentLinkError;
     expect(error.providerErrors).toEqual(expect.arrayContaining([
       expect.objectContaining({ message: 'One or more validation errors occurred.' }),
       expect.objectContaining({
