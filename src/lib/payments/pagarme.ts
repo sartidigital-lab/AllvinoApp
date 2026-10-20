@@ -78,7 +78,6 @@ export function buildPagarmePaymentLinkPayload(input: PagarmePaymentLinkInput) {
         accepted_payment_methods: ['credit_card'],
         credit_card_settings: {
           operation_type: 'auth_and_capture',
-          installments_setup: { interest_type: 'simple' },
           installments: Array.from({ length: input.installments }, (_, index) => ({
             number: index + 1,
             total: amount,

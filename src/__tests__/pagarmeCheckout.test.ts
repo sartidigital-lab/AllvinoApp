@@ -42,7 +42,6 @@ describe('Pagar.me hosted checkout', () => {
       accepted_payment_methods: ['credit_card'],
       credit_card_settings: {
         operation_type: 'auth_and_capture',
-        installments_setup: { interest_type: 'simple' },
         installments: [
           { number: 1, total: 33000 },
           { number: 2, total: 33000 },
@@ -50,6 +49,7 @@ describe('Pagar.me hosted checkout', () => {
         ],
       },
     });
+    expect(payload.payment_settings.credit_card_settings).not.toHaveProperty('installments_setup');
   });
 
   it('captures sanitized provider diagnostics when payment-link creation fails', async () => {
