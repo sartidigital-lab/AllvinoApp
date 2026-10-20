@@ -4,6 +4,7 @@ import { createAdminClient } from '@/utils/supabase/admin';
 import {
   mapPagarmeWebhookStatus,
   type PagarmeWebhookEvent,
+  verifyPagarmeWebhookBasicAuth,
   verifyPagarmeWebhookSignature,
 } from '@/lib/payments/pagarmeWebhook';
 import { auditSecurityEvent } from '@/lib/security/audit';
@@ -13,10 +14,39 @@ export async function POST(request: Request) {
   const signingKey = process.env.PAGARME_WEBHOOK_SIGNING_KEY?.trim()
     || process.env.PAGARME_SECRET_KEY?.trim()
     || '';
+  const basicUsername = process.env.PAGARME_WEBHOOK_USERNAME?.trim() || '';
+  const basicPassword = process.env.PAGARME_WEBHOOK_PASSWORD || '';
+  const basicAuthPartiallyConfigured = Boolean(basicUsername) !== Boolean(basicPassword);
+  const basicAuthConfigured = Boolean(basicUsername && basicPassword);
+  const authMode = basicAuthConfigured || basicAuthPartiallyConfigured ? 'basic' : 'hmac_sha1';
+  const authValid = basicAuthPartiallyConfigured
+    ? false
+    : basicAuthConfigured
+      ? verifyPagarmeWebhookBasicAuth(
+          request.headers.get('authorization'),
+          basicUsername,
+          basicPassword,
+        )
+      : verifyPagarmeWebhookSignature(
+          rawBody,
+          request.headers.get('x-hub-signature'),
+          signingKey,
+        );
 
-  if (!verifyPagarmeWebhookSignature(rawBody, request.headers.get('x-hub-signature'), signingKey)) {
-    auditSecurityEvent('payment.webhook_rejected', { reason: 'invalid_signature' });
-    return NextResponse.json({ error: 'Assinatura inválida.' }, { status: 401 });
+  if (!authValid) {
+    const reason = basicAuthPartiallyConfigured
+      ? 'incomplete_basic_auth_configuration'
+      : authMode === 'basic'
+        ? 'invalid_basic_auth'
+        : 'invalid_signature';
+    auditSecurityEvent('payment.webhook_rejected', {
+      reason,
+      authMode,
+      authorizationHeaderPresent: Boolean(request.headers.get('authorization')),
+      signatureHeaderPresent: Boolean(request.headers.get('x-hub-signature')),
+      signingKeyConfigured: Boolean(signingKey),
+    });
+    return NextResponse.json({ error: 'Autenticação do webhook inválida.' }, { status: 401 });
   }
 
   let event: PagarmeWebhookEvent;

@@ -4,7 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('server-only', () => ({}));
 
 import { buildPagarmePaymentLinkPayload, createPagarmePaymentLink, PagarmePaymentLinkError } from '@/lib/payments/pagarme';
-import { mapPagarmeWebhookStatus, verifyPagarmeWebhookSignature } from '@/lib/payments/pagarmeWebhook';
+import {
+  mapPagarmeWebhookStatus,
+  verifyPagarmeWebhookBasicAuth,
+  verifyPagarmeWebhookSignature,
+} from '@/lib/payments/pagarmeWebhook';
 
 describe('Pagar.me hosted checkout', () => {
   beforeEach(() => {
@@ -131,5 +135,14 @@ describe('Pagar.me hosted checkout', () => {
     expect(mapPagarmeWebhookStatus({ type: 'order.paid' })).toBe('paid');
     expect(mapPagarmeWebhookStatus({ type: 'charge.refunded' })).toBe('refunded');
     expect(mapPagarmeWebhookStatus({ type: 'checkout.closed' })).toBeNull();
+  });
+
+  it('validates configured webhook Basic Auth credentials without accepting missing or wrong credentials', () => {
+    const authorization = `Basic ${Buffer.from('allvino-webhook:local-test-password').toString('base64')}`;
+
+    expect(verifyPagarmeWebhookBasicAuth(authorization, 'allvino-webhook', 'local-test-password')).toBe(true);
+    expect(verifyPagarmeWebhookBasicAuth(null, 'allvino-webhook', 'local-test-password')).toBe(false);
+    expect(verifyPagarmeWebhookBasicAuth(authorization, 'allvino-webhook', 'wrong-password')).toBe(false);
+    expect(verifyPagarmeWebhookBasicAuth('Bearer token', 'allvino-webhook', 'local-test-password')).toBe(false);
   });
 });
