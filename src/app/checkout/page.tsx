@@ -21,8 +21,6 @@ import {
 import { createPaymentCheckout } from '@/lib/database/payments';
 import { DeliveryZone, Promotion } from '@/types/database';
 
-const SALES_WHATSAPP_NUMBER = '5527992770952';
-
 type AddressFields = {
   logradouro: string;
   numero: string;
@@ -56,7 +54,6 @@ export default function CheckoutPage() {
   const [addressLookupMessage, setAddressLookupMessage] = useState<string | null>(null);
   const [deliveryZone, setDeliveryZone] = useState<DeliveryZone | null>(null);
   const [deliveryMessage, setDeliveryMessage] = useState<string | null>(null);
-  const [unsupportedZip, setUnsupportedZip] = useState<string | null>(null);
   const [isCheckingDelivery, setIsCheckingDelivery] = useState(false);
   const [pagamento, setPagamento] = useState('Pix');
   const [installments, setInstallments] = useState(1);
@@ -99,13 +96,6 @@ export default function CheckoutPage() {
   const finalTotal = cartTotal - discount + shippingFee;
   const cardInstallmentOptions = getCardInstallmentOptions(finalTotal);
   const selectedCardInstallments = normalizeCardInstallments(finalTotal, installments);
-  const cartItemsMessage = cart.map((item) => `${item.quantity}x ${item.name}`).join('\n');
-  const unsupportedZipWhatsAppUrl = unsupportedZip
-    ? `https://wa.me/${SALES_WHATSAPP_NUMBER}?text=${encodeURIComponent(
-        `Olá, Allvino! Quero consultar entrega para o CEP ${formatZipCode(unsupportedZip)}.\n\nItens no carrinho:\n${cartItemsMessage || 'Carrinho ainda sem itens'}\n\nSubtotal: R$ ${cartTotal.toFixed(2).replace('.', ',')}`
-      )}`
-    : null;
-
   const handleApplyPromotion = async () => {
     const normalizedCode = normalizePromotionCode(promotionCode);
 
@@ -161,7 +151,6 @@ export default function CheckoutPage() {
     if (normalizedZip.length !== 8) {
       setDeliveryMessage('Informe um CEP com 8 dígitos.');
       setDeliveryZone(null);
-      setUnsupportedZip(null);
       return;
     }
 
@@ -174,7 +163,6 @@ export default function CheckoutPage() {
     if (error) {
       setDeliveryMessage('Não foi possível calcular o frete agora.');
       setDeliveryZone(null);
-      setUnsupportedZip(null);
       setIsCheckingDelivery(false);
       return;
     }
@@ -182,14 +170,12 @@ export default function CheckoutPage() {
     if (!zone) {
       setDeliveryMessage('Ainda não entregamos neste CEP.');
       setDeliveryZone(null);
-      setUnsupportedZip(normalizedZip);
       setIsCheckingDelivery(false);
       return;
     }
 
     setCep(formatZipCode(normalizedZip));
     setDeliveryZone(zone);
-    setUnsupportedZip(null);
     setDeliveryMessage(
       `${zone.name}: ${nextShippingFee === 0 ? 'frete grátis' : `frete R$ ${nextShippingFee.toFixed(2).replace('.', ',')}`} em até ${zone.estimate_days} dia(s).`
     );
@@ -253,7 +239,6 @@ export default function CheckoutPage() {
     setIsCheckingDelivery(false);
     setCep(formatZipCode(normalizedZip));
     setDeliveryZone(null);
-    setUnsupportedZip(null);
     setDeliveryMessage(null);
     addressLookupControllerRef.current?.abort();
     setIsLookingUpAddress(false);
@@ -507,17 +492,6 @@ export default function CheckoutPage() {
                 <p className={`text-xs font-bold ${deliveryZone ? 'text-emerald-700' : 'text-stone-500'}`}>
                   {deliveryMessage}
                 </p>
-              )}
-              {unsupportedZipWhatsAppUrl && (
-                <a
-                  href={unsupportedZipWhatsAppUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-center gap-2 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700"
-                >
-                  <span className="material-symbols-outlined text-[18px]">chat</span>
-                  Consultar atendimento pelo WhatsApp
-                </a>
               )}
               <fieldset disabled={isLookingUpAddress} aria-busy={isLookingUpAddress} className="grid grid-cols-1 gap-3 disabled:opacity-60 sm:grid-cols-2">
                 <label className="space-y-1 sm:col-span-2">

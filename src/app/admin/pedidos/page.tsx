@@ -4,7 +4,7 @@ import { AdminEmptyState, AdminNotice, AdminPageHeader, AdminSection, AdminStatC
 import { createClient } from '@/utils/supabase/client';
 import { useEffect, useMemo, useState } from 'react';
 
-type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'delivered' | 'cancelled';
+type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'in_transit' | 'delivered' | 'cancelled';
 type DateFilter = 'all' | 'today' | '7d' | '30d';
 type SortOrder = 'recent' | 'oldest' | 'value-desc' | 'value-asc';
 
@@ -42,22 +42,26 @@ type AdminOrder = {
 
 const statusLabels: Record<OrderStatus, string> = {
   pending: 'Pendente',
-  confirmed: 'Confirmado',
+  confirmed: 'Pago',
   preparing: 'Em separação',
+  in_transit: 'Em trânsito',
   delivered: 'Entregue',
   cancelled: 'Cancelado',
 };
 
 const statusTones: Record<OrderStatus, 'neutral' | 'success' | 'warning' | 'danger' | 'info'> = {
   pending: 'warning',
-  confirmed: 'info',
+  confirmed: 'success',
   preparing: 'neutral',
+  in_transit: 'info',
   delivered: 'success',
   cancelled: 'danger',
 };
 
-const statusFlow: OrderStatus[] = ['pending', 'confirmed', 'preparing', 'delivered'];
-const statusOptions: Array<'all' | OrderStatus> = ['all', ...statusFlow, 'cancelled'];
+const statusFlow: OrderStatus[] = ['confirmed', 'preparing', 'in_transit', 'delivered'];
+const statusOptions: Array<'all' | OrderStatus> = [
+  'all', 'pending', 'confirmed', 'preparing', 'in_transit', 'delivered', 'cancelled',
+];
 
 const paymentStatusLabels: Record<AdminOrder['payment_status'], string> = {
   pending: 'Pagamento pendente',
@@ -96,6 +100,15 @@ function nextStatus(status: OrderStatus) {
   const currentIndex = statusFlow.indexOf(status);
   if (currentIndex === -1 || currentIndex === statusFlow.length - 1) return null;
   return statusFlow[currentIndex + 1];
+}
+
+function availableStatusOptions(order: AdminOrder): OrderStatus[] {
+  if (order.status === 'cancelled' || order.status === 'delivered') return [order.status];
+  if (order.payment_status === 'paid') {
+    return ['confirmed', 'preparing', 'in_transit', 'delivered', 'cancelled'];
+  }
+  if (order.status === 'confirmed') return ['confirmed', 'cancelled'];
+  return ['pending', 'cancelled'];
 }
 
 function normalizeSearch(value: string | null | undefined) {
@@ -255,7 +268,7 @@ export default function AdminPedidosPage() {
         acc[order.status] += 1;
         return acc;
       },
-      { total: 0, revenue: 0, paymentPending: 0, pending: 0, confirmed: 0, preparing: 0, delivered: 0, cancelled: 0 }
+      { total: 0, revenue: 0, paymentPending: 0, pending: 0, confirmed: 0, preparing: 0, in_transit: 0, delivered: 0, cancelled: 0 }
     );
   }, [orders]);
 
@@ -266,7 +279,7 @@ export default function AdminPedidosPage() {
         acc[order.status] += 1;
         return acc;
       },
-      { all: 0, pending: 0, confirmed: 0, preparing: 0, delivered: 0, cancelled: 0 }
+      { all: 0, pending: 0, confirmed: 0, preparing: 0, in_transit: 0, delivered: 0, cancelled: 0 }
     );
   }, [orders]);
 
@@ -328,7 +341,7 @@ export default function AdminPedidosPage() {
     <div className="space-y-6">
       <AdminPageHeader
         title="Pedidos"
-        description="Acompanhe, filtre e avance pedidos em operação com atendimento pelo WhatsApp."
+        description="Acompanhe pagamentos e atualize manualmente as etapas de separação e entrega."
         actions={(
           <button
             type="button"
@@ -598,7 +611,7 @@ export default function AdminPedidosPage() {
                     onChange={(event) => updateOrderStatus(selectedOrder, event.target.value as OrderStatus)}
                     className="h-12 w-full rounded-lg border border-stone-200 bg-white px-3 text-sm font-bold text-black outline-none transition focus:border-black disabled:opacity-50"
                   >
-                    {statusFlow.concat('cancelled').map((status) => (
+                    {availableStatusOptions(selectedOrder).map((status) => (
                       <option key={status} value={status}>
                         {statusLabels[status]}
                       </option>
