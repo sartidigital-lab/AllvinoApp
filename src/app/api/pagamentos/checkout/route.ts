@@ -120,6 +120,8 @@ export async function POST(request: Request) {
       providerHttpStatus: providerError?.httpStatus ?? null,
       providerRequestId: providerError?.requestId ?? null,
       providerErrors: providerError?.providerErrors ?? [],
+      providerResponseType: providerError?.providerResponseType ?? null,
+      providerResponseKeys: providerError?.providerResponseKeys ?? [],
       providerPaymentLinkId,
       errorName: error instanceof Error ? error.name : 'UnknownError',
     };

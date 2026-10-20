@@ -29,12 +29,16 @@ export class PagarmePaymentLinkError extends Error {
   readonly errorCode: string;
   readonly requestId: string | null;
   readonly providerErrors: PagarmeErrorDetail[];
+  readonly providerResponseType: string;
+  readonly providerResponseKeys: string[];
 
   constructor(options: {
     httpStatus: number;
     errorCode: string;
     requestId: string | null;
     providerErrors: PagarmeErrorDetail[];
+    providerResponseType: string;
+    providerResponseKeys: string[];
   }) {
     super('Não foi possível criar o checkout de pagamento.');
     this.name = 'PagarmePaymentLinkError';
@@ -42,6 +46,8 @@ export class PagarmePaymentLinkError extends Error {
     this.errorCode = options.errorCode;
     this.requestId = options.requestId;
     this.providerErrors = options.providerErrors;
+    this.providerResponseType = options.providerResponseType;
+    this.providerResponseKeys = options.providerResponseKeys;
   }
 }
 
@@ -128,19 +134,44 @@ function safeProviderText(value: unknown, maxLength = 240): string | null {
 }
 
 function readProviderErrors(value: unknown): PagarmeErrorDetail[] {
-  const entries = Array.isArray(value) ? value : value && typeof value === 'object' ? [value] : [];
+  const details: PagarmeErrorDetail[] = [];
+  const visited = new Set<object>();
+  const nestedErrorKeys = new Set(['error', 'errors', 'details', 'issues', 'violations', 'response', 'data', 'cause']);
 
-  return entries.slice(0, 5).flatMap((entry) => {
-    if (!entry || typeof entry !== 'object') return [];
+  function visit(entry: unknown, depth = 0, parentKey = 'response') {
+    if (depth > 5 || details.length >= 5) return;
+
+    if (typeof entry === 'string') {
+      const message = safeProviderText(entry);
+      if (message && ['error', 'errors', 'message', 'description', 'detail', 'reason', 'response'].includes(parentKey)) {
+        details.push({ code: null, type: null, parameter: null, message });
+      }
+      return;
+    }
+
+    if (Array.isArray(entry)) {
+      for (const item of entry.slice(0, 10)) visit(item, depth + 1, parentKey);
+      return;
+    }
+
+    if (!entry || typeof entry !== 'object' || visited.has(entry)) return;
+    visited.add(entry);
     const detail = entry as Record<string, unknown>;
-    const code = safeProviderText(detail.code ?? detail.error_code, 100);
+    const code = safeProviderText(detail.code ?? detail.error_code ?? detail.errorCode, 100);
     const type = safeProviderText(detail.type ?? detail.category, 100);
     const parameter = safeProviderText(detail.parameter ?? detail.param ?? detail.field, 100);
-    const message = safeProviderText(detail.message ?? detail.description);
+    const message = safeProviderText(detail.message ?? detail.description ?? detail.detail ?? detail.reason
+      ?? (typeof detail.error === 'string' ? detail.error : undefined));
 
-    if (!code && !type && !parameter && !message) return [];
-    return [{ code, type, parameter, message }];
-  });
+    if (code || type || parameter || message) details.push({ code, type, parameter, message });
+
+    for (const [key, nested] of Object.entries(detail)) {
+      if (nestedErrorKeys.has(key.toLowerCase())) visit(nested, depth + 1, key.toLowerCase());
+    }
+  }
+
+  visit(value);
+  return details.slice(0, 5);
 }
 
 export async function createPagarmePaymentLink(input: PagarmePaymentLinkInput) {
@@ -158,24 +189,41 @@ export async function createPagarmePaymentLink(input: PagarmePaymentLinkInput) {
     signal: AbortSignal.timeout(15_000),
   });
 
-  const payload = await response.json().catch(() => ({})) as PagarmePaymentLinkResponse;
+  const responseBody = await response.text().catch(() => '');
+  let decodedPayload: unknown = {};
+  try {
+    decodedPayload = responseBody ? JSON.parse(responseBody) : {};
+  } catch {
+    decodedPayload = responseBody;
+  }
+  const payload = decodedPayload && typeof decodedPayload === 'object' && !Array.isArray(decodedPayload)
+    ? decodedPayload as PagarmePaymentLinkResponse
+    : {};
   if (!response.ok || !payload.id || !payload.url) {
-    const providerErrors = readProviderErrors(payload.errors);
-    if (providerErrors.length === 0) {
-      const message = safeProviderText(payload.message);
-      if (message) providerErrors.push({ code: null, type: null, parameter: null, message });
-    }
+    const providerErrors = readProviderErrors(decodedPayload);
     const responseCode = providerErrors.find((error) => error.code)?.code;
     const errorCode = responseCode || `PAGARME_HTTP_${response.status}`;
     const requestId = response.headers.get('x-request-id')
       || response.headers.get('request-id')
-      || response.headers.get('x-pagarme-request-id');
+      || response.headers.get('x-pagarme-request-id')
+      || (typeof decodedPayload === 'object' && decodedPayload !== null && !Array.isArray(decodedPayload)
+        ? safeProviderText((decodedPayload as Record<string, unknown>).request_id
+          ?? (decodedPayload as Record<string, unknown>).requestId, 160)
+        : null);
+    const providerResponseType = Array.isArray(decodedPayload)
+      ? 'array'
+      : decodedPayload === null ? 'null' : typeof decodedPayload;
+    const providerResponseKeys = decodedPayload && typeof decodedPayload === 'object' && !Array.isArray(decodedPayload)
+      ? Object.keys(decodedPayload).slice(0, 20)
+      : [];
 
     throw new PagarmePaymentLinkError({
       httpStatus: response.status,
       errorCode,
       requestId: safeProviderText(requestId, 160),
       providerErrors,
+      providerResponseType,
+      providerResponseKeys,
     });
   }
 
