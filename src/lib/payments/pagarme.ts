@@ -137,36 +137,77 @@ function readProviderErrors(value: unknown): PagarmeErrorDetail[] {
   const details: PagarmeErrorDetail[] = [];
   const visited = new Set<object>();
   const nestedErrorKeys = new Set(['error', 'errors', 'details', 'issues', 'violations', 'response', 'data', 'cause']);
+  const codeKeys = ['code', 'error_code', 'errorCode'] as const;
+  const typeKeys = ['type', 'category'] as const;
+  const parameterKeys = ['parameter', 'param', 'field'] as const;
+  const messageKeys = ['message', 'description', 'detail', 'reason', 'title', 'error'] as const;
+  const knownErrorKeys = new Set([
+    ...codeKeys,
+    ...typeKeys,
+    ...parameterKeys,
+    ...messageKeys,
+    ...nestedErrorKeys,
+  ]);
 
-  function visit(entry: unknown, depth = 0, parentKey = 'response') {
+  function getFirstText(record: Record<string, unknown>, keys: readonly string[]) {
+    for (const key of keys) {
+      if (typeof record[key] === 'string' && record[key].trim()) return record[key] as string;
+    }
+
+    return undefined;
+  }
+
+  function appendParameter(parent: string | null, child: string) {
+    const safeChild = safeProviderText(child, 100);
+    if (!safeChild) return parent;
+    return parent ? `${parent}.${safeChild}`.slice(0, 100) : safeChild;
+  }
+
+  function visit(entry: unknown, depth = 0, parentKey = 'response', inheritedParameter: string | null = null) {
     if (depth > 5 || details.length >= 5) return;
 
     if (typeof entry === 'string') {
       const message = safeProviderText(entry);
-      if (message && ['error', 'errors', 'message', 'description', 'detail', 'reason', 'response'].includes(parentKey)) {
-        details.push({ code: null, type: null, parameter: null, message });
+      if (message && ['error', 'errors', 'message', 'description', 'detail', 'reason', 'title', 'response', 'validation'].includes(parentKey)) {
+        details.push({ code: null, type: null, parameter: inheritedParameter, message });
       }
       return;
     }
 
     if (Array.isArray(entry)) {
-      for (const item of entry.slice(0, 10)) visit(item, depth + 1, parentKey);
+      for (const item of entry.slice(0, 10)) visit(item, depth + 1, parentKey, inheritedParameter);
       return;
     }
 
     if (!entry || typeof entry !== 'object' || visited.has(entry)) return;
     visited.add(entry);
     const detail = entry as Record<string, unknown>;
-    const code = safeProviderText(detail.code ?? detail.error_code ?? detail.errorCode, 100);
-    const type = safeProviderText(detail.type ?? detail.category, 100);
-    const parameter = safeProviderText(detail.parameter ?? detail.param ?? detail.field, 100);
-    const message = safeProviderText(detail.message ?? detail.description ?? detail.detail ?? detail.reason
-      ?? (typeof detail.error === 'string' ? detail.error : undefined));
+    const entryKeys = Object.keys(detail);
+
+    // Problem Details APIs such as ASP.NET put field names directly under `errors`:
+    // { "errors": { "field.path": ["validation message"] } }.
+    // Only traverse arbitrary keys in that known validation-map context.
+    if (parentKey === 'errors' && entryKeys.length > 0 && !entryKeys.some((key) => knownErrorKeys.has(key))) {
+      for (const [field, errors] of Object.entries(detail).slice(0, 10)) {
+        visit(errors, depth + 1, 'validation', appendParameter(inheritedParameter, field));
+      }
+      return;
+    }
+
+    const code = safeProviderText(getFirstText(detail, codeKeys), 100);
+    const rawType = getFirstText(detail, typeKeys);
+    // RFC 9110 `type` is a documentation URI, not a provider error category.
+    const type = rawType && !/^https?:\/\//i.test(rawType) ? safeProviderText(rawType, 100) : null;
+    const ownParameter = safeProviderText(getFirstText(detail, parameterKeys), 100);
+    const parameter = ownParameter || inheritedParameter;
+    const message = safeProviderText(getFirstText(detail, messageKeys));
 
     if (code || type || parameter || message) details.push({ code, type, parameter, message });
 
     for (const [key, nested] of Object.entries(detail)) {
-      if (nestedErrorKeys.has(key.toLowerCase())) visit(nested, depth + 1, key.toLowerCase());
+      if (nestedErrorKeys.has(key.toLowerCase())) {
+        visit(nested, depth + 1, key.toLowerCase(), inheritedParameter);
+      }
     }
   }
 

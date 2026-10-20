@@ -85,6 +85,41 @@ describe('Pagar.me hosted checkout', () => {
     });
   });
 
+  it('parses and sanitizes RFC Problem Details validation maps', async () => {
+    vi.stubEnv('PAGARME_SECRET_KEY', 'sk_test_do_not_log');
+    vi.stubEnv('PAGARME_BASE_URL', 'https://sdx-api.pagar.me/core/v5');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      type: 'https://tools.ietf.org/html/rfc9110#section-15.5.1',
+      title: 'One or more validation errors occurred.',
+      status: 400,
+      errors: {
+        'payment_settings.credit_card_settings.installments': [
+          'Invalid value for customer cliente.teste@example.com, document 12345678901',
+        ],
+      },
+    }), { status: 400 })));
+
+    const error = await createPagarmePaymentLink({
+      orderId: '12345678-0000-4000-8000-000000000000',
+      amountCents: 33000,
+      paymentMethod: 'credit_card',
+      installments: 3,
+    }).catch((cause: unknown) => cause as {
+      providerErrors: Array<{ code: string | null; type: string | null; parameter: string | null; message: string | null }>;
+    });
+
+    expect(error.providerErrors).toEqual(expect.arrayContaining([
+      expect.objectContaining({ message: 'One or more validation errors occurred.' }),
+      expect.objectContaining({
+        parameter: 'payment_settings.credit_card_settings.installments',
+        message: 'Invalid value for customer [email], document [number]',
+      }),
+    ]));
+    expect(JSON.stringify(error.providerErrors)).not.toContain('https://tools.ietf.org');
+    expect(JSON.stringify(error.providerErrors)).not.toContain('cliente.teste@example.com');
+    expect(JSON.stringify(error.providerErrors)).not.toContain('12345678901');
+  });
+
   it('accepts only a valid webhook signature and maps final payment events', () => {
     const rawBody = '{"id":"hook_test","type":"order.paid"}';
     const key = 'sk_test_example';
