@@ -2,6 +2,7 @@
 
 import { useCart } from '@/context/CartContext';
 import Link from 'next/link';
+import { formatCatalogDiscountPercent } from '@/components/catalog/WinePrice';
 import { useEffect, useRef, useState } from 'react';
 import { Button, Checkbox, EmptyState, IconButton, ProductImage } from '@/components/ui';
 import { usePathname } from 'next/navigation';
@@ -134,7 +135,7 @@ export function CartOverlay() {
                       <span className="text-stone-400 line-through">R$ {item.original_price.toFixed(2).replace('.', ',')}</span>
                     )}
                     <span className="font-bold text-[#B91C1C]">R$ {item.price.toFixed(2).replace('.', ',')}</span>
-                    {item.discount_percent && <span className="rounded bg-red-50 px-1.5 py-0.5 font-black text-[#B91C1C]">-{item.discount_percent}%</span>}
+                    {item.discount_percent && <span className="rounded bg-red-50 px-1.5 py-0.5 font-black text-[#B91C1C]">-{formatCatalogDiscountPercent(item.discount_percent)}%</span>}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">

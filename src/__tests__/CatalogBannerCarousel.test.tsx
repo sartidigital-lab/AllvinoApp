@@ -59,4 +59,10 @@ describe('CatalogBannerCarousel', () => {
     expect(screen.getByRole('button', { name: bannerWithOverlays.cta_label })).toBeVisible();
     expect(screen.getByText(`-${bannerWithOverlays.discount_percent}%`)).toBeVisible();
   });
+
+  it('rounds a decimal discount for the customer-facing badge', () => {
+    render(<CatalogBannerCarousel banners={[{ ...mobileOnlyBanner, discount_percent: 15.6, show_discount_badge: true }]} onSelectPromotion={vi.fn()} />);
+
+    expect(screen.getByText('-16%')).toBeVisible();
+  });
 });

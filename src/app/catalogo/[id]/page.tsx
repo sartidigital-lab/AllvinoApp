@@ -11,7 +11,7 @@ import { useParams } from 'next/navigation';
 import { ArrowLeft, Ban, Grape, Heart, MapPin, ShoppingCart, TriangleAlert, Truck, Wine, type LucideIcon } from 'lucide-react';
 import { getStockStatus } from '@/lib/catalog/stockStatus';
 import { getGrapeClassification, parseGrapes } from '@/lib/catalog/grapes';
-import { getKitUnitPrice } from '@/components/catalog/WinePrice';
+import { formatCatalogDiscountPercent, getKitUnitPrice } from '@/components/catalog/WinePrice';
 import { fetchDeliveryQuote } from '@/lib/database/delivery';
 import { formatZipCode, normalizeZipCode, PICKUP_SCHEDULE_NOTICE } from '@/lib/delivery/rules';
 import { ProductReviews } from '@/components/catalog/ProductReviews';
@@ -140,7 +140,7 @@ export default function WineDetailPage() {
             <div className="border-t border-stone-100 pt-6">
               {wine.discount_percent && (
                 <span className="mb-2 inline-flex rounded-full bg-brand-primary px-3 py-1 text-xs font-black text-white">
-                  {wine.discount_percent}% OFF · {wine.promotion_title}
+                  {formatCatalogDiscountPercent(wine.discount_percent)}% OFF · {wine.promotion_title}
                 </span>
               )}
               {hasPromotionalPrice ? (

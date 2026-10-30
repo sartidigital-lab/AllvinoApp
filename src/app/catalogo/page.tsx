@@ -10,7 +10,7 @@ import { useRecentlyViewed } from '@/context/RecentlyViewedContext';
 import { WineCardSkeleton, EmptyState, PageTransition, ProductImage } from '@/components/ui';
 import { Heart, Search, Share2, ShoppingCart, SlidersHorizontal, Star, Wine as WineIcon, X } from 'lucide-react';
 import { CatalogBannerCarousel } from '@/components/catalog/CatalogBannerCarousel';
-import { formatMoney, getKitUnitPrice, WinePrice } from '@/components/catalog/WinePrice';
+import { formatCatalogDiscountPercent, formatMoney, getKitUnitPrice, WinePrice } from '@/components/catalog/WinePrice';
 import { FlashOfferCountdown } from '@/components/catalog/FlashOfferCountdown';
 import { getGrapeClassification } from '@/lib/catalog/grapes';
 import type { CatalogBanner, CatalogProductCategory, Wine } from '@/types/database';
@@ -62,7 +62,7 @@ function CatalogProductCard({ wine, onAddToCart, onToggleFavorite, onShare, isFa
                 </div>
                 {wine.discount_percent && (
                   <span className="shrink-0 rounded-md bg-[#d21f2b] px-2.5 py-1 text-[10px] font-black text-white shadow-lg shadow-red-950/20">
-                    -{wine.discount_percent}%
+                    -{formatCatalogDiscountPercent(wine.discount_percent)}%
                   </span>
                 )}
               </div>

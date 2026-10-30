@@ -41,6 +41,10 @@ describe('catalog storage sanitizers', () => {
     expect(hugeQuantity.quantity).toBe(50);
   });
 
+  it('preserves decimal campaign discounts stored in the customer browser', () => {
+    expect(sanitizeWine({ ...wine, discount_percent: 15.1 })?.discount_percent).toBe(15.1);
+  });
+
   it('keeps persisted cart storage minimal and deduplicated by product id', () => {
     expect(sanitizeStoredCartItems([
       { id: wine.id, quantity: 2, price: 999 },

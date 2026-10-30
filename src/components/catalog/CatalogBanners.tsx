@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { formatCatalogDiscountPercent } from '@/components/catalog/WinePrice';
 
 type PublicCatalogBanner = {
   id: string;
@@ -41,7 +42,7 @@ export default function CatalogBanners() {
           key={banner.id}
           href={`/catalogo?promocao=${encodeURIComponent(banner.promotion.slug)}#produtos-promocao`}
           className="relative aspect-[9/10] min-w-full snap-center overflow-hidden rounded-3xl bg-black shadow-sm md:aspect-[3/1]"
-          aria-label={`${banner.title}: ver produtos com ${banner.promotion.discount_percent}% de desconto`}
+          aria-label={`${banner.title}: ver produtos com ${formatCatalogDiscountPercent(banner.promotion.discount_percent)}% de desconto`}
         >
           <Image
             src={banner.mobile_image_url || banner.image_url}
@@ -62,7 +63,7 @@ export default function CatalogBanners() {
           <div className="absolute inset-0 flex flex-col items-start justify-end gap-2 p-6 text-white md:max-w-xl md:justify-center md:p-10">
             {banner.show_discount_badge && (
                 <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-brand-primary shadow-sm">
-                {banner.promotion.discount_percent}% OFF
+                {formatCatalogDiscountPercent(banner.promotion.discount_percent)}% OFF
               </span>
             )}
             {banner.show_text && (

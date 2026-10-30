@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import { formatCatalogDiscountPercent } from '@/components/catalog/WinePrice';
 import type { CatalogBanner, CatalogBannerTheme } from '@/types/database';
 
 const themes: Record<CatalogBannerTheme, string> = {
@@ -90,7 +91,7 @@ export function CatalogBannerCarousel({
         )}
         {activeBanner.show_discount_badge && (
           <div className="absolute right-5 top-5 z-10 rounded-full border border-white/20 bg-black/30 px-3 py-1.5 text-xs font-black text-white backdrop-blur-md">
-            -{activeBanner.discount_percent}%
+            -{formatCatalogDiscountPercent(activeBanner.discount_percent)}%
           </div>
         )}
       </div>

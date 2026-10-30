@@ -4,6 +4,11 @@ export function formatMoney(value: number) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+/** Customer-facing discounts are deliberately shown as whole percentages. */
+export function formatCatalogDiscountPercent(value: number) {
+  return Math.round(value);
+}
+
 export function getKitUnitPrice(totalPrice: number, itemCount?: number | null) {
   const total = Number(totalPrice);
   const quantity = Number(itemCount);

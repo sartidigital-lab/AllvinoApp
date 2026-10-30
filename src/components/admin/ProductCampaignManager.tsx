@@ -120,13 +120,13 @@ export function ProductCampaignManager() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const discount = Number(form.discount_percent);
+    const discount = Number(form.discount_percent.trim().replace(',', '.'));
     if (!form.title.trim() || !slugify(form.slug || form.title)) {
       setMessage('Informe nome e identificador da campanha.');
       return;
     }
-    if (!Number.isInteger(discount) || discount < 1 || discount > 90) {
-      setMessage('O desconto deve ser um percentual inteiro entre 1% e 90%.');
+    if (!Number.isFinite(discount) || discount < 1 || discount > 90 || Number(discount.toFixed(2)) !== discount) {
+      setMessage('O desconto deve estar entre 1% e 90%, com até duas casas decimais.');
       return;
     }
     if (form.product_ids.length === 0) {
@@ -147,7 +147,7 @@ export function ProductCampaignManager() {
       title: form.title,
       slug: slugify(form.slug || form.title),
       description: form.description || null,
-      discount_percent: discount,
+      discount_percent: Number(discount.toFixed(2)),
       starts_at: form.starts_at ? new Date(form.starts_at).toISOString() : null,
       ends_at: form.ends_at ? new Date(form.ends_at).toISOString() : null,
       is_active: form.is_active,
@@ -205,7 +205,8 @@ export function ProductCampaignManager() {
             </label>
             <label className="space-y-1">
               <span className="text-xs font-bold uppercase text-stone-500">Desconto</span>
-              <div className="relative"><input type="number" min="1" max="90" step="1" value={form.discount_percent} onChange={(event) => setForm({ ...form, discount_percent: event.target.value })} className="w-full rounded-lg border border-stone-200 bg-white p-3 pr-9 font-bold outline-none focus:border-black" /><span className="absolute right-3 top-3 font-black text-stone-400">%</span></div>
+              <div className="relative"><input type="text" inputMode="decimal" value={form.discount_percent} onChange={(event) => setForm({ ...form, discount_percent: event.target.value })} aria-describedby="campaign-discount-help" className="w-full rounded-lg border border-stone-200 bg-white p-3 pr-9 font-bold outline-none focus:border-black" /><span className="absolute right-3 top-3 font-black text-stone-400">%</span></div>
+              <span id="campaign-discount-help" className="block text-[10px] font-semibold text-stone-400">Use até duas casas decimais, com vírgula ou ponto.</span>
             </label>
             <label className="space-y-1"><span className="text-xs font-bold uppercase text-stone-500">Início</span><input type="datetime-local" value={form.starts_at} onChange={(event) => setForm({ ...form, starts_at: event.target.value })} className="w-full rounded-lg border border-stone-200 bg-white p-3 text-sm font-bold" /></label>
             <label className="space-y-1"><span className="text-xs font-bold uppercase text-stone-500">Fim</span><input type="datetime-local" value={form.ends_at} onChange={(event) => setForm({ ...form, ends_at: event.target.value })} className="w-full rounded-lg border border-stone-200 bg-white p-3 text-sm font-bold" /></label>

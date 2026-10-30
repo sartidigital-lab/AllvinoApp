@@ -45,7 +45,7 @@ export function sanitizeWine(value: unknown): Wine | null {
     description: asNullableString(input.description),
     price: asNonNegativeNumber(input.price),
     original_price: asNonNegativeNumber(input.original_price, asNonNegativeNumber(input.price)),
-    discount_percent: input.discount_percent == null ? null : asNonNegativeInteger(input.discount_percent),
+    discount_percent: input.discount_percent == null ? null : asNonNegativeNumber(input.discount_percent),
     promotion_ends_at: asNullableString(input.promotion_ends_at),
     show_countdown: input.show_countdown === true,
     promotion_id: asNullableString(input.promotion_id),
