@@ -66,7 +66,7 @@ export function SiteFooter() {
   };
 
   return (
-    <footer className="mx-auto mt-16 max-w-7xl border-t border-brand-border px-4 pb-32 pt-10 lg:px-8" aria-label="Rodapé da Allvino">
+    <footer className="mx-auto mt-16 max-w-7xl border-t border-brand-border px-4 pb-32 pt-10 lg:px-8 lg:pb-16" aria-label="Rodapé da Allvino">
       <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
         <div className="max-w-3xl space-y-7 text-sm leading-7 text-brand-ink-light">
           <section>

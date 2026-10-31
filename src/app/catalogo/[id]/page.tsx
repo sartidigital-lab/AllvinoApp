@@ -113,8 +113,8 @@ export default function WineDetailPage() {
   };
 
   return (
-    <main className="min-h-screen bg-brand-bg pb-24">
-      <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-stone-100">
+    <main className="min-h-screen bg-brand-bg pb-24 lg:pb-16">
+      <div className="sticky top-0 z-30 border-b border-stone-100 bg-white/90 backdrop-blur-md lg:top-20">
         <div className="flex items-center px-4 py-3">
           <a href="/catalogo" aria-label="Voltar ao catálogo" className="rounded-full p-2 hover:bg-stone-100 transition">
             <ArrowLeft className="h-5 w-5" aria-hidden="true" />
@@ -125,7 +125,7 @@ export default function WineDetailPage() {
 
       <div className="max-w-6xl mx-auto px-4 py-6">
         <div className="grid items-start lg:grid-cols-[minmax(0,1fr)_420px] gap-8">
-          <div className="surface-card flex items-center justify-center p-8 lg:sticky lg:top-24 lg:h-[calc(100dvh-12rem)] lg:min-h-[400px]">
+            <div className="surface-card flex items-center justify-center p-8 lg:sticky lg:top-40 lg:h-[calc(100dvh-14rem)] lg:min-h-[400px]">
             <ProductImage src={wine.image_url} alt={wine.name} width={600} height={800} priority sizes="(max-width: 1024px) 100vw, 60vw" className="w-full max-h-[500px] object-contain mix-blend-multiply lg:h-full lg:max-h-none" />
           </div>
 
@@ -223,7 +223,7 @@ export default function WineDetailPage() {
                 onClick={() => { addToCart(wine); showToast('Item adicionado. Ajuste a quantidade no carrinho quando quiser.', 'success'); }}
                 type="button"
                 disabled={wine.stock === 0}
-                className="flex min-h-12 w-full items-center justify-center gap-2 rounded-brand-xl bg-brand-primary px-5 text-base font-bold text-white shadow-lg shadow-red-900/15 transition hover:bg-brand-primary-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                className="flex min-h-12 w-full items-center justify-center gap-2 rounded-brand-xl bg-brand-primary px-5 text-base font-bold text-white shadow-lg shadow-red-900/15 transition hover:bg-brand-primary-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 lg:border lg:border-brand-primary lg:bg-white lg:text-brand-primary lg:shadow-none lg:hover:bg-brand-primary-light"
               >
                 <ShoppingCart className="h-5 w-5" aria-hidden="true" />
                 Adicionar ao carrinho

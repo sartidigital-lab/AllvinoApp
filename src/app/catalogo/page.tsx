@@ -45,10 +45,10 @@ function CatalogProductCard({ wine, onAddToCart, onToggleFavorite, onShare, isFa
     : 'p-2 sm:p-3';
 
   return (
-    <article className="w-[calc((100vw-3rem)/2)] min-w-[138px] shrink-0 overflow-hidden bg-transparent transition-transform hover:-translate-y-0.5 sm:w-[min(42vw,220px)] md:w-[280px] md:rounded-brand-2xl md:border md:border-[#3c2528] md:bg-white md:shadow-[0_2px_10px_rgba(54,16,24,0.08)]">
+    <article className="w-[calc((100vw-3rem)/2)] min-w-[138px] shrink-0 overflow-hidden bg-transparent transition-transform hover:-translate-y-0.5 sm:w-[min(42vw,220px)] md:w-[280px] md:rounded-brand-2xl md:border md:border-[#3c2528] md:bg-white md:shadow-[0_2px_10px_rgba(54,16,24,0.08)] lg:w-full lg:min-w-0">
       <Link href={`/catalogo/${wine.id}`} className="block active:scale-[0.99]">
         <div className="relative md:border-b md:border-stone-100 md:bg-[#fdfbf8]">
-          <ProductImage src={wine.image_url} alt={wine.name} width={300} height={400} sizes="(max-width: 639px) calc((100vw - 3rem) / 2), (max-width: 767px) 42vw, 280px" className={`h-40 w-full object-contain mix-blend-multiply sm:h-48 md:h-52 ${imagePadding}`} />
+          <ProductImage src={wine.image_url} alt={wine.name} width={300} height={400} sizes="(max-width: 639px) calc((100vw - 3rem) / 2), (max-width: 767px) 42vw, (min-width: 1024px) 25vw, 280px" className={`h-40 w-full object-contain mix-blend-multiply sm:h-48 md:h-52 ${imagePadding}`} />
           {hasProductBadges && (
             <div className="pointer-events-none absolute inset-x-2 top-2 z-10" aria-label="Informações do produto">
               <div className="flex min-h-6 items-start justify-between gap-1">
@@ -111,8 +111,8 @@ function CatalogProductRow({ wines, getIsFavorite, label, onAddToCart, onToggleF
   }, [wines.length]);
 
   return <div>
-    <div ref={rowRef} onScroll={(event) => setActivePage(Math.min(pageCount - 1, Math.max(0, Math.round(event.currentTarget.scrollLeft / Math.max(event.currentTarget.clientWidth, 1)))))} className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-3 scrollbar-hide lg:-mx-8 lg:gap-4 lg:px-8" aria-label={label}>
-      {wines.map((wine) => <div key={wine.id} className="snap-start"><CatalogProductCard wine={wine} isFavorite={getIsFavorite(wine.id)} onAddToCart={onAddToCart} onToggleFavorite={onToggleFavorite} onShare={onShare} /></div>)}
+    <div ref={rowRef} onScroll={(event) => setActivePage(Math.min(pageCount - 1, Math.max(0, Math.round(event.currentTarget.scrollLeft / Math.max(event.currentTarget.clientWidth, 1)))))} className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-3 scrollbar-hide lg:mx-0 lg:grid lg:grid-cols-4 lg:gap-5 lg:overflow-visible lg:px-0" aria-label={label}>
+      {wines.map((wine) => <div key={wine.id} className="snap-start lg:min-w-0"><CatalogProductCard wine={wine} isFavorite={getIsFavorite(wine.id)} onAddToCart={onAddToCart} onToggleFavorite={onToggleFavorite} onShare={onShare} /></div>)}
     </div>
     {pageCount > 1 && <div className="flex items-center justify-center gap-1.5 pb-1 pt-0.5 md:hidden" aria-label="Indicador de rolagem horizontal"><span className="mr-1 text-[10px] font-bold text-stone-400">Deslize</span>{Array.from({ length: pageCount }).map((_, index) => <span key={index} className={`h-1.5 rounded-full transition-all ${index === activePage ? 'w-5 bg-brand-primary' : 'w-1.5 bg-stone-300'}`} aria-hidden="true" />)}</div>}
   </div>;
@@ -264,9 +264,9 @@ export default function CatalogoPage() {
   };
 
   return (
-    <PageTransition><main className="min-h-screen bg-brand-bg pb-24">
+    <PageTransition><main className="min-h-screen bg-brand-bg pb-24 lg:pb-16">
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-stone-100">
+      <div className="sticky top-0 z-30 border-b border-stone-100 bg-white/90 backdrop-blur-md lg:top-20">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 lg:px-8">
           <h1 className="font-serif text-xl font-bold">Catálogo</h1>
           {isOffline && (
@@ -448,7 +448,7 @@ export default function CatalogoPage() {
           </nav>
         )}
         {isLoading ? (
-          <div className="flex gap-3 overflow-hidden md:gap-4">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="w-[calc((100vw-3rem)/2)] min-w-[138px] shrink-0 sm:w-[min(42vw,220px)] md:w-[280px]"><WineCardSkeleton /></div>)}</div>
+          <div className="flex gap-3 overflow-hidden md:gap-4 lg:grid lg:grid-cols-4 lg:gap-5">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="w-[calc((100vw-3rem)/2)] min-w-[138px] shrink-0 sm:w-[min(42vw,220px)] md:w-[280px] lg:w-full lg:min-w-0"><WineCardSkeleton /></div>)}</div>
         ) : filteredWines.length === 0 ? (
           <div className="py-16 text-center"><WineIcon className="mx-auto h-12 w-12 text-stone-200" aria-hidden="true" /><p className="mt-4 font-bold text-stone-400">Nenhum vinho encontrado.</p>{activeFilterCount > 0 && <button onClick={clearFilters} className="mt-2 text-sm font-bold text-brand-primary">Limpar filtros</button>}</div>
         ) : (
@@ -458,7 +458,7 @@ export default function CatalogoPage() {
                 ? Array.from({ length: Math.ceil(section.wines.length / 8) }, (_, index) => section.wines.slice(index * 8, (index + 1) * 8))
                 : [section.wines];
               return <section key={section.id} id={section.slug} className="scroll-mt-36" aria-label={section.title}>
-                <div className="mb-4 flex items-end justify-between gap-4"><div><p className="text-[10px] font-black uppercase tracking-[0.24em] text-brand-primary">Catálogo Allvino</p><h2 className="mt-1 font-serif text-2xl font-bold text-stone-950">{section.title}</h2></div><span className="hidden text-xs font-bold text-stone-400 md:inline">Deslize para ver mais</span></div>
+                <div className="mb-4 flex items-end justify-between gap-4"><div><p className="text-[10px] font-black uppercase tracking-[0.24em] text-brand-primary">Catálogo Allvino</p><h2 className="mt-1 font-serif text-2xl font-bold text-stone-950">{section.title}</h2></div><span className="hidden text-xs font-bold text-stone-400 md:inline lg:hidden">Deslize para ver mais</span></div>
                 <div className="space-y-5">
                   {rows.map((row, index) => <CatalogProductRow key={`${section.id}-${index}`} wines={row} label={`${section.title}, faixa ${index + 1}`} getIsFavorite={isFavorite} onAddToCart={(item) => { if (item.stock > 0) { addToCart(item); showToast(`${item.product_kind === 'kit' ? 'Kit' : 'Vinho'} adicionado ao carrinho!`, 'success'); } }} onToggleFavorite={(item) => { toggleFavorite(item); showToast(isFavorite(item.id) ? 'Removido dos favoritos' : 'Adicionado aos favoritos', 'info'); }} onShare={(item) => { if (navigator.share) { void navigator.share({ title: item.name, url: `${window.location.origin}/catalogo/${item.id}` }); } else { void navigator.clipboard?.writeText(`${window.location.origin}/catalogo/${item.id}`); showToast('Link do produto copiado.', 'success'); } }} />)}
                 </div>

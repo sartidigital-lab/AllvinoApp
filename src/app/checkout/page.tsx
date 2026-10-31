@@ -614,13 +614,14 @@ export default function CheckoutPage() {
   }
 
   return (
-    <main className="max-w-xl mx-auto px-5 pt-8 pb-32 space-y-8 animate-in fade-in duration-300">
+    <main className="mx-auto max-w-xl space-y-8 px-5 pb-32 pt-8 animate-in fade-in duration-300 lg:max-w-6xl lg:px-8 lg:pb-16">
       <div className="space-y-2">
         <h1 className="text-3xl font-bold font-serif text-black text-center">Finalizar Pedido</h1>
         <p className="text-stone-500 text-sm text-center">Confirme os seus dados para enviarmos o pedido.</p>
       </div>
 
-      <div className="bg-white rounded-3xl p-6 border border-stone-100 shadow-sm space-y-4">
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(340px,420px)] lg:items-start lg:gap-10">
+      <div className="bg-white rounded-3xl p-6 border border-stone-100 shadow-sm space-y-4 lg:sticky lg:top-24 lg:col-start-2 lg:row-start-1">
         <h2 className="text-xs font-bold text-stone-400 uppercase tracking-widest border-b pb-2">Seus Itens</h2>
         <div className="space-y-3">
           {cart.length === 0 ? (
@@ -673,6 +674,7 @@ export default function CheckoutPage() {
         </div>
       </div>
 
+      <div className="space-y-4 lg:col-start-1 lg:row-start-1">
       <div className="bg-white rounded-3xl p-6 border border-stone-100 shadow-sm space-y-5">
         <h2 className="text-xs font-bold text-stone-400 uppercase tracking-widest border-b pb-2">Seus Dados</h2>
         {user ? (
@@ -927,6 +929,8 @@ export default function CheckoutPage() {
               ? 'GERAR PIX E ENVIAR PEDIDO'
               : 'SOLICITAR LINK NO WHATSAPP'}
         </button>
+      </div>
+      </div>
       </div>
     </main>
   );

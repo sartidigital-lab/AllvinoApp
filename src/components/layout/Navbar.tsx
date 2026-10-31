@@ -15,7 +15,7 @@ export function Navbar() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 z-[70] flex w-full items-center justify-around rounded-t-2xl border-t border-stone-100 bg-white/95 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-10px_30px_rgba(0,0,0,0.04)] backdrop-blur-md">
+    <nav className="fixed bottom-0 left-0 z-[70] flex w-full items-center justify-around rounded-t-2xl border-t border-stone-100 bg-white/95 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-10px_30px_rgba(0,0,0,0.04)] backdrop-blur-md lg:hidden">
       {navItems.map((item) => {
         const Icon = item.icon;
 
