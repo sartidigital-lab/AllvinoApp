@@ -146,14 +146,14 @@
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmZ3RhZm5mdXFseXNkbnZzYmhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNDY1NzgsImV4cCI6MjA5MjcyMjU3OH0.mZDnR1A8VIJVUzedb7GU1db628dSqU-8SdvBFXXVaE4';
         const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        // PROTEÇÃO DO PAINEL ADMIN (Executa Imediatamente)
+        // Proteção de UX alinhada à autorização RLS no banco. A RPC só retorna
+        // true para uma conta ativa em admin_users com app_metadata.role = admin.
         async function verificarAcessoAdmin() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (!session) {
-                window.location.replace('admin-login.html'); // Expulsa não logados
-            }
+            const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+            if (sessionError || !session) return false;
+            const { data: isAdmin, error: adminError } = await supabaseClient.rpc('is_admin');
+            return !adminError && isAdmin === true;
         }
-        verificarAcessoAdmin();
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); document.getElementById('sidebar-overlay').classList.toggle('hidden'); } function showTab(t) { document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.getElementById('tab-' + t).classList.add('active'); if(window.innerWidth < 1024) toggleSidebar(); } function toggleModal(id) { const m = document.getElementById(id); if (m.classList.contains('hidden')) { m.classList.remove('hidden'); setTimeout(() => { m.classList.remove('opacity-0'); if(m.querySelector('.translate-x-full')) m.querySelector('.relative').classList.remove('translate-x-full'); if(m.querySelector('.scale-95')) m.querySelector('.relative').classList.remove('scale-95'); }, 10); } else { m.classList.add('opacity-0'); if(m.querySelector('.relative').classList.contains('translate-x-0')) m.querySelector('.relative').classList.add('translate-x-full'); if(m.querySelector('.relative').classList.contains('scale-100')) m.querySelector('.relative').classList.add('scale-95'); setTimeout(() => m.classList.add('hidden'), 300); } } 
         
@@ -263,8 +263,13 @@
         
         async function carregarEquipe() { const { data, error } = await supabaseClient.from('equipe').select('*').order('nome'); const tbody = document.getElementById('tabela-equipe'); tbody.innerHTML = ''; if (error) return; if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-stone-400 font-bold">Nenhum membro.</td></tr>`; return; } dbEquipe = data; data.forEach(u => { const statusBadge = u.status === 'ativo' ? '<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-200">Ativo</span>' : '<span class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold border border-red-200">Inativo</span>'; tbody.innerHTML += `<tr class="hover:bg-stone-50 border-b border-stone-100"><td class="px-6 py-4 font-bold text-sm">${u.nome}</td><td class="px-6 py-4 text-sm">${u.cargo}<br><span class="text-[10px] text-stone-400 font-mono">${u.email}</span></td><td class="px-6 py-4">${statusBadge}</td><td class="px-6 py-4 text-right"><div class="flex justify-end gap-2"><button type="button" onclick="abrirModalEquipe('${u.id}')" class="text-blue-600 bg-blue-50 p-2 rounded-lg hover:bg-blue-100 transition"><span class="material-symbols-outlined text-[18px]">edit</span></button><button type="button" onclick="deletarMembro('${u.id}')" class="text-red-600 bg-red-50 p-2 rounded-lg hover:bg-red-100 transition"><span class="material-symbols-outlined text-[18px]">delete</span></button></div></td></tr>`; }); } function abrirModalEquipe(id) { document.getElementById('form-equipe').reset(); const idInput = document.getElementById('equipe-id'); const tituloModal = document.getElementById('titulo-modal-equipe'); if (id) { const u = dbEquipe.find(x => x.id === id); tituloModal.innerText = "Editar Usuário"; idInput.value = u.id; document.getElementById('equipe-nome').value = u.nome; document.getElementById('equipe-email').value = u.email; document.getElementById('equipe-cargo').value = u.cargo || 'Consultor de Vendas'; document.getElementById('equipe-status').value = u.status || 'ativo'; } else { tituloModal.innerText = "Novo Usuário"; idInput.value = ""; document.getElementById('equipe-status').value = 'ativo'; } toggleModal('modal-equipe'); } async function salvarEquipe(e) { e.preventDefault(); const btn = e.submitter; const textoOriginal = btn.innerText; btn.innerText = "Salvando..."; btn.disabled = true; const id = document.getElementById('equipe-id').value; const nome = document.getElementById('equipe-nome').value; const email = document.getElementById('equipe-email').value; const cargo = document.getElementById('equipe-cargo').value; const status = document.getElementById('equipe-status').value; const dadosSalvar = { nome, email, cargo, status }; let erroDb; if (id) { const { error } = await supabaseClient.from('equipe').update(dadosSalvar).eq('id', id); erroDb = error; } else { const { error } = await supabaseClient.from('equipe').insert([dadosSalvar]); erroDb = error; } if (erroDb) alert("Erro: " + erroDb.message); else { toggleModal('modal-equipe'); carregarEquipe(); alert("Membro salvo!"); } btn.innerText = textoOriginal; btn.disabled = false; } async function deletarMembro(id) { if(confirm("Apagar membro da equipe?")) { await supabaseClient.from('equipe').delete().eq('id', id); carregarEquipe(); } } async function carregarPerfil() { const { data: { user } } = await supabaseClient.auth.getUser(); if (user) { document.getElementById('perfil-email').value = user.email; document.getElementById('perfil-nome').value = user.user_metadata?.nome_completo || 'Administrador Master'; } } async function salvarPerfil(e) { e.preventDefault(); const btn = e.submitter; const textoOriginal = btn.innerText; btn.innerText = "Atualizando..."; btn.disabled = true; const nome = document.getElementById('perfil-nome').value; const senha = document.getElementById('perfil-senha').value; const updates = { data: { nome_completo: nome } }; if (senha) updates.password = senha; const { error } = await supabaseClient.auth.updateUser(updates); if (error) alert("Erro: " + error.message); else { alert("Perfil atualizado!"); document.getElementById('perfil-senha').value = ''; } btn.innerText = textoOriginal; btn.disabled = false; }
 
-        document.addEventListener("DOMContentLoaded", () => { 
-            carregarCategorias(); carregarProdutos(); carregarPromocoes(); carregarBI(); carregarEquipe(); carregarPerfil(); 
+        document.addEventListener("DOMContentLoaded", async () => {
+            if (!await verificarAcessoAdmin()) {
+                await supabaseClient.auth.signOut();
+                window.location.replace('admin-login.html');
+                return;
+            }
+            carregarCategorias(); carregarProdutos(); carregarPromocoes(); carregarBI(); carregarEquipe(); carregarPerfil();
         });
     </script>
 </body>

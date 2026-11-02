@@ -132,7 +132,7 @@
                 alert("Erro ao criar conta: " + error.message);
                 btn.innerText = "Criar Conta"; btn.disabled = false;
             } else if (!data.session) {
-                alert("Aviso: Este e-mail já está registado. Por favor, vá a 'Fazer login'.");
+                alert("Cadastro iniciado. Verifique seu e-mail para confirmar a conta antes de entrar.");
                 btn.innerText = "Criar Conta"; btn.disabled = false;
             } else {
                 // Atraso para dar tempo ao telemóvel de gravar a sessão antes de sair da página

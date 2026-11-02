@@ -45,13 +45,21 @@
 
             const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
             
-            if (error) {
+            if (error || !data.session) {
                 alert("Acesso negado: Verifique suas credenciais master.");
                 btn.innerText = "Acessar Painel"; btn.disabled = false;
-            } else {
-                // Redireciona para o ADMIN com sucesso
-                window.location.replace('admin.html');
+                return;
             }
+
+            const { data: isAdmin, error: adminError } = await supabaseClient.rpc('is_admin');
+            if (adminError || !isAdmin) {
+                await supabaseClient.auth.signOut();
+                alert("Acesso negado: sua conta não possui permissão administrativa.");
+                btn.innerText = "Acessar Painel"; btn.disabled = false;
+                return;
+            }
+
+            window.location.replace('admin.html');
         }
     </script>
 </body>
