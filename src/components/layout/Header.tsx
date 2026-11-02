@@ -24,7 +24,7 @@ export function Header() {
         <AppShareButton />
       </div>
       
-      <Link href="/" aria-label="Allvino — ir para o início" className="h-12 flex items-center justify-center">
+      <Link href="/catalogo" aria-label="Allvino — ir para o catálogo" className="h-12 flex items-center justify-center">
         <Image src="/logo-allvino-header.png" alt="Allvino" width={144} height={48} priority className="h-auto w-36 object-contain" />
       </Link>
       
@@ -44,7 +44,7 @@ export function Header() {
 
       <header className="sticky top-0 z-40 hidden border-b border-stone-200 bg-white/95 backdrop-blur-md lg:block">
         <div className="mx-auto flex h-20 max-w-7xl items-center gap-8 px-8">
-          <Link href="/" className="shrink-0" aria-label="Allvino — ir para o início">
+          <Link href="/catalogo" className="shrink-0" aria-label="Allvino — ir para o catálogo">
             <Image src="/logo-allvino-header.png" alt="Allvino" width={144} height={48} priority className="h-auto w-36 object-contain" />
           </Link>
           <nav className="flex min-w-0 flex-1 items-center gap-1" aria-label="Navegação principal">
