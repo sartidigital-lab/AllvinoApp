@@ -1,0 +1,937 @@
+"use client";
+
+import { useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useCart } from '@/context/CartContext';
+import { CurrentUser, getCurrentUserFast } from '@/lib/auth/currentUser';
+import { createOrder, getUserOrders } from '@/lib/database/orders';
+import {
+  calculatePromotionDiscount,
+  fetchActivePromotionByCode,
+  getPromotionBottleCount,
+  getPromotionEligibleSubtotal,
+  normalizePromotionCode,
+} from '@/lib/database/promotions';
+import { fetchDeliveryQuote } from '@/lib/database/delivery';
+import { calculateShippingFee, formatZipCode, normalizeZipCode, PICKUP_SCHEDULE_NOTICE } from '@/lib/delivery/rules';
+import { lookupCepAddress } from '@/lib/address/cep';
+import { createPixPayload, createPixQrCode, getPixConfig } from '@/lib/payments/pix';
+import {
+  calculatePixDiscount,
+  getCardInstallmentOptions,
+  MAX_CARD_INSTALLMENTS,
+  normalizeCardInstallments,
+} from '@/lib/payments/terms';
+import { buildCheckoutWhatsAppMessage, buildWhatsAppUrl } from '@/lib/payments/whatsapp';
+import { DeliveryZone, Promotion } from '@/types/database';
+
+const SALES_WHATSAPP_NUMBER = '5527992770952';
+
+type AddressFields = {
+  logradouro: string;
+  numero: string;
+  bairro: string;
+  localidade: string;
+  uf: string;
+};
+
+const EMPTY_ADDRESS: AddressFields = {
+  logradouro: '',
+  numero: '',
+  bairro: '',
+  localidade: '',
+  uf: '',
+};
+
+function formatDeliveryAddress(address: AddressFields) {
+  const streetAndNumber = [address.logradouro, address.numero].filter(Boolean).join(', ');
+  const cityAndState = [address.localidade, address.uf].filter(Boolean).join('/');
+
+  return [streetAndNumber, address.bairro, cityAndState].filter(Boolean).join(' - ');
+}
+
+export default function CheckoutPage() {
+  const { cart, cartTotal, clearCart } = useCart();
+  const [user, setUser] = useState<CurrentUser | null>(null);
+  const [entrega, setEntrega] = useState('entrega');
+  const [address, setAddress] = useState<AddressFields>(EMPTY_ADDRESS);
+  const [cep, setCep] = useState('');
+  const [isLookingUpAddress, setIsLookingUpAddress] = useState(false);
+  const [addressLookupMessage, setAddressLookupMessage] = useState<string | null>(null);
+  const [deliveryZone, setDeliveryZone] = useState<DeliveryZone | null>(null);
+  const [deliveryMessage, setDeliveryMessage] = useState<string | null>(null);
+  const [unsupportedZip, setUnsupportedZip] = useState<string | null>(null);
+  const [isCheckingDelivery, setIsCheckingDelivery] = useState(false);
+  const [pagamento, setPagamento] = useState('Pix');
+  const [installments, setInstallments] = useState(1);
+  const [promotionCode, setPromotionCode] = useState('');
+  const [appliedPromotion, setAppliedPromotion] = useState<Promotion | null>(null);
+  const [promotionMessage, setPromotionMessage] = useState<string | null>(null);
+  const [isCheckingPromotion, setIsCheckingPromotion] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
+  const [copyMessage, setCopyMessage] = useState<string | null>(null);
+  const addressLookupControllerRef = useRef<AbortController | null>(null);
+  const addressLookupRequestRef = useRef(0);
+  const deliveryRequestRef = useRef(0);
+  const numberInputRef = useRef<HTMLInputElement>(null);
+  const numberFocusTimeoutRef = useRef<number | null>(null);
+  const [successOrderId, setSuccessOrderId] = useState<string | null>(null);
+  const [successSummary, setSuccessSummary] = useState<{
+    total: number;
+    subtotal: number;
+    discount: number;
+    promotionCode: string | null;
+    shippingFee: number;
+    zipCode: string | null;
+    zoneName: string | null;
+    estimateDays: number | null;
+    payment: string;
+    installments: number | null;
+    paymentProvider: string;
+    paymentStatus: string;
+    paymentUrl: string | null;
+    pixKey: string | null;
+    pixPayload: string | null;
+    pixQrCode: string | null;
+    whatsappUrl: string;
+    whatsappOpened: boolean;
+    delivery: string;
+    address: string | null;
+  } | null>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const currentUser = await getCurrentUserFast();
+      if (currentUser) setUser(currentUser);
+    };
+
+    fetchUser();
+  }, []);
+
+  useEffect(() => {
+    const couponCode = new URLSearchParams(window.location.search).get('cupom');
+    if (couponCode) setPromotionCode(normalizePromotionCode(couponCode));
+  }, []);
+
+  useEffect(() => () => {
+    addressLookupControllerRef.current?.abort();
+    if (numberFocusTimeoutRef.current !== null) {
+      window.clearTimeout(numberFocusTimeoutRef.current);
+    }
+  }, []);
+
+  const pickupDiscount = entrega === 'retirada' ? cartTotal * 0.05 : 0;
+  const promotionDiscount = appliedPromotion ? calculatePromotionDiscount(appliedPromotion, cart) : 0;
+  const nonPaymentDiscount = Math.min(cartTotal, pickupDiscount + promotionDiscount);
+  const pixDiscount = pagamento === 'Pix'
+    ? Math.min(calculatePixDiscount(cartTotal), cartTotal - nonPaymentDiscount)
+    : 0;
+  const discount = nonPaymentDiscount + pixDiscount;
+  const shippingFee = entrega === 'entrega' && deliveryZone ? calculateShippingFee(deliveryZone, cartTotal) : 0;
+  const finalTotal = cartTotal - discount + shippingFee;
+  const cardInstallmentOptions = getCardInstallmentOptions(finalTotal);
+  const selectedCardInstallments = normalizeCardInstallments(finalTotal, installments);
+  const cartItemsMessage = cart.map((item) => `${item.quantity}x ${item.name}`).join('\n');
+  const unsupportedZipWhatsAppUrl = unsupportedZip
+    ? `https://wa.me/${SALES_WHATSAPP_NUMBER}?text=${encodeURIComponent(
+        `Olá, Allvino! Quero consultar entrega para o CEP ${formatZipCode(unsupportedZip)}.\n\nItens no carrinho:\n${cartItemsMessage || 'Carrinho ainda sem itens'}\n\nSubtotal: R$ ${cartTotal.toFixed(2).replace('.', ',')}`
+      )}`
+    : null;
+
+  const handleApplyPromotion = async () => {
+    const normalizedCode = normalizePromotionCode(promotionCode);
+
+    if (!normalizedCode) {
+      setPromotionMessage('Informe um cupom.');
+      return;
+    }
+
+    setIsCheckingPromotion(true);
+    setPromotionMessage(null);
+
+    const { promotion, error } = await fetchActivePromotionByCode(normalizedCode);
+
+    if (error) {
+      setPromotionMessage('Não foi possível validar o cupom agora.');
+      setAppliedPromotion(null);
+      setIsCheckingPromotion(false);
+      return;
+    }
+
+    if (!promotion) {
+      setPromotionMessage('Cupom inválido ou expirado.');
+      setAppliedPromotion(null);
+      setIsCheckingPromotion(false);
+      return;
+    }
+
+    if (promotion.requires_first_purchase) {
+      if (!user) {
+        setPromotionMessage('Entre na sua conta para validar este cupom de primeira compra.');
+        setAppliedPromotion(null);
+        setIsCheckingPromotion(false);
+        return;
+      }
+
+      const { orders, error: ordersError } = await getUserOrders(user.id, 1);
+      if (ordersError) {
+        setPromotionMessage('Não foi possível validar o histórico de compras agora.');
+        setAppliedPromotion(null);
+        setIsCheckingPromotion(false);
+        return;
+      }
+
+      if (orders.length > 0) {
+        setPromotionMessage('Este cupom é válido somente para a primeira compra.');
+        setAppliedPromotion(null);
+        setIsCheckingPromotion(false);
+        return;
+      }
+    }
+
+    if (promotion.min_item_quantity && getPromotionBottleCount(cart) < promotion.min_item_quantity) {
+      setPromotionMessage(`Cupom válido a partir de ${promotion.min_item_quantity} garrafa(s) no carrinho.`);
+      setAppliedPromotion(null);
+      setIsCheckingPromotion(false);
+      return;
+    }
+
+    if (promotion.scope === 'selected_products' && getPromotionEligibleSubtotal(promotion, cart) <= 0) {
+      setPromotionMessage('Este cupom é válido somente para os produtos selecionados pela campanha.');
+      setAppliedPromotion(null);
+      setIsCheckingPromotion(false);
+      return;
+    }
+
+    const nextDiscount = calculatePromotionDiscount(promotion, cart);
+    if (nextDiscount <= 0) {
+      setPromotionMessage(`Cupom válido para pedidos a partir de R$ ${promotion.min_subtotal.toFixed(2).replace('.', ',')}.`);
+      setAppliedPromotion(null);
+      setIsCheckingPromotion(false);
+      return;
+    }
+
+    setPromotionCode(promotion.code);
+    setAppliedPromotion(promotion);
+    setPromotionMessage(`${promotion.title} aplicado.`);
+    setIsCheckingPromotion(false);
+  };
+
+  const clearPromotion = () => {
+    setAppliedPromotion(null);
+    setPromotionCode('');
+    setPromotionMessage(null);
+  };
+
+  const copyPixValue = async (value: string, successMessage: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopyMessage(successMessage);
+    } catch {
+      setCopyMessage('Não foi possível copiar automaticamente. Selecione o valor e copie manualmente.');
+    }
+  };
+
+  const handleCalculateDelivery = async (zipCodeOverride?: string) => {
+    const normalizedZip = normalizeZipCode(zipCodeOverride ?? cep);
+    const requestId = deliveryRequestRef.current + 1;
+    deliveryRequestRef.current = requestId;
+
+    if (normalizedZip.length !== 8) {
+      setDeliveryMessage('Informe um CEP com 8 dígitos.');
+      setDeliveryZone(null);
+      setUnsupportedZip(null);
+      return;
+    }
+
+    setIsCheckingDelivery(true);
+    setDeliveryMessage(null);
+
+    const { zone, shippingFee: nextShippingFee, error } = await fetchDeliveryQuote(normalizedZip, cartTotal);
+    if (deliveryRequestRef.current !== requestId) return;
+
+    if (error) {
+      setDeliveryMessage('Não foi possível calcular o frete agora.');
+      setDeliveryZone(null);
+      setUnsupportedZip(null);
+      setIsCheckingDelivery(false);
+      return;
+    }
+
+    if (!zone) {
+      setDeliveryMessage('Ainda não entregamos neste CEP.');
+      setDeliveryZone(null);
+      setUnsupportedZip(normalizedZip);
+      setIsCheckingDelivery(false);
+      return;
+    }
+
+    setCep(formatZipCode(normalizedZip));
+    setDeliveryZone(zone);
+    setUnsupportedZip(null);
+    setDeliveryMessage(
+      `${zone.name}: ${nextShippingFee === 0 ? 'frete grátis' : `frete R$ ${nextShippingFee.toFixed(2).replace('.', ',')}`} em até ${zone.estimate_days} dia(s).`
+    );
+    setIsCheckingDelivery(false);
+  };
+
+  const handleAddressFieldChange = (field: keyof AddressFields, value: string) => {
+    setAddress((currentAddress) => ({
+      ...currentAddress,
+      [field]: field === 'uf' ? value.toUpperCase().slice(0, 2) : value,
+    }));
+  };
+
+  const lookupAddressByZipCode = async (zipCode: string) => {
+    addressLookupControllerRef.current?.abort();
+    const controller = new AbortController();
+    const requestId = addressLookupRequestRef.current + 1;
+
+    addressLookupControllerRef.current = controller;
+    addressLookupRequestRef.current = requestId;
+    setIsLookingUpAddress(true);
+    setAddressLookupMessage(null);
+
+    try {
+      const data = await lookupCepAddress(zipCode, controller.signal);
+      if (addressLookupRequestRef.current !== requestId) return;
+
+      setAddress((currentAddress) => ({
+        ...currentAddress,
+        logradouro: data.logradouro,
+        bairro: data.bairro,
+        localidade: data.localidade,
+        uf: data.uf,
+      }));
+      setAddressLookupMessage('Endereço preenchido automaticamente.');
+
+      if (numberFocusTimeoutRef.current !== null) {
+        window.clearTimeout(numberFocusTimeoutRef.current);
+      }
+      numberFocusTimeoutRef.current = window.setTimeout(() => {
+        numberInputRef.current?.focus();
+        numberFocusTimeoutRef.current = null;
+      }, 0);
+    } catch {
+      if (controller.signal.aborted || addressLookupRequestRef.current !== requestId) return;
+
+      setAddress(EMPTY_ADDRESS);
+      setAddressLookupMessage('CEP não encontrado. Preencha o endereço manualmente.');
+    } finally {
+      if (addressLookupRequestRef.current === requestId) {
+        setIsLookingUpAddress(false);
+      }
+    }
+  };
+
+  const handleZipCodeChange = (value: string) => {
+    const normalizedZip = normalizeZipCode(value);
+    const currentZip = normalizeZipCode(cep);
+
+    deliveryRequestRef.current += 1;
+    setIsCheckingDelivery(false);
+    setCep(formatZipCode(normalizedZip));
+    setDeliveryZone(null);
+    setUnsupportedZip(null);
+    setDeliveryMessage(null);
+    addressLookupControllerRef.current?.abort();
+    setIsLookingUpAddress(false);
+
+    if (normalizedZip.length < 8) {
+      setAddressLookupMessage(null);
+      return;
+    }
+
+    if (normalizedZip === currentZip) return;
+
+    void lookupAddressByZipCode(normalizedZip);
+    if (cart.length > 0) void handleCalculateDelivery(normalizedZip);
+  };
+
+  const handleFinalizar = async () => {
+    setCheckoutMessage(null);
+    const deliveryAddress = formatDeliveryAddress(address);
+
+    if (cart.length === 0) {
+      setCheckoutMessage('Carrinho vazio. Adicione pelo menos um vinho antes de finalizar.');
+      return;
+    }
+
+    if (entrega === 'entrega' && !deliveryAddress) {
+      setCheckoutMessage('Informe o seu endereço para entrega.');
+      return;
+    }
+
+    if (entrega === 'entrega' && !deliveryZone) {
+      setCheckoutMessage('Calcule o frete para o CEP de entrega.');
+      return;
+    }
+
+    if (!user) {
+      window.location.assign('/?login=true&mode=signup&redirectTo=/checkout');
+      return;
+    }
+
+    if (pagamento === 'Pix' && !getPixConfig().key) {
+      setCheckoutMessage('O pagamento via PIX ainda não está configurado. Escolha cartão ou fale com a loja.');
+      return;
+    }
+
+    const isCardPayment = pagamento === 'Cartao (Link)';
+    const whatsappWindow = window.open('about:blank', '_blank');
+    if (whatsappWindow) whatsappWindow.opener = null;
+
+    setIsLoading(true);
+
+    const { order, error } = await createOrder(
+      user.id,
+      cart,
+      finalTotal,
+      entrega === 'retirada' ? 'Retirada na Loja' : 'Entrega no Endereço',
+      pagamento,
+      entrega === 'entrega' ? deliveryAddress : undefined,
+      appliedPromotion?.code,
+      entrega === 'entrega' ? normalizeZipCode(cep) : undefined
+    );
+
+    if (error || !order) {
+      whatsappWindow?.close();
+      setCheckoutMessage(error?.message || 'Erro ao criar pedido. Tente novamente.');
+      setIsLoading(false);
+      return;
+    }
+
+    const subtotal = order.subtotal_amount ?? cartTotal;
+    const orderDiscount = order.discount_amount || 0;
+    const orderShippingFee = order.shipping_fee || 0;
+    const orderInstallments = isCardPayment
+      ? normalizeCardInstallments(order.total_amount, installments)
+      : 1;
+    const msg = buildCheckoutWhatsAppMessage({
+      orderId: order.id,
+      customerName: user.name,
+      customerPhone: user.phone,
+      items: order.order_items.map((item) => ({
+        name: item.product_name || 'Produto',
+        quantity: item.quantity,
+        unitPrice: item.unit_price,
+      })),
+      paymentMethod: isCardPayment ? 'Cartao (Link)' : 'Pix',
+      installments: orderInstallments,
+      deliveryType: entrega === 'retirada' ? 'Retirada na loja (-5% OFF)' : 'Entrega no endereço',
+      deliveryAddress: entrega === 'entrega' ? (order.delivery_address || deliveryAddress) : null,
+      deliveryZipCode: order.delivery_zip_code ? formatZipCode(order.delivery_zip_code) : null,
+      deliveryZoneName: order.delivery_zone_name,
+      deliveryEstimateDays: order.delivery_estimate_days,
+      shippingFee: orderShippingFee,
+      subtotal,
+      discount: orderDiscount,
+      total: order.total_amount,
+      promotionCode: order.promotion_code,
+    });
+
+    const link = buildWhatsAppUrl(SALES_WHATSAPP_NUMBER, msg);
+    if (whatsappWindow) {
+      whatsappWindow.location.href = link;
+    }
+
+    const pixPayload = pagamento === 'Pix' ? createPixPayload(order.total_amount) : null;
+    const pixQrCode = pixPayload
+      ? await createPixQrCode(pixPayload).catch(() => null)
+      : null;
+    clearCart();
+    setSuccessOrderId(order.id);
+    setSuccessSummary({
+      total: order.total_amount,
+      subtotal,
+      discount: orderDiscount,
+      promotionCode: order.promotion_code,
+      shippingFee: orderShippingFee,
+      zipCode: order.delivery_zip_code,
+      zoneName: order.delivery_zone_name,
+      estimateDays: order.delivery_estimate_days,
+      payment: order.payment_method || pagamento,
+      installments: isCardPayment ? orderInstallments : null,
+      paymentProvider: order.payment_provider,
+      paymentStatus: order.payment_status,
+      paymentUrl: order.payment_url,
+      pixKey: pagamento === 'Pix' ? getPixConfig().key : null,
+      pixPayload,
+      pixQrCode,
+      whatsappUrl: link,
+      whatsappOpened: whatsappWindow !== null,
+      delivery: order.delivery_type,
+      address: order.delivery_address,
+    });
+    setIsLoading(false);
+  };
+
+  if (successOrderId && successSummary) {
+    return (
+      <main className="max-w-xl mx-auto px-5 pt-10 pb-32">
+        <div className="rounded-3xl border border-emerald-100 bg-white p-8 text-center shadow-sm space-y-5">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+            <span className="material-symbols-outlined text-4xl">check</span>
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold font-serif text-black">Pedido realizado</h1>
+            <p className="mt-2 text-sm font-bold text-stone-500">
+              {successSummary.payment === 'Pix'
+                ? successSummary.whatsappOpened
+                  ? 'Abrimos o pedido no WhatsApp da Allvino. Envie a mensagem e faça o pagamento pelo QR Code, código copia e cola ou chave PIX.'
+                  : 'O navegador bloqueou o WhatsApp. Use o botão abaixo para enviar os detalhes do pedido e depois faça o pagamento via PIX.'
+                : successSummary.whatsappOpened
+                  ? 'Abrimos o pedido no WhatsApp da Allvino. A loja enviará o link de pagamento do cartão por lá.'
+                  : 'O navegador bloqueou a abertura do WhatsApp. Use o botão abaixo para enviar o pedido e receber o link do cartão.'}
+            </p>
+          </div>
+          <p className="rounded-2xl bg-stone-50 px-4 py-3 text-xs font-bold uppercase tracking-widest text-stone-500">
+            Pedido #{successOrderId.slice(0, 8)}
+          </p>
+          <div className="space-y-2 rounded-2xl bg-stone-50 p-4 text-left text-sm">
+            <div className="flex justify-between gap-4">
+              <span className="font-bold text-stone-500">Pagamento</span>
+              <span className="font-bold text-black">{successSummary.payment}</span>
+            </div>
+            {successSummary.installments && (
+              <div className="flex justify-between gap-4">
+                <span className="font-bold text-stone-500">Parcelamento solicitado</span>
+                <span className="font-bold text-black">{successSummary.installments}x</span>
+              </div>
+            )}
+            <div className="flex justify-between gap-4">
+              <span className="font-bold text-stone-500">Status pagamento</span>
+              <span className="text-right font-bold text-black">
+                {successSummary.paymentProvider} / {successSummary.paymentStatus}
+              </span>
+            </div>
+            <div className="flex justify-between gap-4">
+              <span className="font-bold text-stone-500">Entrega</span>
+              <span className="font-bold text-black">{successSummary.delivery}</span>
+            </div>
+            {successSummary.address && (
+              <div className="flex justify-between gap-4">
+                <span className="font-bold text-stone-500">Endereço</span>
+                <span className="text-right font-bold text-black">{successSummary.address}</span>
+              </div>
+            )}
+            {successSummary.zipCode && (
+              <div className="flex justify-between gap-4">
+                <span className="font-bold text-stone-500">CEP</span>
+                <span className="font-bold text-black">{formatZipCode(successSummary.zipCode)}</span>
+              </div>
+            )}
+            {successSummary.zoneName && (
+              <div className="flex justify-between gap-4">
+                <span className="font-bold text-stone-500">Prazo</span>
+                <span className="text-right font-bold text-black">
+                  {successSummary.zoneName}
+                  {successSummary.estimateDays ? `, até ${successSummary.estimateDays} dia(s)` : ''}
+                </span>
+              </div>
+            )}
+            {successSummary.delivery === 'Entrega no Endereco' && (
+              <div className="flex justify-between gap-4">
+                <span className="font-bold text-stone-500">Frete</span>
+                <span className="font-bold text-black">
+                  {successSummary.shippingFee > 0
+                    ? `R$ ${successSummary.shippingFee.toFixed(2).replace('.', ',')}`
+                    : 'Grátis'}
+                </span>
+              </div>
+            )}
+            {successSummary.discount > 0 && (
+              <div className="flex justify-between gap-4 text-emerald-700">
+                <span className="font-bold">
+                  Desconto{successSummary.promotionCode ? ` (${successSummary.promotionCode})` : ''}
+                </span>
+                <span className="font-bold">- R$ {successSummary.discount.toFixed(2).replace('.', ',')}</span>
+              </div>
+            )}
+            {successSummary.paymentUrl && (
+              <a
+                href={successSummary.paymentUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="block rounded-xl border border-stone-200 px-3 py-2 text-center text-xs font-bold text-stone-700"
+              >
+                Abrir link de pagamento
+              </a>
+            )}
+            {successSummary.payment === 'Pix' && successSummary.pixPayload && (
+              <div className="space-y-3 rounded-xl border border-emerald-100 bg-emerald-50 p-4">
+                <p className="text-xs font-bold uppercase tracking-widest text-emerald-800">Pagamento via PIX</p>
+                {successSummary.pixQrCode && (
+                  <Image src={successSummary.pixQrCode} alt="QR Code para pagamento via PIX" width={224} height={224} unoptimized className="mx-auto h-56 w-56 rounded-lg bg-white p-2" />
+                )}
+                <p className="break-all rounded-lg bg-white p-3 text-[11px] font-bold text-stone-600">{successSummary.pixPayload}</p>
+                <p className="text-center text-xs font-bold text-emerald-800">Chave PIX: {successSummary.pixKey}</p>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => copyPixValue(successSummary.pixPayload!, 'Código PIX copia e cola copiado.')}
+                    className="rounded-xl bg-emerald-700 px-3 py-3 text-xs font-bold text-white"
+                  >
+                    Copiar código PIX
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => copyPixValue(successSummary.pixKey!, 'Chave PIX copiada.')}
+                    className="rounded-xl border border-emerald-200 bg-white px-3 py-3 text-xs font-bold text-emerald-800"
+                  >
+                    Copiar chave PIX
+                  </button>
+                </div>
+                {copyMessage && <p role="status" className="text-center text-xs font-bold text-emerald-800">{copyMessage}</p>}
+              </div>
+            )}
+            <div className="flex justify-between gap-4 border-t border-stone-200 pt-2 text-base">
+              <span className="font-bold text-black">Total</span>
+              <span className="font-bold text-black">R$ {successSummary.total.toFixed(2).replace('.', ',')}</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-3">
+            <a
+              href={successSummary.whatsappUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-2xl bg-emerald-600 py-4 text-sm font-bold text-white"
+            >
+              Abrir pedido no WhatsApp
+            </a>
+            <Link href="/conta" className="rounded-brand-2xl bg-brand-primary py-4 text-sm font-bold text-white">
+              Ver meus pedidos
+            </Link>
+            <Link href="/catalogo" className="rounded-2xl border border-stone-200 py-4 text-sm font-bold text-stone-600">
+              Continuar comprando
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="mx-auto max-w-xl space-y-8 px-5 pb-32 pt-8 animate-in fade-in duration-300 lg:max-w-6xl lg:px-8 lg:pb-16">
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold font-serif text-black text-center">Finalizar Pedido</h1>
+        <p className="text-stone-500 text-sm text-center">Confirme os seus dados para enviarmos o pedido.</p>
+      </div>
+
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(340px,420px)] lg:items-start lg:gap-10">
+      <div className="bg-white rounded-3xl p-6 border border-stone-100 shadow-sm space-y-4 lg:sticky lg:top-24 lg:col-start-2 lg:row-start-1">
+        <h2 className="text-xs font-bold text-stone-400 uppercase tracking-widest border-b pb-2">Seus Itens</h2>
+        <div className="space-y-3">
+          {cart.length === 0 ? (
+            <p className="text-stone-500 text-sm">O seu carrinho está vazio.</p>
+          ) : (
+            cart.map((item) => (
+              <div key={item.id} className="flex justify-between items-center text-sm">
+                <div className="flex gap-2 items-center">
+                  <span className="font-bold text-stone-400">{item.quantity}x</span>
+                  <span className="font-bold text-black">{item.name}</span>
+                </div>
+                <div className="text-right">
+                  {item.discount_percent && item.original_price > item.price && (
+                    <p className="text-[10px] text-stone-400 line-through">R$ {(item.original_price * item.quantity).toFixed(2).replace('.', ',')}</p>
+                  )}
+                  <span className="font-bold">R$ {(item.price * item.quantity).toFixed(2).replace('.', ',')}</span>
+                  {item.discount_percent && <p className="text-[10px] font-black text-[#B91C1C]">-{item.discount_percent}% aplicado</p>}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+        <div className="border-t pt-4 space-y-2">
+          <div className="flex justify-between text-sm text-stone-500">
+            <span>Subtotal</span>
+            <span>R$ {cartTotal.toFixed(2).replace('.', ',')}</span>
+          </div>
+          {nonPaymentDiscount > 0 && (
+            <div className="flex justify-between text-sm text-green-600">
+              <span>Outros descontos</span>
+              <span>- R$ {nonPaymentDiscount.toFixed(2).replace('.', ',')}</span>
+            </div>
+          )}
+          {pixDiscount > 0 && (
+            <div className="flex justify-between text-sm font-bold text-green-600">
+              <span>Desconto PIX (5%)</span>
+              <span>- R$ {pixDiscount.toFixed(2).replace('.', ',')}</span>
+            </div>
+          )}
+          {shippingFee > 0 && (
+            <div className="flex justify-between text-sm text-stone-500">
+              <span>Frete</span>
+              <span>R$ {shippingFee.toFixed(2).replace('.', ',')}</span>
+            </div>
+          )}
+          <div className="flex justify-between text-xl font-bold pt-2">
+            <span>Total</span>
+            <span>R$ {finalTotal.toFixed(2).replace('.', ',')}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-4 lg:col-start-1 lg:row-start-1">
+      <div className="bg-white rounded-3xl p-6 border border-stone-100 shadow-sm space-y-5">
+        <h2 className="text-xs font-bold text-stone-400 uppercase tracking-widest border-b pb-2">Seus Dados</h2>
+        {user ? (
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest ml-1">Nome</label>
+              <input type="text" readOnly value={user.name} className="w-full border-stone-200 bg-stone-50 rounded-xl text-sm font-bold text-stone-500 mt-1 focus:ring-0" />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest ml-1">WhatsApp</label>
+              <input type="text" readOnly value={user.phone || 'Não informado'} className="w-full border-stone-200 bg-stone-50 rounded-xl text-sm font-bold text-stone-500 mt-1 focus:ring-0" />
+            </div>
+          </div>
+        ) : (
+          <p className="rounded-2xl bg-stone-50 p-4 text-sm font-bold text-stone-500">
+            Você pode montar o pedido sem cadastro. Ao enviar para pagamento, pediremos seu nome, WhatsApp, e-mail e senha para criar a conta.
+          </p>
+        )}
+      </div>
+
+      <div className="space-y-4">
+        <div className="bg-white rounded-3xl p-6 border border-stone-100 shadow-sm space-y-4">
+          <h2 className="text-xs font-bold text-stone-400 uppercase tracking-widest border-b pb-2">Cupom</h2>
+          <div className="flex gap-2">
+            <input
+              value={promotionCode}
+              onChange={(event) => {
+                setPromotionCode(event.target.value.toUpperCase());
+                if (appliedPromotion) setAppliedPromotion(null);
+              }}
+              placeholder="Digite seu cupom"
+              className="min-w-0 flex-1 border-stone-200 rounded-2xl p-4 text-sm font-bold uppercase outline-none focus:border-black transition-colors"
+            />
+            {appliedPromotion ? (
+              <button
+                type="button"
+                onClick={clearPromotion}
+                className="rounded-2xl border border-stone-200 px-4 text-sm font-bold text-stone-600"
+              >
+                Remover
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleApplyPromotion}
+                disabled={isCheckingPromotion || cart.length === 0}
+                className="rounded-2xl bg-black px-4 text-sm font-bold text-white disabled:opacity-50"
+              >
+                {isCheckingPromotion ? 'Validando...' : 'Aplicar'}
+              </button>
+            )}
+          </div>
+          {promotionMessage && (
+            <p className={`text-xs font-bold ${appliedPromotion ? 'text-emerald-700' : 'text-stone-500'}`}>
+              {promotionMessage}
+            </p>
+          )}
+          {appliedPromotion && (
+            <div className="rounded-2xl bg-emerald-50 p-3 text-xs font-bold text-emerald-800">
+              Desconto do cupom: - R$ {promotionDiscount.toFixed(2).replace('.', ',')}
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white rounded-3xl p-6 border border-stone-100 shadow-sm space-y-5">
+          <h2 className="text-xs font-bold text-stone-400 uppercase tracking-widest border-b pb-2">Entrega</h2>
+          <div className="space-y-3">
+            <label className="flex items-center gap-3 p-4 border rounded-2xl border-stone-200 cursor-pointer has-[:checked]:border-black has-[:checked]:bg-stone-50 transition">
+              <input type="radio" name="entrega" value="entrega" checked={entrega === 'entrega'} onChange={() => setEntrega('entrega')} className="text-black focus:ring-0" />
+              <div className="flex-1 text-sm font-bold">Entrega no Endereço</div>
+            </label>
+            <label className="flex items-center gap-3 p-4 border rounded-2xl border-stone-200 cursor-pointer has-[:checked]:border-black has-[:checked]:bg-stone-50 transition">
+              <input type="radio" name="entrega" value="retirada" checked={entrega === 'retirada'} onChange={() => setEntrega('retirada')} className="text-black focus:ring-0" />
+              <div className="flex-1"><p className="text-sm font-bold">Retirada na Loja <span className="ml-2 text-[10px] text-green-600">5% OFF</span></p><p className="mt-1 text-xs font-medium leading-5 text-stone-500">{PICKUP_SCHEDULE_NOTICE}</p></div>
+            </label>
+          </div>
+          {entrega === 'entrega' && (
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <input
+                  value={cep}
+                  onChange={(event) => handleZipCodeChange(event.target.value)}
+                  placeholder="CEP"
+                  inputMode="numeric"
+                  autoComplete="postal-code"
+                  maxLength={9}
+                  aria-describedby="cep-status"
+                  className="min-w-0 flex-1 border-stone-200 rounded-2xl p-4 text-sm font-bold outline-none focus:border-black transition-colors"
+                />
+                <button
+                  type="button"
+                  onClick={() => void handleCalculateDelivery()}
+                  disabled={isCheckingDelivery || cart.length === 0}
+                  className="rounded-2xl bg-black px-4 text-sm font-bold text-white disabled:opacity-50"
+                >
+                  {isCheckingDelivery ? 'Calculando...' : 'Calcular'}
+                </button>
+              </div>
+              <div id="cep-status" aria-live="polite">
+                {isLookingUpAddress && (
+                  <p className="flex items-center gap-2 text-xs font-bold text-stone-500">
+                    <span className="material-symbols-outlined animate-spin text-base" aria-hidden="true">progress_activity</span>
+                    Buscando endereço pelo CEP...
+                  </p>
+                )}
+                {addressLookupMessage && (
+                  <p role={addressLookupMessage.startsWith('CEP não encontrado') ? 'alert' : 'status'} className={`text-xs font-bold ${addressLookupMessage.startsWith('CEP não encontrado') ? 'text-red-700' : 'text-emerald-700'}`}>
+                    {addressLookupMessage}
+                  </p>
+                )}
+              </div>
+              {deliveryMessage && (
+                <p className={`text-xs font-bold ${deliveryZone ? 'text-emerald-700' : 'text-stone-500'}`}>
+                  {deliveryMessage}
+                </p>
+              )}
+              {unsupportedZipWhatsAppUrl && (
+                <a
+                  href={unsupportedZipWhatsAppUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center justify-center gap-2 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700"
+                >
+                  <span className="material-symbols-outlined text-[18px]">chat</span>
+                  Consultar atendimento pelo WhatsApp
+                </a>
+              )}
+              <fieldset disabled={isLookingUpAddress} aria-busy={isLookingUpAddress} className="grid grid-cols-1 gap-3 disabled:opacity-60 sm:grid-cols-2">
+                <label className="space-y-1 sm:col-span-2">
+                  <span className="ml-1 text-[10px] font-bold uppercase tracking-widest text-stone-400">Rua/Avenida</span>
+                  <input
+                    value={address.logradouro}
+                    onChange={(event) => handleAddressFieldChange('logradouro', event.target.value)}
+                    placeholder="Rua, avenida ou travessa"
+                    autoComplete="street-address"
+                    className="w-full rounded-2xl border-stone-200 p-4 text-sm outline-none transition-colors focus:border-black"
+                  />
+                </label>
+                <label className="space-y-1">
+                  <span className="ml-1 text-[10px] font-bold uppercase tracking-widest text-stone-400">Número</span>
+                  <input
+                    ref={numberInputRef}
+                    value={address.numero}
+                    onChange={(event) => handleAddressFieldChange('numero', event.target.value)}
+                    placeholder="Número"
+                    inputMode="numeric"
+                    autoComplete="address-line2"
+                    className="w-full rounded-2xl border-stone-200 p-4 text-sm outline-none transition-colors focus:border-black"
+                  />
+                </label>
+                <label className="space-y-1">
+                  <span className="ml-1 text-[10px] font-bold uppercase tracking-widest text-stone-400">Bairro</span>
+                  <input
+                    value={address.bairro}
+                    onChange={(event) => handleAddressFieldChange('bairro', event.target.value)}
+                    placeholder="Bairro"
+                    autoComplete="address-level3"
+                    className="w-full rounded-2xl border-stone-200 p-4 text-sm outline-none transition-colors focus:border-black"
+                  />
+                </label>
+                <label className="space-y-1">
+                  <span className="ml-1 text-[10px] font-bold uppercase tracking-widest text-stone-400">Cidade</span>
+                  <input
+                    value={address.localidade}
+                    onChange={(event) => handleAddressFieldChange('localidade', event.target.value)}
+                    placeholder="Cidade"
+                    autoComplete="address-level2"
+                    className="w-full rounded-2xl border-stone-200 p-4 text-sm outline-none transition-colors focus:border-black"
+                  />
+                </label>
+                <label className="space-y-1">
+                  <span className="ml-1 text-[10px] font-bold uppercase tracking-widest text-stone-400">Estado</span>
+                  <input
+                    value={address.uf}
+                    onChange={(event) => handleAddressFieldChange('uf', event.target.value)}
+                    placeholder="UF"
+                    autoComplete="address-level1"
+                    maxLength={2}
+                    className="w-full rounded-2xl border-stone-200 p-4 text-sm uppercase outline-none transition-colors focus:border-black"
+                  />
+                </label>
+              </fieldset>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white rounded-3xl p-6 border border-stone-100 shadow-sm space-y-5">
+          <h2 className="text-xs font-bold text-stone-400 uppercase tracking-widest border-b pb-2">Pagamento</h2>
+          <select
+            value={pagamento}
+            onChange={(event) => setPagamento(event.target.value)}
+            className="w-full border-stone-200 rounded-2xl p-4 text-sm outline-none focus:border-black transition-colors font-bold"
+          >
+            <option value="Pix">Pix (Rápido e Seguro)</option>
+            <option value="Cartao (Link)">Cartão de Crédito (Link de Pagamento)</option>
+          </select>
+          {pagamento === 'Pix' ? (
+            <div className="space-y-2 rounded-2xl bg-emerald-50 p-4 text-xs font-bold text-emerald-800">
+              <p>Pagamento via PIX recebe 5% de desconto adicional.</p>
+              <p>Após criar o pedido, o WhatsApp será aberto com todos os detalhes. Envie a mensagem e pague pelo QR Code, copia e cola ou chave PIX.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <label className="block space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400">Parcelamento desejado</span>
+                <select
+                  value={selectedCardInstallments}
+                  onChange={(event) => setInstallments(Number(event.target.value))}
+                  className="w-full rounded-2xl border-stone-200 p-4 text-sm font-bold outline-none transition-colors focus:border-black"
+                >
+                  {cardInstallmentOptions.map((count) => (
+                    <option key={count} value={count}>
+                      {count}x sem juros — R$ {(finalTotal / count).toFixed(2).replace('.', ',')} por parcela
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <p className="text-xs font-bold text-stone-500">
+                Até {MAX_CARD_INSTALLMENTS}x sem juros, sem valor mínimo de pedido. O pedido completo será enviado ao WhatsApp para a loja retornar o link seguro do cartão.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {checkoutMessage && (
+          <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-center text-sm font-bold text-red-700">
+            {checkoutMessage}
+          </div>
+        )}
+        <p className="text-center text-sm font-bold text-stone-500">
+          {pagamento === 'Pix'
+            ? 'O pedido será registrado e aberto no WhatsApp antes da geração do PIX.'
+            : 'O pedido completo será enviado ao WhatsApp da loja.'}
+        </p>
+        <button
+          onClick={handleFinalizar}
+          disabled={isLoading}
+          className="flex w-full items-center justify-center gap-3 rounded-3xl bg-brand-whatsapp py-5 text-lg font-bold text-white shadow-xl shadow-emerald-900/20 transition-transform hover:bg-brand-whatsapp-hover active:scale-95 disabled:opacity-50"
+        >
+          {pagamento === 'Pix' ? (
+            <span className="material-symbols-outlined text-[26px]">qr_code_2</span>
+          ) : (
+            <svg aria-hidden="true" viewBox="0 0 32 32" className="h-6 w-6 fill-current">
+              <path d="M16.03 4C9.39 4 4 9.28 4 15.78c0 2.24.65 4.34 1.78 6.12L4.61 28l6.29-1.62A12.2 12.2 0 0 0 16.03 27C22.67 27 28 21.72 28 15.22 28 8.72 22.67 4 16.03 4Zm0 20.83c-1.66 0-3.28-.43-4.7-1.25l-.34-.2-3.73.96.99-3.55-.23-.37a9.36 9.36 0 0 1-1.49-5.07c0-5.3 4.38-9.62 9.76-9.62 5.37 0 9.19 4.02 9.19 9.49 0 5.3-4.09 9.61-9.45 9.61Zm5.37-7.2c-.29-.14-1.72-.83-1.99-.92-.27-.1-.46-.14-.66.14-.19.28-.76.92-.93 1.11-.17.19-.34.21-.63.07-.29-.14-1.23-.44-2.34-1.4-.86-.75-1.44-1.68-1.61-1.96-.17-.28-.02-.43.13-.57.13-.13.29-.34.43-.51.14-.16.19-.28.29-.47.1-.19.05-.35-.02-.5-.07-.14-.66-1.55-.9-2.13-.24-.56-.49-.49-.66-.5h-.56c-.19 0-.5.07-.76.35-.27.28-1 1-1 2.42 0 1.42 1.03 2.79 1.17 2.98.14.19 2.03 3.02 4.91 4.24.69.29 1.22.46 1.64.59.69.21 1.31.18 1.8.11.55-.08 1.72-.69 1.96-1.35.24-.67.24-1.24.17-1.35-.07-.11-.26-.18-.55-.32Z" />
+            </svg>
+          )}
+          {isLoading
+            ? 'PROCESSANDO...'
+            : pagamento === 'Pix'
+              ? 'GERAR PIX E ENVIAR PEDIDO'
+              : 'SOLICITAR LINK NO WHATSAPP'}
+        </button>
+      </div>
+      </div>
+      </div>
+    </main>
+  );
+}

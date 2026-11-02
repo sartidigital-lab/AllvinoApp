@@ -1,0 +1,361 @@
+"use client";
+
+import { createClient } from '@/utils/supabase/admin-client';
+import { useEffect, useMemo, useState } from 'react';
+import { AdminNotice, AdminPageHeader, AdminStatCard } from '@/components/admin/AdminPrimitives';
+
+type CustomerOrder = {
+  id: string;
+  user_id: string | null;
+  total_amount: number;
+  status: string;
+  created_at: string;
+  customer_name: string | null;
+  customer_phone: string | null;
+  delivery_type: string;
+  order_items: Array<{
+    quantity: number;
+    product_name: string | null;
+  }> | null;
+};
+
+type CustomerSummary = {
+  key: string;
+  userId: string | null;
+  name: string;
+  phone: string | null;
+  orders: CustomerOrder[];
+  totalSpent: number;
+  averageTicket: number;
+  lastOrderAt: string;
+  favoriteProduct: string;
+};
+
+function formatMoney(value: number) {
+  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function normalizeSearch(value: string | null | undefined) {
+  return (value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+function getWhatsAppUrl(phone: string | null, name: string) {
+  const digits = (phone || '').replace(/\D/g, '');
+  if (!digits) return null;
+
+  const normalizedPhone = digits.startsWith('55') ? digits : `55${digits}`;
+  const message = `Olá, ${name}! Aqui é da Allvino.`;
+  return `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(message)}`;
+}
+
+function getCustomerKey(order: CustomerOrder) {
+  return order.user_id || order.customer_phone || order.customer_name || order.id;
+}
+
+function getFavoriteProduct(orders: CustomerOrder[]) {
+  const counts = new Map<string, number>();
+
+  orders.forEach((order) => {
+    order.order_items?.forEach((item) => {
+      const name = item.product_name || 'Produto removido';
+      counts.set(name, (counts.get(name) || 0) + item.quantity);
+    });
+  });
+
+  return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || 'Sem histórico';
+}
+
+export default function AdminClientesPage() {
+  const [orders, setOrders] = useState<CustomerOrder[]>([]);
+  const [selectedCustomerKey, setSelectedCustomerKey] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const loadCustomers = async () => {
+    setIsLoading(true);
+    setErrorMessage(null);
+
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('orders')
+      .select('id,user_id,total_amount,status,created_at,customer_name,customer_phone,delivery_type,order_items(quantity,product_name)')
+      .order('created_at', { ascending: false })
+      .limit(300);
+
+    if (error) {
+      setErrorMessage('Não foi possível carregar clientes.');
+      setIsLoading(false);
+      return;
+    }
+
+    const nextOrders = (data || []) as CustomerOrder[];
+    setOrders(nextOrders);
+    setSelectedCustomerKey((current) => current || (nextOrders[0] ? getCustomerKey(nextOrders[0]) : null));
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    loadCustomers();
+  }, []);
+
+  const deleteCustomerAccount = async (customer: CustomerSummary) => {
+    if (!customer.userId || isDeleting) return;
+
+    const confirmed = window.confirm(
+      `Excluir permanentemente a conta de ${customer.name} e seus dados vinculados? Esta ação não pode ser desfeita.`
+    );
+    if (!confirmed) return;
+
+    setIsDeleting(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    const supabase = createClient();
+    const { error } = await supabase.functions.invoke('delete-customer-account', {
+      body: { userId: customer.userId },
+    });
+
+    if (error) {
+      setErrorMessage('Não foi possível excluir a conta. Tente novamente ou contate o suporte técnico.');
+      setIsDeleting(false);
+      return;
+    }
+
+    setOrders((current) => current.filter((order) => order.user_id !== customer.userId));
+    setSelectedCustomerKey(null);
+    setSuccessMessage('Conta e dados vinculados do cliente foram excluídos permanentemente.');
+    setIsDeleting(false);
+  };
+
+  const customers = useMemo(() => {
+    const groups = new Map<string, CustomerOrder[]>();
+
+    orders.forEach((order) => {
+      const key = getCustomerKey(order);
+      groups.set(key, [...(groups.get(key) || []), order]);
+    });
+
+    return [...groups.entries()]
+      .map(([key, customerOrders]): CustomerSummary => {
+        const sortedOrders = [...customerOrders].sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        const firstOrder = sortedOrders[0];
+        const totalSpent = sortedOrders.reduce((total, order) => total + order.total_amount, 0);
+
+        return {
+          key,
+          userId: firstOrder.user_id,
+          name: firstOrder.customer_name || 'Cliente sem nome',
+          phone: firstOrder.customer_phone,
+          orders: sortedOrders,
+          totalSpent,
+          averageTicket: sortedOrders.length > 0 ? totalSpent / sortedOrders.length : 0,
+          lastOrderAt: firstOrder.created_at,
+          favoriteProduct: getFavoriteProduct(sortedOrders),
+        };
+      })
+      .sort((a, b) => new Date(b.lastOrderAt).getTime() - new Date(a.lastOrderAt).getTime());
+  }, [orders]);
+
+  const filteredCustomers = useMemo(() => {
+    const normalizedSearch = normalizeSearch(searchTerm.trim());
+    if (!normalizedSearch) return customers;
+
+    return customers.filter((customer) =>
+      normalizeSearch([customer.name, customer.phone, customer.favoriteProduct].join(' ')).includes(normalizedSearch)
+    );
+  }, [customers, searchTerm]);
+
+  const selectedCustomer = useMemo(
+    () => customers.find((customer) => customer.key === selectedCustomerKey) || filteredCustomers[0] || null,
+    [customers, filteredCustomers, selectedCustomerKey]
+  );
+
+  const summary = useMemo(() => {
+    const totalSpent = customers.reduce((total, customer) => total + customer.totalSpent, 0);
+    const totalOrders = customers.reduce((total, customer) => total + customer.orders.length, 0);
+
+    return {
+      totalCustomers: customers.length,
+      totalOrders,
+      totalSpent,
+      averageTicket: totalOrders > 0 ? totalSpent / totalOrders : 0,
+    };
+  }, [customers]);
+
+  return (
+    <div className="space-y-6">
+      <AdminPageHeader
+        title="Clientes"
+        description="Acompanhe histórico, gasto total e sinais de recompra."
+        actions={(
+          <button type="button" onClick={loadCustomers} className="admin-button flex items-center gap-2 bg-black px-5 text-sm text-white hover:bg-stone-800">
+            <span className="material-symbols-outlined text-[18px]">refresh</span>
+            Atualizar
+          </button>
+        )}
+      />
+
+      {errorMessage && (
+        <AdminNotice tone="danger">{errorMessage}</AdminNotice>
+      )}
+      {successMessage && (
+        <AdminNotice tone="success">{successMessage}</AdminNotice>
+      )}
+
+      <div className="admin-stats-grid grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+        <AdminStatCard label="Clientes" value={isLoading ? '...' : summary.totalCustomers} icon="groups" tone="dark" />
+        <AdminStatCard label="Pedidos" value={isLoading ? '...' : summary.totalOrders} icon="receipt_long" />
+        <AdminStatCard label="Faturamento" value={isLoading ? '...' : formatMoney(summary.totalSpent)} icon="monitoring" tone="success" />
+        <AdminStatCard label="Ticket médio" value={isLoading ? '...' : formatMoney(summary.averageTicket)} icon="payments" />
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="admin-surface overflow-hidden">
+          <div className="space-y-4 border-b border-stone-100 px-5 py-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="font-bold text-black">Base de clientes</h2>
+              <span className="text-xs font-bold text-stone-400">{filteredCustomers.length} clientes encontrados</span>
+            </div>
+            <label className="relative block">
+              <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-stone-400">
+                search
+              </span>
+              <input
+                type="search"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Buscar por cliente, telefone ou produto favorito"
+                className="h-11 w-full rounded-lg border border-stone-200 bg-white pl-10 pr-3 text-sm font-bold text-stone-800 outline-none transition placeholder:text-stone-400 focus:border-black"
+              />
+            </label>
+          </div>
+
+          {isLoading ? (
+            <div className="p-8 text-center text-sm font-bold text-stone-400">Carregando clientes...</div>
+          ) : filteredCustomers.length === 0 ? (
+            <div className="p-8 text-center text-sm font-bold text-stone-400">Nenhum cliente encontrado.</div>
+          ) : (
+            <div className="divide-y divide-stone-100">
+              {filteredCustomers.map((customer) => {
+                const isSelected = selectedCustomer?.key === customer.key;
+
+                return (
+                  <button
+                    key={customer.key}
+                    type="button"
+                    onClick={() => setSelectedCustomerKey(customer.key)}
+                    className={`grid w-full grid-cols-1 gap-3 p-5 text-left transition md:grid-cols-[minmax(0,1fr)_140px_140px] md:items-center ${
+                      isSelected ? 'bg-stone-50' : 'hover:bg-stone-50'
+                    }`}
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold text-black">{customer.name}</p>
+                      <p className="mt-1 truncate text-xs font-bold text-stone-400">{customer.phone || 'Telefone não informado'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Pedidos</p>
+                      <p className="text-sm font-bold text-black">{customer.orders.length}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Total</p>
+                      <p className="text-sm font-bold text-black">{formatMoney(customer.totalSpent)}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <aside className="rounded-lg border border-stone-100 bg-white p-5 shadow-sm xl:sticky xl:top-24 xl:self-start">
+          {!selectedCustomer ? (
+            <div className="py-10 text-center text-sm font-bold text-stone-400">Selecione um cliente.</div>
+          ) : (
+            <div className="space-y-6">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-stone-400">Cliente</p>
+                <h2 className="mt-1 text-xl font-bold text-black">{selectedCustomer.name}</h2>
+                <p className="mt-1 text-sm font-bold text-stone-500">{selectedCustomer.phone || 'Telefone não informado'}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-lg bg-stone-50 p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400">Total gasto</p>
+                  <p className="mt-1 text-lg font-bold text-black">{formatMoney(selectedCustomer.totalSpent)}</p>
+                </div>
+                <div className="rounded-lg bg-stone-50 p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400">Ticket médio</p>
+                  <p className="mt-1 text-lg font-bold text-black">{formatMoney(selectedCustomer.averageTicket)}</p>
+                </div>
+              </div>
+
+              <div className="rounded-lg bg-stone-50 p-4">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400">Produto favorito</p>
+                <p className="mt-1 text-sm font-bold text-black">{selectedCustomer.favoriteProduct}</p>
+              </div>
+
+              {getWhatsAppUrl(selectedCustomer.phone, selectedCustomer.name) && (
+                <a
+                  href={getWhatsAppUrl(selectedCustomer.phone, selectedCustomer.name)!}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] py-3 text-sm font-bold text-white transition hover:bg-[#1FAF55]"
+                >
+                  <span className="material-symbols-outlined text-[18px]">chat</span>
+                  Chamar no WhatsApp
+                </a>
+              )}
+
+              <section className="rounded-xl border border-red-100 bg-red-50 p-4">
+                <p className="text-xs font-bold uppercase tracking-widest text-red-700">Zona de risco</p>
+                <h3 className="mt-1 text-sm font-bold text-red-900">Excluir conta e dados</h3>
+                {selectedCustomer.userId ? (
+                  <>
+                    <p className="mt-2 text-xs leading-5 text-red-800">Remove permanentemente o acesso, perfil, pedidos, pagamentos, CRM, conversas e preferências deste cliente.</p>
+                    <button
+                      type="button"
+                      disabled={isDeleting}
+                      onClick={() => deleteCustomerAccount(selectedCustomer)}
+                      className="mt-3 flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-red-700 px-3 text-xs font-bold text-white transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <span className="material-symbols-outlined text-[17px]">delete_forever</span>
+                      {isDeleting ? 'Excluindo dados...' : 'Excluir conta do cliente'}
+                    </button>
+                  </>
+                ) : (
+                  <p className="mt-2 text-xs leading-5 text-red-800">Este pedido não está vinculado a uma conta. Não há uma conta de cliente para excluir.</p>
+                )}
+              </section>
+
+              <div>
+                <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-stone-400">Histórico</h3>
+                <div className="space-y-3">
+                  {selectedCustomer.orders.map((order) => (
+                    <div key={order.id} className="rounded-lg border border-stone-100 p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-bold text-black">#{order.id.slice(0, 8)}</p>
+                          <p className="text-xs font-bold text-stone-400">{new Date(order.created_at).toLocaleString('pt-BR')}</p>
+                        </div>
+                        <p className="text-sm font-bold text-black">{formatMoney(order.total_amount)}</p>
+                      </div>
+                      <p className="mt-2 text-xs font-bold text-stone-500">{order.delivery_type}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </aside>
+      </div>
+    </div>
+  );
+}

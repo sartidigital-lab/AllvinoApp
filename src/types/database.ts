@@ -1,0 +1,247 @@
+export type Wine = {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  original_price?: number;
+  base_price?: number | null;
+  discount_percent: number | null;
+  promotion_ends_at?: string | null;
+  show_countdown?: boolean;
+  promotion_id: string | null;
+  promotion_title: string | null;
+  promotion_slug: string | null;
+  image_url: string | null;
+  type: string | null;
+  region: string | null;
+  grape: string | null;
+  category: string | null;
+  stock: number;
+  product_code: string | null;
+  product_kind?: 'wine' | 'kit';
+  kit_item_count?: number;
+  published: boolean;
+  created_at: string;
+};
+
+export type Order = {
+  id: string;
+  user_id: string;
+  status: string;
+  total_amount: number;
+  created_at: string;
+  delivery_type: string;
+  payment_method: string | null;
+  payment_provider: string;
+  payment_status: 'pending' | 'authorized' | 'paid' | 'failed' | 'refunded' | 'cancelled';
+  payment_reference: string | null;
+  payment_url: string | null;
+  paid_at: string | null;
+  payment_error: string | null;
+  delivery_address: string | null;
+  discount_amount: number;
+  subtotal_amount: number | null;
+  customer_name: string | null;
+  customer_phone: string | null;
+  promotion_code: string | null;
+  delivery_zip_code: string | null;
+  delivery_zone_name: string | null;
+  delivery_estimate_days: number | null;
+  shipping_fee: number;
+  stock_reserved_at: string | null;
+};
+
+export type OrderItem = {
+  id: string;
+  order_id: string;
+  wine_id: string | null;
+  product_id: string | null;
+  product_name: string | null;
+  quantity: number;
+  unit_price: number;
+  base_unit_price: number;
+  discount_percent: number | null;
+  product_promotion_id: string | null;
+};
+
+export type OrderWithItems = Order & {
+  order_items: OrderItem[];
+};
+
+export type Promotion = {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  code: string;
+  title: string;
+  description: string | null;
+  discount_type: 'percent' | 'fixed';
+  discount_value: number;
+  scope: 'store' | 'selected_products';
+  min_subtotal: number;
+  min_item_quantity: number | null;
+  requires_first_purchase: boolean;
+  max_discount: number | null;
+  applicable_product_ids: string[];
+  custom_rule: string | null;
+  starts_at: string | null;
+  ends_at: string | null;
+  is_active: boolean;
+};
+
+export type CustomerCoupon = Pick<
+  Promotion,
+  | 'id'
+  | 'code'
+  | 'title'
+  | 'description'
+  | 'discount_type'
+  | 'discount_value'
+  | 'scope'
+  | 'min_subtotal'
+  | 'min_item_quantity'
+  | 'requires_first_purchase'
+  | 'max_discount'
+  | 'custom_rule'
+  | 'ends_at'
+> & {
+  selected_product_count: number;
+};
+
+export type ProductPromotionCampaign = {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  discount_percent: number;
+  starts_at: string | null;
+  ends_at: string | null;
+  is_active: boolean;
+  show_countdown?: boolean;
+  product_ids: string[];
+};
+
+export type ProductKitItem = {
+  product_id: string;
+  quantity: number;
+};
+
+export type CatalogProductCategoryItem = {
+  product_id: string;
+  sort_order: number;
+};
+
+export type CatalogProductCategory = {
+  id: string;
+  title: string;
+  slug: string;
+  sort_order: number;
+  is_active: boolean;
+  items: CatalogProductCategoryItem[];
+};
+
+export type CatalogBannerTheme = 'wine' | 'gold' | 'forest';
+
+export type CatalogBanner = {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  promotion_id: string;
+  promotion_title: string;
+  promotion_slug: string;
+  discount_percent: number;
+  eyebrow: string | null;
+  title: string;
+  subtitle: string | null;
+  cta_label: string;
+  image_url: string | null;
+  mobile_image_url: string | null;
+  image_alt: string | null;
+  theme: CatalogBannerTheme;
+  show_text: boolean;
+  show_cta: boolean;
+  show_discount_badge: boolean;
+  sort_order: number;
+  starts_at: string | null;
+  ends_at: string | null;
+  is_active: boolean;
+};
+
+export type DeliveryZone = {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  name: string;
+  zip_start: string;
+  zip_end: string;
+  fee: number;
+  free_shipping_min_subtotal: number | null;
+  estimate_days: number;
+  is_active: boolean;
+};
+
+export type StockLevel = {
+  product_code: string;
+  quantity: number;
+  updated_at: string;
+  source: string;
+  import_id: string | null;
+};
+
+export type StockImport = {
+  id: string;
+  created_at: string;
+  file_name: string | null;
+  total_rows: number;
+  source: string;
+};
+
+export type CustomerCrmStage = 'novo' | 'contato' | 'negociacao' | 'pedido' | 'pos_venda';
+
+export type CustomerCrmPriority = 'baixa' | 'normal' | 'alta';
+
+export type CustomerCrmCard = {
+  id: string;
+  customer_key: string;
+  user_id: string | null;
+  customer_name: string;
+  customer_phone: string | null;
+  stage: CustomerCrmStage;
+  priority: CustomerCrmPriority;
+  notes: string | null;
+  next_action_at: string | null;
+  last_contacted_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CustomerConversationStatus = 'open' | 'waiting' | 'closed';
+
+export type CustomerConversationChannel = 'whatsapp' | 'manual';
+
+export type CustomerConversation = {
+  id: string;
+  customer_key: string;
+  user_id: string | null;
+  customer_name: string;
+  customer_phone: string | null;
+  status: CustomerConversationStatus;
+  channel: CustomerConversationChannel;
+  last_message_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CustomerConversationMessageDirection = 'incoming' | 'outgoing' | 'note';
+
+export type CustomerConversationMessage = {
+  id: string;
+  conversation_id: string;
+  direction: CustomerConversationMessageDirection;
+  body: string;
+  sent_at: string;
+  created_by: string | null;
+  created_at: string;
+};

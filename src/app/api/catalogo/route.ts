@@ -1,0 +1,34 @@
+import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import { CatalogProduct, mapCatalogProductToWine } from '@/lib/catalog/products';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+export async function GET() {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    }
+  );
+
+  const { data, error } = await supabase
+    .from('catalog_products')
+    .select('id,nome,descricao,base_price,effective_price,sku_sankhya,imagem_url,pais,regiao,tipo,uva,estoque,publicado,criado_em,promotion_id,promotion_title,promotion_slug,discount_percent,promotion_ends_at,show_countdown,tipo_produto,kit_item_count')
+    .order('criado_em', { ascending: false });
+
+  if (error) {
+    return NextResponse.json({ error: 'Não foi possível carregar o catálogo.' }, { status: 500 });
+  }
+
+  return NextResponse.json(((data || []) as CatalogProduct[]).map(mapCatalogProductToWine), {
+    headers: {
+      'Cache-Control': 'no-store, max-age=0',
+    },
+  });
+}

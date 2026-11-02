@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+    <title>Allvino - Recuperar Senha</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap" rel="stylesheet"/>
+    <style>
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        body { background-color: #FDFBF7; font-family: 'Manrope', sans-serif; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-5">
+    
+    <div class="w-full max-w-sm">
+        <div class="flex justify-center mb-10 h-16">
+            <img src="LOGO-ALLVINO-PRETO.png" alt="Allvino" class="h-full w-auto object-contain scale-150 transform origin-center">
+        </div>
+
+        <button onclick="history.back()" class="mb-6 flex items-center gap-2 text-stone-500 hover:text-black transition-colors text-sm font-bold">
+            <span class="material-symbols-outlined text-[18px]">arrow_back</span> Voltar
+        </button>
+
+        <h1 class="text-2xl font-bold text-black mb-2">Esqueceu sua senha?</h1>
+        <p class="text-stone-500 text-sm mb-8 leading-relaxed">Não se preocupe. Digite o e-mail cadastrado e enviaremos um link seguro para você redefinir sua senha.</p>
+
+        <form onsubmit="event.preventDefault(); alert('Link de recuperação enviado para o seu e-mail! (Simulação MVP)'); window.location.href='login.html';" class="space-y-6">
+            <div>
+                <input type="email" placeholder="Digite seu e-mail" required class="w-full bg-white border border-stone-200 text-black rounded-2xl py-4 px-5 outline-none focus:border-black transition-colors shadow-sm">
+            </div>
+            
+            <button type="submit" class="w-full bg-black text-white py-4 rounded-2xl font-bold text-lg active:scale-95 transition-transform shadow-xl">
+                Enviar link de recuperação
+            </button>
+        </form>
+
+        <p class="text-center text-sm font-bold text-stone-400 mt-8">
+            Lembrou a senha? <a href="login.html" class="text-black hover:underline">Fazer login</a>
+        </p>
+    </div>
+
+</body>
+</html>

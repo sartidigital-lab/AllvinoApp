@@ -1,0 +1,12 @@
+.agents
+.codex
+.codex-remote-attachments
+.next
+node_modules
+*.log
+.env
+.env*.local
+.supabase-token.local
+.supabase-db-password.local
+supabase/.temp
+tsconfig.tsbuildinfo

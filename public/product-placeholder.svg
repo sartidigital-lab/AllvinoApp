@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400" role="img" aria-labelledby="title desc">
+  <title id="title">Imagem de produto indisponível</title>
+  <desc id="desc">Ilustração minimalista de uma garrafa de vinho</desc>
+  <rect width="300" height="400" rx="24" fill="#F9F7F4"/>
+  <path d="M126 76h48v48c0 13 26 31 26 67v123H100V191c0-36 26-54 26-67V76Z" fill="#B91C1C" opacity=".9"/>
+  <path d="M126 76h48M119 124h62" stroke="#7F1D1D" stroke-width="10"/>
+  <rect x="116" y="190" width="68" height="78" rx="6" fill="#FDFBF7"/>
+  <path d="M131 214h38M131 230h38M142 253h16" stroke="#B91C1C" stroke-width="5" stroke-linecap="round" opacity=".75"/>
+</svg>
