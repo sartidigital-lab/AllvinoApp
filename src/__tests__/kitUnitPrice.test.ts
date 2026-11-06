@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { getKitUnitPrice } from '@/components/catalog/WinePrice';
+import { formatCatalogDiscountPercent, getKitUnitPrice } from '@/components/catalog/WinePrice';
+
+describe('customer discount display', () => {
+  it('truncates a fractional percentage instead of showing or rounding it up', () => {
+    expect(formatCatalogDiscountPercent(32.9)).toBe(32);
+    expect(formatCatalogDiscountPercent(32.5)).toBe(32);
+  });
+});
 
 describe('kit unit price', () => {
   it('calculates the displayed unit price from the kit total', () => {

@@ -340,7 +340,7 @@ export default function CatalogoPage() {
                 onClick={() => handleSelectPromotion(selection.slug)}
                 className={`shrink-0 rounded-2xl border px-4 py-3 text-left transition ${selectedPromotion === selection.slug ? 'border-brand-primary bg-brand-primary text-white shadow-lg shadow-red-950/10' : 'border-stone-200 bg-white text-stone-900 hover:border-brand-primary/40'}`}
               >
-                <span className="block text-[10px] font-black uppercase tracking-wider opacity-65">Até {selection.discount}% off</span>
+                <span className="block text-[10px] font-black uppercase tracking-wider opacity-65">Até {formatCatalogDiscountPercent(selection.discount)}% off</span>
                 <span className="mt-0.5 block text-sm font-bold">{selection.title}</span>
               </button>
             ))}
@@ -496,7 +496,7 @@ export default function CatalogoPage() {
                           onClick={() => handleSelectPromotion(selectedPromotion === selection.slug ? '' : selection.slug)}
                           className={`rounded-xl border px-3 py-2 text-xs font-bold transition ${selectedPromotion === selection.slug ? 'border-brand-primary bg-brand-primary text-white' : 'border-stone-200 bg-white text-stone-600 hover:border-brand-primary'}`}
                         >
-                          {selection.title} · -{selection.discount}%
+                          {selection.title} · -{formatCatalogDiscountPercent(selection.discount)}%
                         </button>
                       ))}
                     </div>
