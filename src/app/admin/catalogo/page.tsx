@@ -2,9 +2,10 @@
 
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react';
 import { AdminEmptyState, AdminNotice, AdminPageHeader, AdminSection, AdminStatCard, AdminStatusBadge } from '@/components/admin/AdminPrimitives';
-import { createWine, deleteWine, fetchWinesFromSupabase, toggleWinePublished, updateWine } from '@/lib/database/wines';
+import { createWine, deleteWine, fetchWinesFromSupabase, importWinePricing, toggleWinePublished, updateWine } from '@/lib/database/wines';
 import { fetchStockLevelByCode, fetchStockLevelsByCodes, importStockLevels, normalizeProductCode, parseStockRows, saveManualStockLevel } from '@/lib/database/stock';
 import { readStockImportRows } from '@/lib/stock/importFile';
+import { createCatalogXlsx, parsePricingRows } from '@/lib/catalog/pricingImport';
 import { createClient } from '@/utils/supabase/admin-client';
 import { Wine } from '@/types/database';
 import { ProductImage } from '@/components/ui';
@@ -161,6 +162,7 @@ export default function AdminCatalogPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSyncingStock, setIsSyncingStock] = useState(false);
   const [isImportingStock, setIsImportingStock] = useState(false);
+  const [isImportingPricing, setIsImportingPricing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   const grapesInForm = useMemo(() => parseGrapes(form.grape), [form.grape]);
@@ -470,6 +472,49 @@ export default function AdminCatalogPage() {
     }
   };
 
+  const handlePricingImport = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsImportingPricing(true);
+    setMessage(null);
+
+    try {
+      const rows = await readStockImportRows(file);
+      const pricingRows = parsePricingRows(rows);
+      if (pricingRows.length === 0) {
+        setMessage('Não encontrei linhas de precificação. Use Código, Preço DE e, opcionalmente, Preço POR.');
+        return;
+      }
+
+      const { count, ignoredCodes } = await importWinePricing(pricingRows);
+      await loadWines();
+      setMessage(`${count} produto(s) tiveram a precificação atualizada.${ignoredCodes.length ? ` ${ignoredCodes.length} código(s) não cadastrado(s) foram ignorados.` : ''}`);
+    } catch (error) {
+      const detail = getErrorMessage(error);
+      setMessage(`Não foi possível importar a precificação.${detail ? ` Detalhe: ${detail}` : ''}`);
+    } finally {
+      event.target.value = '';
+      setIsImportingPricing(false);
+    }
+  };
+
+  const handleCatalogExport = () => {
+    const workbook = createCatalogXlsx(wines.map((wine) => ({
+      product_code: wine.product_code,
+      name: wine.name,
+      original_price: wine.original_price,
+      price: wine.price,
+      stock: wine.stock,
+    })));
+    const url = URL.createObjectURL(new Blob([workbook], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `catalogo-allvino-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleDelete = async (wine: Wine) => {
     if (!confirm(`Excluir "${wine.name}" do catálogo?`)) return;
 
@@ -491,6 +536,26 @@ export default function AdminCatalogPage() {
         description="Gerencie produtos, imagens, estoque e informações comerciais."
         actions={(
           <>
+            <label className="admin-button flex cursor-pointer items-center gap-2 border border-amber-200 bg-amber-50 px-4 text-sm text-amber-900 shadow-sm transition hover:bg-amber-100">
+              <span className="material-symbols-outlined text-[20px]">sell</span>
+              {isImportingPricing ? 'Importando...' : 'Importar preços'}
+              <input
+                type="file"
+                accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
+                disabled={isImportingPricing}
+                onChange={handlePricingImport}
+                className="hidden"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={handleCatalogExport}
+              disabled={isLoading}
+              className="admin-button flex items-center gap-2 border border-emerald-200 bg-emerald-50 px-4 text-sm text-emerald-900 shadow-sm transition hover:bg-emerald-100 disabled:opacity-50"
+            >
+              <span className="material-symbols-outlined text-[20px]">download</span>
+              Exportar Excel
+            </button>
             <label className="admin-button flex cursor-pointer items-center gap-2 border border-stone-200 bg-white px-4 text-sm text-stone-700 shadow-sm transition hover:bg-stone-50">
               <span className="material-symbols-outlined text-[20px]">upload_file</span>
               {isImportingStock ? 'Importando...' : 'Importar estoque'}

@@ -77,7 +77,7 @@ function spreadsheetRowsToRecords(rows: unknown[][]): SpreadsheetRow[] {
     .map((row) => Object.fromEntries(headers.map((header, index) => [header, row[index] ?? ''])));
 }
 
-export async function readStockImportRows(file: File): Promise<SpreadsheetRow[]> {
+export async function readSpreadsheetRows(file: File): Promise<SpreadsheetRow[]> {
   const extension = getFileExtension(file.name);
 
   if (file.size > MAX_IMPORT_FILE_SIZE) {
@@ -94,7 +94,7 @@ export async function readStockImportRows(file: File): Promise<SpreadsheetRow[]>
   ) {
     rows = spreadsheetRowsToRecords(await readSheet(file));
   } else {
-    throw new Error('Envie um arquivo .xlsx ou .csv de estoque.');
+    throw new Error('Envie um arquivo .xlsx ou .csv.');
   }
 
   if (rows.length > MAX_IMPORT_ROWS) {
@@ -103,3 +103,5 @@ export async function readStockImportRows(file: File): Promise<SpreadsheetRow[]>
 
   return rows;
 }
+
+export const readStockImportRows = readSpreadsheetRows;

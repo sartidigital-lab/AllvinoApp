@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/client';
 import { createBffClient } from '@/utils/supabase/bff-client';
 import { LegacyProduct, mapProductToWine, mapWineToProduct } from '@/lib/catalog/products';
 import { Wine } from '@/types/database';
+import { PricingImportRow } from '@/lib/catalog/pricingImport';
 
 function getDatabaseErrorMessage(error: unknown) {
   if (!error) return '';
@@ -178,4 +179,15 @@ export async function deleteWine(id: string): Promise<boolean> {
     console.error('Error deleting wine:', error);
     return false;
   }
+}
+
+export async function importWinePricing(rows: PricingImportRow[]): Promise<{ count: number; ignoredCodes: string[] }> {
+  const supabase = createBffClient();
+  const { data, error } = await supabase.rpc('import_catalog_pricing_atomic', { p_rows: rows });
+  if (error) throw new Error(getDatabaseErrorMessage(error) || 'Não foi possível importar a precificação.');
+  const result = data as { updated_count?: unknown; ignored_codes?: unknown } | null;
+  return {
+    count: Number(result?.updated_count || 0),
+    ignoredCodes: Array.isArray(result?.ignored_codes) ? result.ignored_codes.map(String) : [],
+  };
 }
