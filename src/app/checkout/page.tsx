@@ -52,9 +52,8 @@ function formatDeliveryAddress(address: AddressFields) {
 }
 
 export default function CheckoutPage() {
-  const { cart, cartTotal, clearCart } = useCart();
+  const { cart, cartTotal, clearCart, deliveryMethod: entrega, setDeliveryMethod } = useCart();
   const [user, setUser] = useState<CurrentUser | null>(null);
-  const [entrega, setEntrega] = useState('entrega');
   const [address, setAddress] = useState<AddressFields>(EMPTY_ADDRESS);
   const [cep, setCep] = useState('');
   const [isLookingUpAddress, setIsLookingUpAddress] = useState(false);
@@ -743,11 +742,11 @@ export default function CheckoutPage() {
           <h2 className="text-xs font-bold text-stone-400 uppercase tracking-widest border-b pb-2">Entrega</h2>
           <div className="space-y-3">
             <label className="flex items-center gap-3 p-4 border rounded-2xl border-stone-200 cursor-pointer has-[:checked]:border-black has-[:checked]:bg-stone-50 transition">
-              <input type="radio" name="entrega" value="entrega" checked={entrega === 'entrega'} onChange={() => setEntrega('entrega')} className="text-black focus:ring-0" />
+              <input type="radio" name="entrega" value="entrega" checked={entrega === 'entrega'} onChange={() => setDeliveryMethod('entrega')} className="text-black focus:ring-0" />
               <div className="flex-1 text-sm font-bold">Entrega no Endereço</div>
             </label>
             <label className="flex items-center gap-3 p-4 border rounded-2xl border-stone-200 cursor-pointer has-[:checked]:border-black has-[:checked]:bg-stone-50 transition">
-              <input type="radio" name="entrega" value="retirada" checked={entrega === 'retirada'} onChange={() => setEntrega('retirada')} className="text-black focus:ring-0" />
+              <input type="radio" name="entrega" value="retirada" checked={entrega === 'retirada'} onChange={() => setDeliveryMethod('retirada')} className="text-black focus:ring-0" />
               <div className="flex-1"><p className="text-sm font-bold">Retirada na Loja <span className="ml-2 text-[10px] text-green-600">5% OFF</span></p><p className="mt-1 text-xs font-medium leading-5 text-stone-500">{PICKUP_SCHEDULE_NOTICE}</p></div>
             </label>
           </div>

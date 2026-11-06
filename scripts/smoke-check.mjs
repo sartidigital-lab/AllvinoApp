@@ -18,7 +18,7 @@ const checks = [
   },
   {
     file: 'src/components/onboarding/FirstVisitExperience.tsx',
-    includes: ['Tenho 18 anos ou mais', 'Permitir localização', 'beforeinstallprompt', 'Notification.requestPermission', "navigator.serviceWorker", ".register('/sw.js'"],
+    includes: ['Tenho 18 anos ou mais', 'Acesso restrito a maiores de 18 anos', "navigator.serviceWorker", ".register('/sw.js'"],
   },
   {
     file: 'src/app/api/admin/notificacoes/route.ts',
@@ -34,7 +34,7 @@ const checks = [
   },
   {
     file: 'src/components/cart/CartOverlay.tsx',
-    includes: ['Sua Seleção', 'Retirada na Loja', 'Ir para Pagamento', 'updateQuantity', 'removeFromCart'],
+    includes: ['Sua Seleção', 'Retirada na Loja', 'Continuar como visitante', 'deliveryMethod', 'updateQuantity', 'removeFromCart'],
   },
   {
     file: 'src/app/catalogo/page.tsx',

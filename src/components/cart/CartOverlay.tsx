@@ -11,14 +11,13 @@ import { PICKUP_SCHEDULE_NOTICE } from '@/lib/delivery/rules';
 import { AUTH_STATE_EVENT, getBrowserSession } from '@/lib/auth/browserSession';
 
 export function CartOverlay() {
-  const { cart, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, cartTotal } = useCart();
-  const [retirada, setRetirada] = useState(false);
+  const { cart, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, cartTotal, deliveryMethod, setDeliveryMethod } = useCart();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const pathname = usePathname();
   const panelRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
-  const discount = retirada ? cartTotal * 0.05 : 0;
+  const discount = deliveryMethod === 'retirada' ? cartTotal * 0.05 : 0;
   const finalTotal = cartTotal - discount;
 
   useEffect(() => {
@@ -175,8 +174,8 @@ export function CartOverlay() {
             <Checkbox
               label="Retirada na Loja"
               description="Ganhe 5% de desconto"
-              checked={retirada}
-              onChange={(e) => setRetirada(e.target.checked)}
+              checked={deliveryMethod === 'retirada'}
+              onChange={(e) => setDeliveryMethod(e.target.checked ? 'retirada' : 'entrega')}
             />
             <p className="text-xs leading-5 text-stone-500">{PICKUP_SCHEDULE_NOTICE}</p>
             
@@ -186,16 +185,16 @@ export function CartOverlay() {
             </div>
             
             <Link 
-              href={isAuthenticated ? '/checkout' : '/?login=true&redirectTo=/checkout'}
+              href="/checkout"
               onClick={() => setIsCartOpen(false)}
               className="w-full block"
             >
               <Button variant="primary" size="lg" className="w-full">
-                {isAuthenticated ? 'Ir para Pagamento' : 'Entrar ou criar conta'}
+                {isAuthenticated ? 'Ir para pagamento' : 'Continuar como visitante'}
               </Button>
             </Link>
             {isAuthenticated === false && (
-              <p className="text-center text-xs font-medium text-stone-500">Entre ou crie sua conta para finalizar o pedido.</p>
+              <p className="text-center text-xs font-medium text-stone-500">Você poderá criar sua conta no envio do pedido.</p>
             )}
           </div>
         )}

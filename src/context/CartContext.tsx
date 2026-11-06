@@ -6,6 +6,7 @@ import { fetchWinesFromSupabase } from '@/lib/database/wines';
 import { getMaxCartQuantity, sanitizeCartItems, sanitizeStoredCartItems, sanitizeWine, StoredCartItem } from '@/lib/catalog/sanitizeWine';
 
 export type CartItem = Wine & { quantity: number };
+export type DeliveryMethod = 'entrega' | 'retirada';
 
 type CartContextType = {
   cart: CartItem[];
@@ -17,10 +18,13 @@ type CartContextType = {
   updateQuantity: (id: string, delta: number) => void;
   clearCart: () => void;
   cartTotal: number;
+  deliveryMethod: DeliveryMethod;
+  setDeliveryMethod: (deliveryMethod: DeliveryMethod) => void;
 };
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 const STORAGE_KEY = 'allvino_cart';
+const DELIVERY_METHOD_STORAGE_KEY = 'allvino_delivery_method';
 
 function toStoredCartItems(cart: CartItem[]): StoredCartItem[] {
   return cart.map((item) => ({
@@ -45,6 +49,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('entrega');
+
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(DELIVERY_METHOD_STORAGE_KEY) === 'retirada') setDeliveryMethod('retirada');
+    } catch {
+      // The checkout still works when browser storage is unavailable.
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(DELIVERY_METHOD_STORAGE_KEY, deliveryMethod);
+    } catch {
+      // Keep the current choice in memory if browser storage is unavailable.
+    }
+  }, [deliveryMethod]);
 
   useEffect(() => {
     let active = true;
@@ -159,6 +180,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         updateQuantity,
         clearCart,
         cartTotal,
+        deliveryMethod,
+        setDeliveryMethod,
       }}
     >
       {children}

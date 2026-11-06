@@ -8,7 +8,7 @@ import { useToast } from '@/context/ToastContext';
 import { useFavorites } from '@/context/FavoritesContext';
 import { useRecentlyViewed } from '@/context/RecentlyViewedContext';
 import { WineCardSkeleton, EmptyState, PageTransition, ProductImage } from '@/components/ui';
-import { Heart, Search, Share2, ShoppingCart, SlidersHorizontal, Star, Wine as WineIcon, X } from 'lucide-react';
+import { Heart, Search, Share2, ShoppingCart, SlidersHorizontal, Wine as WineIcon, X } from 'lucide-react';
 import { CatalogBannerCarousel } from '@/components/catalog/CatalogBannerCarousel';
 import { formatCatalogDiscountPercent, formatMoney, getKitUnitPrice, WinePrice } from '@/components/catalog/WinePrice';
 import { FlashOfferCountdown } from '@/components/catalog/FlashOfferCountdown';
@@ -69,7 +69,7 @@ function CatalogProductCard({ wine, onAddToCart, onToggleFavorite, onShare, isFa
             </div>
           )}
         </div>
-        <div className="px-2.5 pb-2 pt-3 sm:px-3"><p className="truncate text-[9px] font-bold uppercase tracking-wide text-stone-400 sm:text-[10px]">{wine.product_kind === 'kit' ? 'Seleção especial' : wine.type || wine.region || 'Vinho'}</p><h3 className="mt-1 min-h-10 font-serif text-[13px] font-bold leading-4 text-stone-950 line-clamp-2 sm:text-[15px] sm:leading-5">{wine.name}</h3><p className="mt-2 flex items-center gap-1 text-[9px] text-stone-400 sm:text-[10px]"><span className="flex text-stone-300">{Array.from({ length: 5 }).map((_, index) => <Star key={index} className="h-3 w-3" />)}</span><span className="truncate">Sem avaliações</span></p></div>
+        <div className="px-2.5 pb-2 pt-3 sm:px-3"><p className="truncate text-[10px] font-bold uppercase tracking-wide text-stone-400 sm:text-[11px]">{wine.product_kind === 'kit' ? 'Seleção especial' : wine.type || wine.region || 'Vinho'}</p><h3 className="mt-1 min-h-11 font-serif text-[14px] font-bold leading-5 text-stone-950 line-clamp-2 sm:text-[16px]">{wine.name}</h3></div>
       </Link>
       <div className="grid grid-cols-2 text-[10px] font-medium text-[#741128] sm:text-xs md:border-y md:border-stone-200"><button onClick={() => onToggleFavorite(wine)} type="button" className="flex min-h-9 items-center justify-center gap-1 hover:bg-[#fdf5f6] md:border-r md:border-stone-200" aria-label={isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}><Heart className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${isFavorite ? 'fill-current' : ''}`} /><span className="hidden sm:inline">Favoritar</span></button><button onClick={() => onShare(wine)} type="button" className="flex min-h-9 items-center justify-center gap-1 hover:bg-[#fdf5f6]"><Share2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" /><span className="hidden sm:inline">Compartilhar</span></button></div>
       <div className="space-y-2 p-2.5 sm:p-3">
@@ -137,6 +137,7 @@ export default function CatalogoPage() {
   const [productCategories, setProductCategories] = useState<CatalogProductCategory[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const deferredSearch = useDeferredValue(search);
+  const scrolledPromotionRef = useRef<string | null>(null);
 
   useEffect(() => {
     const syncPromotionFromUrl = () => {
@@ -165,6 +166,12 @@ export default function CatalogoPage() {
       window.removeEventListener('popstate', syncPromotionFromUrl);
     };
   }, []);
+
+  useEffect(() => {
+    if (!selectedPromotion || isLoading || window.location.hash !== '#ofertas' || scrolledPromotionRef.current === selectedPromotion) return;
+    scrolledPromotionRef.current = selectedPromotion;
+    window.requestAnimationFrame(() => document.getElementById('ofertas')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  }, [isLoading, selectedPromotion]);
 
   const types = useMemo(() => [...new Set(wines.map((w) => w.type).filter((value): value is string => Boolean(value)))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [wines]);
   const grapes = useMemo(() => [...new Set(wines.map((w) => getGrapeClassification(w.grape)).filter((value): value is string => Boolean(value)))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [wines]);
@@ -315,9 +322,9 @@ export default function CatalogoPage() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 pt-5 lg:px-8 lg:pt-8">
+      {!selectedPromotion && <div className="mx-auto max-w-7xl px-4 pt-5 lg:px-8 lg:pt-8">
         <CatalogBannerCarousel banners={banners} onSelectPromotion={handleSelectPromotion} />
-      </div>
+      </div>}
 
       {standalonePromotionSelections.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 pt-6 lg:px-8" aria-label="Seleções em promoção">

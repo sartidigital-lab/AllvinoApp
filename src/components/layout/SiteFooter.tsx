@@ -2,8 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import QRCode from 'qrcode';
+import { useEffect, useRef, useState } from 'react';
 import { Copy, QrCode, Share2 } from 'lucide-react';
 
 const shareTitle = 'Allvino';
@@ -33,18 +32,35 @@ export function SiteFooter() {
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [shareMessage, setShareMessage] = useState('');
   const [supportsNativeShare, setSupportsNativeShare] = useState(false);
+  const [shouldLoadQrCode, setShouldLoadQrCode] = useState(false);
+  const qrSectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const url = `${window.location.origin}/`;
     setSiteUrl(url);
     setSupportsNativeShare(Boolean(navigator.share));
 
-    QRCode.toDataURL(url, {
-      errorCorrectionLevel: 'M',
-      margin: 1,
-      width: 176,
-    }).then(setQrCodeUrl).catch(() => setShareMessage('Não foi possível gerar o QR Code agora.'));
   }, []);
+
+  useEffect(() => {
+    const section = qrSectionRef.current;
+    if (!section) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return;
+      setShouldLoadQrCode(true);
+      observer.disconnect();
+    }, { rootMargin: '320px' });
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!shouldLoadQrCode || !siteUrl || qrCodeUrl) return;
+    void import('qrcode')
+      .then(({ default: QRCode }) => QRCode.toDataURL(siteUrl, { errorCorrectionLevel: 'M', margin: 1, width: 176 }))
+      .then(setQrCodeUrl)
+      .catch(() => setShareMessage('Não foi possível gerar o QR Code agora.'));
+  }, [qrCodeUrl, shouldLoadQrCode, siteUrl]);
 
   const handleShare = async () => {
     if (!siteUrl) return;
@@ -84,7 +100,7 @@ export function SiteFooter() {
           <Link href="/privacidade" className="inline-flex font-bold text-brand-primary underline underline-offset-4 hover:text-brand-primary-hover">Política de privacidade</Link>
         </div>
 
-        <section aria-labelledby="site-qr-code-title" className="rounded-brand-2xl border border-brand-border bg-white p-5 text-center shadow-brand-sm">
+        <section ref={qrSectionRef} aria-labelledby="site-qr-code-title" className="rounded-brand-2xl border border-brand-border bg-white p-5 text-center shadow-brand-sm">
           <QrCode className="mx-auto h-6 w-6 text-brand-primary" aria-hidden="true" />
           <h2 id="site-qr-code-title" className="mt-2 font-serif text-xl font-bold text-brand-ink">Leve a Allvino com você</h2>
           <p className="mt-2 text-sm leading-6 text-brand-ink-light">Aponte a câmera para abrir o site ou compartilhe o link.</p>

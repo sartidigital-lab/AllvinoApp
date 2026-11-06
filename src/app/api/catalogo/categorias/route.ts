@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
 export async function GET() {
   const supabase = createClient(
@@ -29,5 +28,5 @@ export async function GET() {
       .sort((a: { sort_order: number }, b: { sort_order: number }) => a.sort_order - b.sort_order),
   }));
 
-  return NextResponse.json(categories, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
+  return NextResponse.json(categories, { headers: { 'Cache-Control': 'public, max-age=30, s-maxage=60, stale-while-revalidate=300' } });
 }

@@ -30,7 +30,7 @@ const wine: Wine = {
 };
 
 function CartHarness() {
-  const { addToCart, addManyToCart, cart, isCartOpen } = useCart();
+  const { addToCart, addManyToCart, cart, isCartOpen, deliveryMethod, setDeliveryMethod } = useCart();
 
   return (
     <>
@@ -38,6 +38,8 @@ function CartHarness() {
       <button type="button" onClick={() => addManyToCart([{ ...wine, quantity: 2 }])}>Adicionar vários</button>
       <output data-testid="cart-open">{String(isCartOpen)}</output>
       <output data-testid="cart-quantity">{cart[0]?.quantity ?? 0}</output>
+      <output data-testid="delivery-method">{deliveryMethod}</output>
+      <button type="button" onClick={() => setDeliveryMethod('retirada')}>Escolher retirada</button>
     </>
   );
 }
@@ -64,5 +66,13 @@ describe('CartContext', () => {
 
     expect(screen.getByTestId('cart-quantity')).toHaveTextContent('2');
     expect(screen.getByTestId('cart-open')).toHaveTextContent('false');
+  });
+
+  it('mantém a escolha de retirada disponível para o checkout', () => {
+    renderCart();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Escolher retirada' }));
+
+    expect(screen.getByTestId('delivery-method')).toHaveTextContent('retirada');
   });
 });

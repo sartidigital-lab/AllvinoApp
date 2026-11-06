@@ -7,7 +7,7 @@ import { useToast } from '@/context/ToastContext';
 import { useFavorites } from '@/context/FavoritesContext';
 import { useRecentlyViewed } from '@/context/RecentlyViewedContext';
 import { ProductImage, WineDetailSkeleton } from '@/components/ui';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Ban, Grape, Heart, MapPin, ShoppingCart, TriangleAlert, Truck, Wine, type LucideIcon } from 'lucide-react';
 import { getStockStatus } from '@/lib/catalog/stockStatus';
 import { getGrapeClassification, parseGrapes } from '@/lib/catalog/grapes';
@@ -49,10 +49,11 @@ function getWhatsAppShareUrl(wine: { name: string; type?: string | null; categor
 
 export default function WineDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const id = params.id as string;
   const { wine, isLoading, error } = useWine(id);
   const { wines } = useWines();
-  const { addToCart, setIsCartOpen } = useCart();
+  const { addToCart } = useCart();
   const { showToast } = useToast();
   const { toggleFavorite, isFavorite } = useFavorites();
   const { trackView } = useRecentlyViewed();
@@ -211,13 +212,13 @@ export default function WineDetailPage() {
             </div>
             <div className="space-y-3">
               <button
-                onClick={() => { addToCart(wine); setIsCartOpen(true); }}
+                onClick={() => { addToCart(wine); router.push('/checkout'); }}
                 type="button"
                 disabled={wine.stock === 0}
                 className="flex min-h-14 w-full items-center justify-center gap-2 rounded-brand-2xl bg-[#82c341] px-5 text-lg font-bold text-white shadow-lg shadow-lime-900/15 transition hover:bg-[#6eae31] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <ShoppingCart className="h-5 w-5" aria-hidden="true" />
-                {wine.stock === 0 ? 'Indisponível' : 'Comprar'}
+                {wine.stock === 0 ? 'Indisponível' : 'Comprar agora'}
               </button>
               <button
                 onClick={() => { addToCart(wine); showToast('Item adicionado. Ajuste a quantidade no carrinho quando quiser.', 'success'); }}

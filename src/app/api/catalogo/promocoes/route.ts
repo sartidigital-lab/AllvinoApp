@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
 export async function GET() {
   const supabase = createClient(
@@ -31,6 +30,6 @@ export async function GET() {
   });
 
   return NextResponse.json(banners, {
-    headers: { 'Cache-Control': 'no-store, max-age=0' },
+    headers: { 'Cache-Control': 'public, max-age=30, s-maxage=60, stale-while-revalidate=300' },
   });
 }
