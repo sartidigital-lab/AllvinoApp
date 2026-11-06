@@ -25,6 +25,7 @@ import {
 } from '@/lib/payments/terms';
 import { buildCheckoutWhatsAppMessage, buildWhatsAppUrl } from '@/lib/payments/whatsapp';
 import { DeliveryZone, Promotion } from '@/types/database';
+import { trackConversionEvent } from '@/lib/analytics/conversionEvents';
 
 const SALES_WHATSAPP_NUMBER = '5527992770952';
 
@@ -108,6 +109,10 @@ export default function CheckoutPage() {
 
     fetchUser();
   }, []);
+
+  useEffect(() => {
+    if (cart.length > 0) trackConversionEvent('checkout_started', { item_count: cart.length, cart_total: cartTotal });
+  }, [cart.length, cartTotal]);
 
   useEffect(() => {
     const couponCode = new URLSearchParams(window.location.search).get('cupom');
@@ -369,6 +374,7 @@ export default function CheckoutPage() {
     }
 
     if (!user) {
+      trackConversionEvent('checkout_auth_required', { item_count: cart.length, cart_total: finalTotal });
       window.location.assign('/?login=true&mode=signup&redirectTo=/checkout');
       return;
     }
@@ -383,6 +389,7 @@ export default function CheckoutPage() {
     if (whatsappWindow) whatsappWindow.opener = null;
 
     setIsLoading(true);
+    trackConversionEvent('order_submission_started', { item_count: cart.length, total: finalTotal, delivery_method: entrega, payment_method: pagamento });
 
     const { order, error } = await createOrder(
       user.id,
@@ -401,6 +408,8 @@ export default function CheckoutPage() {
       setIsLoading(false);
       return;
     }
+
+    trackConversionEvent('order_created', { order_id: order.id, total: order.total_amount, delivery_method: entrega, payment_method: pagamento });
 
     const subtotal = order.subtotal_amount ?? cartTotal;
     const orderDiscount = order.discount_amount || 0;

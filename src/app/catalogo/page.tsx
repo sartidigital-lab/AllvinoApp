@@ -13,6 +13,7 @@ import { CatalogBannerCarousel } from '@/components/catalog/CatalogBannerCarouse
 import { formatCatalogDiscountPercent, formatMoney, getKitUnitPrice, WinePrice } from '@/components/catalog/WinePrice';
 import { FlashOfferCountdown } from '@/components/catalog/FlashOfferCountdown';
 import { getGrapeClassification } from '@/lib/catalog/grapes';
+import { trackConversionEvent } from '@/lib/analytics/conversionEvents';
 import type { CatalogBanner, CatalogProductCategory, Wine } from '@/types/database';
 
 const priceRanges = [
@@ -138,6 +139,7 @@ export default function CatalogoPage() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const deferredSearch = useDeferredValue(search);
   const scrolledPromotionRef = useRef<string | null>(null);
+  const trackedCatalogViewRef = useRef(false);
 
   useEffect(() => {
     const syncPromotionFromUrl = () => {
@@ -172,6 +174,13 @@ export default function CatalogoPage() {
     scrolledPromotionRef.current = selectedPromotion;
     window.requestAnimationFrame(() => document.getElementById('ofertas')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   }, [isLoading, selectedPromotion]);
+
+  useEffect(() => {
+    if (!isLoading && !trackedCatalogViewRef.current) {
+      trackedCatalogViewRef.current = true;
+      trackConversionEvent('catalog_view', { product_count: wines.length });
+    }
+  }, [isLoading, wines.length]);
 
   const types = useMemo(() => [...new Set(wines.map((w) => w.type).filter((value): value is string => Boolean(value)))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [wines]);
   const grapes = useMemo(() => [...new Set(wines.map((w) => getGrapeClassification(w.grape)).filter((value): value is string => Boolean(value)))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [wines]);
@@ -262,6 +271,7 @@ export default function CatalogoPage() {
   };
 
   const handleSelectPromotion = (slug: string) => {
+    if (slug) trackConversionEvent('promotion_selected', { promotion_slug: slug });
     setSelectedPromotion(slug);
     const nextUrl = new URL(window.location.href);
     if (slug) nextUrl.searchParams.set('promocao', slug);
@@ -472,7 +482,7 @@ export default function CatalogoPage() {
               return <section key={section.id} id={section.slug} className="scroll-mt-36" aria-label={section.title}>
                 <div className="mb-4 flex items-end justify-between gap-4"><div><p className="text-[10px] font-black uppercase tracking-[0.24em] text-brand-primary">Catálogo Allvino</p><h2 className="mt-1 font-serif text-2xl font-bold text-stone-950">{section.title}</h2></div><span className="hidden text-xs font-bold text-stone-400 md:inline lg:hidden">Deslize para ver mais</span></div>
                 <div className="space-y-5">
-                  {rows.map((row, index) => <CatalogProductRow key={`${section.id}-${index}`} wines={row} label={`${section.title}, faixa ${index + 1}`} getIsFavorite={isFavorite} onAddToCart={(item) => { if (item.stock > 0) { addToCart(item); showToast(`${item.product_kind === 'kit' ? 'Kit' : 'Vinho'} adicionado ao carrinho!`, 'success'); } }} onToggleFavorite={(item) => { toggleFavorite(item); showToast(isFavorite(item.id) ? 'Removido dos favoritos' : 'Adicionado aos favoritos', 'info'); }} onShare={(item) => { if (navigator.share) { void navigator.share({ title: item.name, url: `${window.location.origin}/catalogo/${item.id}` }); } else { void navigator.clipboard?.writeText(`${window.location.origin}/catalogo/${item.id}`); showToast('Link do produto copiado.', 'success'); } }} />)}
+                  {rows.map((row, index) => <CatalogProductRow key={`${section.id}-${index}`} wines={row} label={`${section.title}, faixa ${index + 1}`} getIsFavorite={isFavorite} onAddToCart={(item) => { if (item.stock > 0) { addToCart(item); trackConversionEvent('add_to_cart', { product_id: item.id, product_kind: item.product_kind }); showToast(`${item.product_kind === 'kit' ? 'Kit' : 'Vinho'} adicionado ao carrinho!`, 'success'); } }} onToggleFavorite={(item) => { toggleFavorite(item); showToast(isFavorite(item.id) ? 'Removido dos favoritos' : 'Adicionado aos favoritos', 'info'); }} onShare={(item) => { if (navigator.share) { void navigator.share({ title: item.name, url: `${window.location.origin}/catalogo/${item.id}` }); } else { void navigator.clipboard?.writeText(`${window.location.origin}/catalogo/${item.id}`); showToast('Link do produto copiado.', 'success'); } }} />)}
                 </div>
               </section>;
             })}
