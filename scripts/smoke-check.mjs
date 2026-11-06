@@ -14,11 +14,11 @@ const checks = [
   },
   {
     file: 'src/app/layout.tsx',
-    includes: ['FirstVisitExperience', 'WhatsAppButton'],
+    includes: ['FirstVisitExperience', 'CustomerOnlyExperience'],
   },
   {
     file: 'src/components/onboarding/FirstVisitExperience.tsx',
-    includes: ['Tenho 18 anos ou mais', 'Permitir localização', 'beforeinstallprompt', 'Notification.requestPermission', "register('/sw.js')"],
+    includes: ['Tenho 18 anos ou mais', 'Permitir localização', 'beforeinstallprompt', 'Notification.requestPermission', "navigator.serviceWorker", ".register('/sw.js'"],
   },
   {
     file: 'src/app/api/admin/notificacoes/route.ts',
@@ -38,7 +38,11 @@ const checks = [
   },
   {
     file: 'src/app/catalogo/page.tsx',
-    includes: ['Buscar por nome', 'Mais recentes', 'Menor preço', 'Limpar filtros', 'addToCart', 'Sobre a Allvino', 'Rua Goiânia, 339'],
+    includes: ['Buscar por nome', 'Mais recentes', 'Menor preço', 'Limpar filtros', 'addToCart'],
+  },
+  {
+    file: 'src/components/layout/SiteFooter.tsx',
+    includes: ['Sobre a Allvino', 'Rua Goiânia, 339'],
   },
   {
     file: 'src/app/catalogo/[id]/page.tsx',
@@ -110,7 +114,7 @@ const checks = [
   },
   {
     file: 'src/app/api/admin/produtos/imagem/route.ts',
-    includes: ['getBearerToken', 'Authorization', 'Apenas administradores podem enviar imagens', "storage.from('produtos')", 'getPublicUrl', 'publicUrl'],
+    includes: ['isSameOrigin', 'auth.getUser()', "rpc('is_admin')", 'Apenas administradores podem enviar imagens', "storage.from('produtos')", 'getPublicUrl', 'publicUrl'],
   },
   {
     file: 'src/app/api/pedidos/route.ts',
