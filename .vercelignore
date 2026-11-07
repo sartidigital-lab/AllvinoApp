@@ -10,3 +10,5 @@ node_modules
 .supabase-db-password.local
 supabase/.temp
 tsconfig.tsbuildinfo
+.codex-staging-debug/
+.planning/debug/
