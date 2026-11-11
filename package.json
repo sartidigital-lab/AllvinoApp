@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/verify-payment-gateway.mjs && next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit",

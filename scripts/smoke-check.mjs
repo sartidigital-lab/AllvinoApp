@@ -50,7 +50,15 @@ const checks = [
   },
   {
     file: 'src/app/checkout/page.tsx',
-    includes: ['5527992770952', 'O pedido completo será enviado ao WhatsApp da loja', 'GERAR PIX E ENVIAR PEDIDO', 'Pedido realizado', 'createOrder', 'calculatePixDiscount', 'getCardInstallmentOptions', 'fetchActivePromotionByCode', 'fetchDeliveryQuote', 'Consultar atendimento pelo WhatsApp', 'Cupom', 'CEP'],
+    includes: ['5527992770952', 'createOrder', 'createPaymentCheckout', 'window.location.assign(paymentUrl)', 'IR PARA PAGAMENTO PIX', 'IR PARA PAGAMENTO SEGURO', 'checkout seguro da Stone/Pagar.me', 'calculatePixDiscount', 'getCardInstallmentOptions', 'fetchActivePromotionByCode', 'fetchDeliveryQuote', 'Consultar atendimento pelo WhatsApp', 'Cupom', 'CEP'],
+  },
+  {
+    file: 'src/app/api/pagamentos/checkout/route.ts',
+    includes: ['createPagarmePaymentLink', 'begin_pagarme_payment', 'complete_pagarme_payment'],
+  },
+  {
+    file: 'src/app/api/pagamentos/webhook/route.ts',
+    includes: ['verifyPagarmeWebhook', 'process_pagarme_webhook'],
   },
   {
     file: 'src/app/conta/page.tsx',

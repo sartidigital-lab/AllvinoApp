@@ -7,6 +7,7 @@ import { ToastProvider } from '../context/ToastContext';
 import { FavoritesProvider } from '../context/FavoritesContext';
 import { RecentlyViewedProvider } from '../context/RecentlyViewedContext';
 import { connection } from 'next/server';
+import { headers } from 'next/headers';
 import './globals.css';
 
 export const metadata = {
@@ -26,6 +27,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // The Proxy creates one CSP nonce per request. Rendering dynamically is
   // required so Next can attach that nonce to its framework and page scripts.
   await connection();
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
 
   return (
     <html lang="pt-BR">
@@ -40,7 +42,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <CartProvider>
                 <AppChrome />
                 {children}
-                <CustomerOnlyExperience />
+                <CustomerOnlyExperience nonce={nonce} />
                 <FirstVisitExperience />
                 <PushSubscriptionManager />
               </CartProvider>
