@@ -15,19 +15,43 @@ export type ConversionEvent =
 
 type EventProperties = Record<string, string | number | boolean | null | undefined>;
 
+export type MetaConversionEvent = {
+  id: string;
+  name: ConversionEvent;
+  properties: EventProperties;
+};
+
 declare global {
   interface Window {
-    dataLayer?: Array<Record<string, unknown>>;
-    gtag?: (command: 'event', event: string, parameters?: Record<string, unknown>) => void;
+    dataLayer?: unknown[];
+    gtag?: (...args: unknown[]) => void;
+    allvinoMetaEventQueue?: MetaConversionEvent[];
   }
 }
 
 /** Emits only consented, non-identifying funnel signals for the configured analytics destination. */
 export function trackConversionEvent(event: ConversionEvent, properties: EventProperties = {}) {
-  if (typeof window === 'undefined' || !isCookieCategoryAllowed(readCookieConsent(document.cookie), 'analytics')) return;
+  if (typeof window === 'undefined') return;
+
+  const consent = readCookieConsent(document.cookie);
+  const analyticsAllowed = isCookieCategoryAllowed(consent, 'analytics');
+  const marketingAllowed = isCookieCategoryAllowed(consent, 'marketing');
+  if (!analyticsAllowed && !marketingAllowed) return;
+
   const payload = { event, ...properties };
-  window.dataLayer = window.dataLayer || [];
-  window.dataLayer.push(payload);
-  window.gtag?.('event', event, properties);
-  window.dispatchEvent(new CustomEvent('allvino:conversion', { detail: payload }));
+  if (analyticsAllowed) {
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push(payload);
+    window.gtag?.('event', event, properties);
+  }
+
+  if (marketingAllowed) {
+    const metaEvent: MetaConversionEvent = {
+      id: globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`,
+      name: event,
+      properties,
+    };
+    window.allvinoMetaEventQueue = [...(window.allvinoMetaEventQueue || []), metaEvent];
+    window.dispatchEvent(new CustomEvent<MetaConversionEvent>('allvino:conversion', { detail: metaEvent }));
+  }
 }
