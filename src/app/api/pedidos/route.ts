@@ -5,6 +5,7 @@ import { normalizeZipCode } from '@/lib/delivery/rules';
 import { checkoutRequestSchema } from '@/lib/validation/checkout';
 import { checkRateLimitDistributed, getClientKey, rateLimitResponse } from '@/lib/security/rateLimit';
 import { auditSecurityEvent } from '@/lib/security/audit';
+import { isCookieCategoryAllowed, readCookieConsent } from '@/lib/privacy/cookieConsent';
 
 const checkoutMessages = [
   'Pedido invalido.',
@@ -63,6 +64,10 @@ export async function POST(request: Request) {
   const deliveryAddress = parsed.data.deliveryAddress?.trim() || null;
   const promotionCode = normalizePromotionCode(parsed.data.promotionCode || '');
   const deliveryZipCode = normalizeZipCode(parsed.data.deliveryZipCode || '');
+  const marketingConsent = isCookieCategoryAllowed(
+    readCookieConsent(request.headers.get('cookie') || ''),
+    'marketing',
+  );
 
   if (cartItems.length === 0) {
     return NextResponse.json({ error: 'Pedido inválido.' }, { status: 400 });
@@ -79,6 +84,9 @@ export async function POST(request: Request) {
       p_delivery_zip_code: deliveryZipCode || null,
       p_customer_name: user.user_metadata?.nome_completo || user.email?.split('@')[0] || null,
       p_customer_phone: user.user_metadata?.whatsapp || user.user_metadata?.telefone || null,
+      // This named argument selects the current checkout RPC signature and
+      // records consent only when the visitor explicitly allowed marketing.
+      p_marketing_consent: marketingConsent,
     }
   );
 

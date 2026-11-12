@@ -126,7 +126,7 @@ const checks = [
   },
   {
     file: 'src/app/api/pedidos/route.ts',
-    includes: ['create_order_with_stock_reservation', 'p_cart_items', 'p_delivery_method', 'p_customer_name', 'stock_reserved_at'],
+    includes: ['create_order_with_stock_reservation', 'p_cart_items', 'p_delivery_method', 'p_customer_name', 'p_marketing_consent', 'stock_reserved_at'],
   },
   {
     file: 'scripts/checkout-rpc-check.mjs',
