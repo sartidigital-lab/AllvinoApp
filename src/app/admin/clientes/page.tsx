@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/admin-client';
 import { useEffect, useMemo, useState } from 'react';
 import { AdminNotice, AdminPageHeader, AdminStatCard } from '@/components/admin/AdminPrimitives';
+import { CustomerRegistrationDialog } from '@/components/admin/CustomerRegistrationDialog';
 
 type CustomerOrder = {
   id: string;
@@ -74,6 +75,7 @@ export default function AdminClientesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -196,10 +198,16 @@ export default function AdminClientesPage() {
         title="Clientes"
         description="Acompanhe histórico, gasto total e sinais de recompra."
         actions={(
-          <button type="button" onClick={loadCustomers} className="admin-button flex items-center gap-2 bg-black px-5 text-sm text-white hover:bg-stone-800">
-            <span className="material-symbols-outlined text-[18px]">refresh</span>
-            Atualizar
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => setIsRegistrationOpen(true)} className="admin-button flex items-center gap-2 bg-[#8F1D2C] px-5 text-sm text-white hover:bg-[#68131F]">
+              <span className="material-symbols-outlined text-[18px]">person_add</span>
+              Cadastrar cliente
+            </button>
+            <button type="button" onClick={loadCustomers} className="admin-button flex items-center gap-2 bg-black px-5 text-sm text-white hover:bg-stone-800">
+              <span className="material-symbols-outlined text-[18px]">refresh</span>
+              Atualizar
+            </button>
+          </div>
         )}
       />
 
@@ -356,6 +364,14 @@ export default function AdminClientesPage() {
           )}
         </aside>
       </div>
+      <CustomerRegistrationDialog
+        isOpen={isRegistrationOpen}
+        onClose={() => setIsRegistrationOpen(false)}
+        onRegistered={() => {
+          setSuccessMessage('Cliente cadastrado com sucesso. O acesso já está pronto para uso.');
+          loadCustomers();
+        }}
+      />
     </div>
   );
 }
