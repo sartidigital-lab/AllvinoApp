@@ -14,11 +14,11 @@ const checks = [
   },
   {
     file: 'src/app/layout.tsx',
-    includes: ['FirstVisitExperience', 'WhatsAppButton'],
+    includes: ['AppChrome', 'FirstVisitExperience', 'PushSubscriptionManager'],
   },
   {
     file: 'src/components/onboarding/FirstVisitExperience.tsx',
-    includes: ['Tenho 18 anos ou mais', 'Permitir localização', 'beforeinstallprompt', 'Notification.requestPermission', "register('/sw.js')"],
+    includes: ['Tenho 18 anos ou mais', 'Acesso restrito a maiores de 18 anos', 'beforeinstallprompt', 'Notification.requestPermission', 'navigator.serviceWorker'],
   },
   {
     file: 'src/app/api/admin/notificacoes/route.ts',
@@ -38,7 +38,11 @@ const checks = [
   },
   {
     file: 'src/app/catalogo/page.tsx',
-    includes: ['Buscar por nome', 'Mais recentes', 'Menor preço', 'Limpar filtros', 'addToCart', 'Sobre a Allvino', 'Rua Goiânia, 339'],
+    includes: ['Buscar por nome', 'Mais recentes', 'Menor preço', 'Limpar filtros', 'addToCart'],
+  },
+  {
+    file: 'src/components/layout/SiteFooter.tsx',
+    includes: ['Sobre a Allvino', 'Rua Goiânia, 339'],
   },
   {
     file: 'src/app/catalogo/[id]/page.tsx',
@@ -46,7 +50,7 @@ const checks = [
   },
   {
     file: 'src/app/checkout/page.tsx',
-    includes: ['5527992770952', 'O pedido completo será enviado ao WhatsApp da loja', 'GERAR PIX E ENVIAR PEDIDO', 'Pedido realizado', 'createOrder', 'calculatePixDiscount', 'getCardInstallmentOptions', 'fetchActivePromotionByCode', 'fetchDeliveryQuote', 'Consultar atendimento pelo WhatsApp', 'Cupom', 'CEP'],
+    includes: ['createOrder', 'createPaymentCheckout', 'checkout seguro da Stone/Pagar.me', 'IR PARA PAGAMENTO PIX', 'IR PARA PAGAMENTO SEGURO', 'calculatePixDiscount', 'getCardInstallmentOptions', 'fetchActivePromotionByCode', 'fetchDeliveryQuote', 'Consultar atendimento pelo WhatsApp', 'Cupom', 'CEP'],
   },
   {
     file: 'src/app/conta/page.tsx',
@@ -110,11 +114,11 @@ const checks = [
   },
   {
     file: 'src/app/api/admin/produtos/imagem/route.ts',
-    includes: ['getBearerToken', 'Authorization', 'Apenas administradores podem enviar imagens', "storage.from('produtos')", 'getPublicUrl', 'publicUrl'],
+    includes: ['createClient()', 'auth.getUser()', "rpc('is_admin')", 'isSameOrigin', 'Apenas administradores podem enviar imagens', "storage.from('produtos')", 'getPublicUrl', 'publicUrl'],
   },
   {
     file: 'src/app/api/pedidos/route.ts',
-    includes: ['create_order_with_stock_reservation', 'p_cart_items', 'p_delivery_method', 'p_customer_name', 'stock_reserved_at'],
+    includes: ['create_order_with_stock_reservation', 'p_cart_items', 'p_delivery_method', 'p_customer_name', 'p_marketing_consent', 'stock_reserved_at'],
   },
   {
     file: 'scripts/checkout-rpc-check.mjs',
