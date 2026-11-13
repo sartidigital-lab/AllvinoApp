@@ -10,3 +10,10 @@ node_modules
 .supabase-db-password.local
 supabase/.temp
 tsconfig.tsbuildinfo
+.codex-staging-debug/
+.codex-deploy-notifications/
+.codex-desktop-ux-release/
+.codex-pagarme-gateway-release/
+.codex-payment-gateway-guard/
+.customer-admin-registration/
+.planning/debug/
