@@ -11,6 +11,7 @@ const adminTables = new Set([
   'customer_crm_cards',
   'orders',
   'product_promotion_items',
+  'product_selections',
   'product_promotions',
   'produtos',
   'promotions',

@@ -13,6 +13,7 @@ import { Promotion, Wine } from '@/types/database';
 import { AdminNotice, AdminPageHeader, AdminStatCard } from '@/components/admin/AdminPrimitives';
 import { ProductCampaignManager } from '@/components/admin/ProductCampaignManager';
 import { CatalogBannerManager } from '@/components/admin/CatalogBannerManager';
+import { ProductSelectionsManager } from '@/components/admin/ProductSelectionsManager';
 
 type PromotionForm = {
   code: string;
@@ -296,6 +297,7 @@ export default function AdminPromotionsPage() {
         <a href="#cupons" className="shrink-0 rounded-xl px-4 py-2 text-sm font-bold text-stone-600 transition hover:bg-stone-100 hover:text-black">Cupons</a>
       </nav>
 
+      <ProductSelectionsManager />
       <ProductCampaignManager />
       <CatalogBannerManager />
 
