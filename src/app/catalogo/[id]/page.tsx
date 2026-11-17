@@ -1,13 +1,14 @@
 "use client";
 
 import { Suspense, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useWine, useWines } from '@/hooks/useWines';
 import { useCart } from '@/context/CartContext';
 import { useToast } from '@/context/ToastContext';
 import { useFavorites } from '@/context/FavoritesContext';
 import { useRecentlyViewed } from '@/context/RecentlyViewedContext';
 import { ProductImage, WineDetailSkeleton } from '@/components/ui';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { ArrowLeft, Ban, Grape, Heart, MapPin, ShoppingCart, TriangleAlert, Truck, Wine, type LucideIcon } from 'lucide-react';
 import { getStockStatus } from '@/lib/catalog/stockStatus';
 import { getGrapeClassification, parseGrapes } from '@/lib/catalog/grapes';
@@ -15,7 +16,7 @@ import { formatCatalogDiscountPercent, getKitUnitPrice } from '@/components/cata
 import { fetchDeliveryQuote } from '@/lib/database/delivery';
 import { formatZipCode, normalizeZipCode, PICKUP_SCHEDULE_NOTICE } from '@/lib/delivery/rules';
 import { ProductReviews } from '@/components/catalog/ProductReviews';
-import { trackConversionEvent } from '@/lib/analytics/conversionEvents';
+import { readCatalogReturn } from '@/lib/catalog/browsingState';
 
 function formatMoney(value: number) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -50,23 +51,25 @@ function getWhatsAppShareUrl(wine: { name: string; type?: string | null; categor
 
 export default function WineDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const id = params.id as string;
   const { wine, isLoading, error } = useWine(id);
   const { wines } = useWines();
-  const { addToCart } = useCart();
+  const { addToCart, setIsCartOpen } = useCart();
   const { showToast } = useToast();
   const { toggleFavorite, isFavorite } = useFavorites();
   const { trackView } = useRecentlyViewed();
   const [deliveryZip, setDeliveryZip] = useState('');
   const [deliveryQuote, setDeliveryQuote] = useState<string | null>(null);
   const [isCalculatingDelivery, setIsCalculatingDelivery] = useState(false);
+  const [returnHref, setReturnHref] = useState('/catalogo');
 
   useEffect(() => {
-    if (wine) {
-      trackView(wine);
-      trackConversionEvent('product_view', { product_id: wine.id, product_kind: wine.product_kind });
-    }
+    const snapshot = readCatalogReturn();
+    setReturnHref(snapshot?.productId === id ? snapshot.href : '/catalogo');
+  }, [id]);
+
+  useEffect(() => {
+    if (wine) trackView(wine);
   }, [wine, trackView]);
 
   if (isLoading) return <WineDetailSkeleton />;
@@ -76,9 +79,9 @@ export default function WineDetailPage() {
       <div className="min-h-screen flex flex-col items-center justify-center px-4">
         <Wine className="h-16 w-16 text-stone-200" aria-hidden="true" />
         <p className="mt-4 text-lg font-bold">Vinho não encontrado</p>
-        <a href="/catalogo" className="mt-4 text-sm font-bold text-brand-primary">
+        <Link href={returnHref} className="mt-4 text-sm font-bold text-brand-primary">
           Voltar ao catálogo
-        </a>
+        </Link>
       </div>
     );
   }
@@ -121,20 +124,20 @@ export default function WineDetailPage() {
     <main className="min-h-screen bg-brand-bg pb-24 lg:pb-16">
       <div className="sticky top-0 z-30 border-b border-stone-100 bg-white/90 backdrop-blur-md lg:top-20">
         <div className="flex items-center px-4 py-3">
-          <a href="/catalogo" aria-label="Voltar ao catálogo" className="rounded-full p-2 hover:bg-stone-100 transition">
+          <Link href={returnHref} aria-label="Voltar ao catálogo" className="rounded-full p-2 hover:bg-stone-100 transition">
             <ArrowLeft className="h-5 w-5" aria-hidden="true" />
-          </a>
+          </Link>
           <p className="ml-2 font-bold text-sm truncate">{wine.name}</p>
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-6">
-        <div className="grid items-start lg:grid-cols-[minmax(0,1fr)_420px] gap-8">
-            <div className="surface-card flex items-center justify-center p-8 lg:sticky lg:top-40 lg:h-[calc(100dvh-14rem)] lg:min-h-[400px]">
-            <ProductImage src={wine.image_url} alt={wine.name} width={600} height={800} priority sizes="(max-width: 1024px) 100vw, 60vw" className="w-full max-h-[500px] object-contain mix-blend-multiply lg:h-full lg:max-h-none" />
+        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_420px] lg:gap-8">
+            <div className="surface-card flex items-center justify-center p-3 lg:sticky lg:top-40 lg:h-[calc(100dvh-14rem)] lg:min-h-[400px] lg:p-8">
+            <ProductImage src={wine.image_url} alt={wine.name} width={600} height={800} priority sizes="(min-width: 1152px) 670px, (min-width: 1024px) 55vw, 85vw" className="h-[clamp(148px,25dvh,220px)] w-full object-contain mix-blend-multiply sm:h-64 lg:h-full" />
           </div>
 
-          <div className="flex flex-col gap-6">
+          <div className="flex min-w-0 flex-col gap-4 lg:gap-5">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400">
                 {wine.category || wine.type} · {wine.region || 'Região não informada'}
@@ -142,7 +145,7 @@ export default function WineDetailPage() {
               <h1 className="font-serif text-3xl font-bold mt-2">{wine.name}</h1>
             </div>
 
-            <div className="border-t border-stone-100 pt-6">
+            <div className="border-t border-stone-100 pt-4">
               {wine.discount_percent && (
                 <span className="mb-2 inline-flex rounded-full bg-brand-primary px-3 py-1 text-xs font-black text-white">
                   {formatCatalogDiscountPercent(wine.discount_percent)}% OFF · {wine.promotion_title}
@@ -169,20 +172,6 @@ export default function WineDetailPage() {
               )}
             </div>
 
-            {wine.description && (
-              <p className="text-stone-500 text-sm leading-relaxed">{wine.description}</p>
-            )}
-
-            <div className="grid grid-cols-2 gap-3">
-              {wine.type && productAttribute(Wine, 'Tipo', wine.type)}
-              {grapeClassification && productAttribute(Grape, grapeClassification === 'Blend' ? 'Estilo' : 'Uva', grapeClassification)}
-              {wine.region && productAttribute(MapPin, 'Região', wine.region)}
-              {wine.category && productAttribute(MapPin, 'País', wine.category)}
-            </div>
-            {grapeClassification === 'Blend' && grapes.length > 0 && (
-              <p className="text-xs font-medium text-stone-500">Uvas: {grapes.join(', ')}</p>
-            )}
-
             {stock && (
               <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-red-600">
                 <StockIcon className="h-5 w-5" aria-hidden="true" />
@@ -193,6 +182,26 @@ export default function WineDetailPage() {
               </div>
             )}
 
+            <div className="space-y-2">
+              <button
+                onClick={() => { addToCart(wine); setIsCartOpen(true); }}
+                type="button"
+                disabled={wine.stock === 0}
+                className="flex min-h-12 w-full items-center justify-center gap-2 rounded-brand-xl bg-brand-primary px-5 text-base font-bold text-white transition hover:bg-brand-primary-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ShoppingCart className="h-5 w-5" aria-hidden="true" />
+                {wine.stock === 0 ? 'Indisponível' : 'Comprar'}
+              </button>
+              <button
+                onClick={() => { addToCart(wine); showToast('Item adicionado. Ajuste a quantidade no carrinho quando quiser.', 'success'); }}
+                type="button"
+                disabled={wine.stock === 0}
+                className="flex min-h-11 w-full items-center justify-center gap-2 rounded-brand-xl border border-brand-primary bg-white px-5 text-sm font-bold text-brand-primary transition hover:bg-stone-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ShoppingCart className="h-5 w-5" aria-hidden="true" />
+                Adicionar ao carrinho
+              </button>
+            </div>
             <div className="flex gap-3">
               <button
                 onClick={() => { toggleFavorite(wine); showToast(isFavorite(wine.id) ? 'Removido dos favoritos' : 'Adicionado aos favoritos', 'info'); }}
@@ -214,26 +223,6 @@ export default function WineDetailPage() {
                 </svg>
               </a>
             </div>
-            <div className="space-y-3">
-              <button
-                onClick={() => { addToCart(wine); trackConversionEvent('add_to_cart', { product_id: wine.id, source: 'buy_now' }); router.push('/checkout'); }}
-                type="button"
-                disabled={wine.stock === 0}
-                className="flex min-h-14 w-full items-center justify-center gap-2 rounded-brand-2xl bg-[#82c341] px-5 text-lg font-bold text-white shadow-lg shadow-lime-900/15 transition hover:bg-[#6eae31] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <ShoppingCart className="h-5 w-5" aria-hidden="true" />
-                {wine.stock === 0 ? 'Indisponível' : 'Comprar agora'}
-              </button>
-              <button
-                onClick={() => { addToCart(wine); trackConversionEvent('add_to_cart', { product_id: wine.id, source: 'product_page' }); showToast('Item adicionado. Ajuste a quantidade no carrinho quando quiser.', 'success'); }}
-                type="button"
-                disabled={wine.stock === 0}
-                className="flex min-h-12 w-full items-center justify-center gap-2 rounded-brand-xl bg-brand-primary px-5 text-base font-bold text-white shadow-lg shadow-red-900/15 transition hover:bg-brand-primary-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 lg:border lg:border-brand-primary lg:bg-white lg:text-brand-primary lg:shadow-none lg:hover:bg-brand-primary-light"
-              >
-                <ShoppingCart className="h-5 w-5" aria-hidden="true" />
-                Adicionar ao carrinho
-              </button>
-            </div>
             <section className="rounded-brand-xl border border-stone-200 bg-white p-4" aria-labelledby="delivery-calculator-title">
               <div className="flex items-center gap-2"><Truck className="h-5 w-5 text-brand-primary" aria-hidden="true" /><h2 id="delivery-calculator-title" className="font-bold text-stone-900">Calcule frete e prazo</h2></div>
               <form onSubmit={(event) => { event.preventDefault(); void handleCalculateDelivery(); }} className="mt-3 flex gap-2">
@@ -246,9 +235,23 @@ export default function WineDetailPage() {
             <aside className="rounded-brand-xl border border-emerald-200 bg-emerald-50/60 p-4">
               <div className="flex items-start gap-3"><MapPin className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700" aria-hidden="true" /><div><p className="font-bold text-emerald-950">Retire na loja e ganhe <span className="text-emerald-700">5% de desconto</span></p><p className="mt-1 text-xs font-bold text-emerald-800">Comprando até às 19h30</p><p className="mt-2 text-xs leading-5 text-emerald-950/80">{PICKUP_SCHEDULE_NOTICE}</p><address className="mt-2 not-italic text-xs leading-5 text-emerald-950/80">Rua Goiânia, 339 - Itapuã, Vila Velha - ES, 29101-780</address></div></div>
             </aside>
-            <a href="/catalogo" className="block text-center text-sm font-bold text-stone-400 hover:text-brand-primary transition">
+            {wine.description && (
+              <p className="text-stone-500 text-sm leading-relaxed">{wine.description}</p>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              {wine.type && productAttribute(Wine, 'Tipo', wine.type)}
+              {grapeClassification && productAttribute(Grape, grapeClassification === 'Blend' ? 'Estilo' : 'Uva', grapeClassification)}
+              {wine.region && productAttribute(MapPin, 'Região', wine.region)}
+              {wine.category && productAttribute(MapPin, 'País', wine.category)}
+            </div>
+            {grapeClassification === 'Blend' && grapes.length > 0 && (
+              <p className="text-xs font-medium text-stone-500">Uvas: {grapes.join(', ')}</p>
+            )}
+
+            <Link href={returnHref} className="block text-center text-sm font-bold text-stone-400 hover:text-brand-primary transition">
               Continuar comprando
-            </a>
+            </Link>
           </div>
         </div>
 

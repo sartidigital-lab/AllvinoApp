@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { SelectionBanners } from '@/components/catalog/SelectionBanners';
 
 export default function HomePage() {
   return (
@@ -38,7 +37,6 @@ export default function HomePage() {
         </div>
       </main>
 
-      <SelectionBanners />
       <section className="mx-auto max-w-4xl px-5 py-12">
         <h2 className="mb-8 text-center text-xs font-bold uppercase tracking-widest text-stone-400">
           Por que escolher a Allvino?

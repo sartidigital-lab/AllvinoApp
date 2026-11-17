@@ -1,8 +1,8 @@
 import { createClient } from '@/utils/supabase/client';
 import { createBffClient } from '@/utils/supabase/bff-client';
 import { LegacyProduct, mapProductToWine, mapWineToProduct } from '@/lib/catalog/products';
+import type { PricingImportRow } from '@/lib/catalog/pricingImport';
 import { Wine } from '@/types/database';
-import { PricingImportRow } from '@/lib/catalog/pricingImport';
 
 function getDatabaseErrorMessage(error: unknown) {
   if (!error) return '';
@@ -17,7 +17,7 @@ async function fetchCachedPublicCatalog(): Promise<Wine[] | null> {
   if (typeof window === 'undefined') return null;
 
   const response = await fetch('/api/catalogo', {
-    cache: 'default',
+    cache: 'no-store',
     headers: { Accept: 'application/json' },
   });
 

@@ -7,6 +7,7 @@ type AudienceUser = {
   user_id: string;
   user_name: string;
   user_email: string | null;
+  user_phone: string | null;
   registered_at: string;
   notifications_enabled: boolean;
   device_count: number;
@@ -35,6 +36,13 @@ function formatMoney(value: number | string | null) {
 
 function formatDate(value: string) {
   return new Date(value).toLocaleDateString('pt-BR');
+}
+
+function formatPhone(value: string | null) {
+  const digits = (value || '').replace(/\D/g, '');
+  if (digits.length === 11) return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  if (digits.length === 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  return value || 'Não informado';
 }
 
 function getDeviceLabel(user: AudienceUser) {
@@ -90,7 +98,7 @@ export default function AdminNotificationsPage() {
     if (!summary) return [];
     const term = search.trim().toLocaleLowerCase('pt-BR');
     if (!term) return summary.users;
-    return summary.users.filter((user) => [user.user_name, user.user_email || ''].join(' ').toLocaleLowerCase('pt-BR').includes(term));
+    return summary.users.filter((user) => [user.user_name, user.user_email || '', user.user_phone || ''].join(' ').toLocaleLowerCase('pt-BR').includes(term));
   }, [search, summary]);
 
   const enabledUsers = summary?.users.filter((user) => user.notifications_enabled).length || 0;
@@ -149,15 +157,15 @@ export default function AdminNotificationsPage() {
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
         <section className="overflow-hidden rounded-brand-xl border border-brand-border bg-brand-surface">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-brand-border p-5">
-            <div><h2 className="font-serif text-xl font-bold text-brand-ink">Base de usuários</h2><p className="mt-1 text-sm text-brand-ink-light">Dados de compra e permissões por conta.</p></div>
-            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar usuário ou e-mail" className="min-h-10 rounded-brand-lg border border-brand-border bg-white px-3 text-sm outline-none focus:border-brand-primary" />
+            <div><h2 className="font-serif text-xl font-bold text-brand-ink">Base de usuários</h2><p className="mt-1 text-sm text-brand-ink-light">Dados de compra, contato e permissões por conta.</p></div>
+            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar usuário, e-mail ou WhatsApp" className="min-h-10 rounded-brand-lg border border-brand-border bg-white px-3 text-sm outline-none focus:border-brand-primary" />
           </div>
           <div className="overflow-x-auto">
-            <table className="min-w-[1000px] w-full text-left text-sm">
-              <thead className="bg-stone-50 text-[11px] uppercase tracking-wider text-stone-500"><tr><th className="px-5 py-3">Usuário</th><th className="px-4 py-3">Notificações</th><th className="px-4 py-3">Dispositivo</th><th className="px-4 py-3">Pedidos / Recorrência</th><th className="px-4 py-3">Preço médio garrafa</th><th className="px-5 py-3">Ticket médio</th></tr></thead>
+            <table className="min-w-[1140px] w-full text-left text-sm">
+              <thead className="bg-stone-50 text-[11px] uppercase tracking-wider text-stone-500"><tr><th className="px-5 py-3">Usuário</th><th className="px-4 py-3">Telefone / WhatsApp</th><th className="px-4 py-3">Notificações</th><th className="px-4 py-3">Dispositivo</th><th className="px-4 py-3">Pedidos / Recorrência</th><th className="px-4 py-3">Preço médio garrafa</th><th className="px-5 py-3">Ticket médio</th></tr></thead>
               <tbody className="divide-y divide-brand-border">
-                {!summary && <tr><td colSpan={6} className="px-5 py-10 text-center text-brand-ink-light">Carregando usuários...</td></tr>}
-                {summary && visibleUsers.length === 0 && <tr><td colSpan={6} className="px-5 py-10 text-center text-brand-ink-light">Nenhum usuário encontrado.</td></tr>}
+                {!summary && <tr><td colSpan={7} className="px-5 py-10 text-center text-brand-ink-light">Carregando usuários...</td></tr>}
+                {summary && visibleUsers.length === 0 && <tr><td colSpan={7} className="px-5 py-10 text-center text-brand-ink-light">Nenhum usuário encontrado.</td></tr>}
                 {visibleUsers.map((user) => <AudienceRow key={user.user_id} user={user} />)}
               </tbody>
             </table>
@@ -196,7 +204,7 @@ function Metric({ label, value, detail }: { label: string; value: number | strin
 }
 
 function AudienceRow({ user }: { user: AudienceUser }) {
-  return <tr className="align-top text-brand-ink"><td className="px-5 py-4"><p className="font-bold">{user.user_name}</p><p className="mt-1 text-xs text-brand-muted">{user.user_email || 'E-mail não informado'}</p></td><td className="px-4 py-4"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${user.notifications_enabled ? 'bg-emerald-50 text-emerald-700' : 'bg-stone-100 text-stone-600'}`}>{user.notifications_enabled ? 'Habilitadas' : 'Não habilitadas'}</span><p className="mt-1 text-xs text-brand-muted">{user.notifications_enabled ? `${user.device_count} dispositivo${user.device_count === 1 ? '' : 's'}` : 'Sem assinatura push'}</p></td><td className="px-4 py-4 font-medium">{getDeviceLabel(user)}</td><td className="px-4 py-4"><p className="font-bold">{user.has_orders ? 'Já fez pedido' : 'Ainda não comprou'}</p><p className="mt-1 text-xs text-brand-muted">{user.has_orders && user.last_order_at ? `Última compra: ${formatDate(user.last_order_at)} · ${user.days_without_purchase} dias` : `Cadastro: ${formatDate(user.registered_at)} · ${user.days_without_purchase} dias`}</p></td><td className="px-4 py-4 font-bold">{user.has_orders ? formatMoney(user.average_bottle_price) : '—'}</td><td className="px-5 py-4 font-bold">{user.has_orders ? formatMoney(user.average_order_ticket) : '—'}</td></tr>;
+  return <tr className="align-top text-brand-ink"><td className="px-5 py-4"><p className="font-bold">{user.user_name}</p><p className="mt-1 text-xs text-brand-muted">{user.user_email || 'E-mail não informado'}</p></td><td className="px-4 py-4 font-bold">{formatPhone(user.user_phone)}</td><td className="px-4 py-4"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${user.notifications_enabled ? 'bg-emerald-50 text-emerald-700' : 'bg-stone-100 text-stone-600'}`}>{user.notifications_enabled ? 'Habilitadas' : 'Não habilitadas'}</span><p className="mt-1 text-xs text-brand-muted">{user.notifications_enabled ? `${user.device_count} dispositivo${user.device_count === 1 ? '' : 's'}` : 'Sem assinatura push'}</p></td><td className="px-4 py-4 font-medium">{getDeviceLabel(user)}</td><td className="px-4 py-4"><p className="font-bold">{user.has_orders ? 'Já fez pedido' : 'Ainda não comprou'}</p><p className="mt-1 text-xs text-brand-muted">{user.has_orders && user.last_order_at ? `Última compra: ${formatDate(user.last_order_at)} · ${user.days_without_purchase} dias` : `Cadastro: ${formatDate(user.registered_at)} · ${user.days_without_purchase} dias`}</p></td><td className="px-4 py-4 font-bold">{user.has_orders ? formatMoney(user.average_bottle_price) : '—'}</td><td className="px-5 py-4 font-bold">{user.has_orders ? formatMoney(user.average_order_ticket) : '—'}</td></tr>;
 }
 
 function AudienceOption({ selected, onChange, title, detail }: { selected: boolean; onChange: () => void; title: string; detail: string }) {

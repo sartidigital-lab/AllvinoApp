@@ -171,6 +171,8 @@ describe('Pagar.me hosted checkout', () => {
     expect(verifyPagarmeWebhookSignature(rawBody, signature, key)).toBe(true);
     expect(verifyPagarmeWebhookSignature(rawBody, signature, 'another-key')).toBe(false);
     expect(mapPagarmeWebhookStatus({ type: 'order.paid' })).toBe('paid');
+    expect(mapPagarmeWebhookStatus({ type: 'order.payment_failed' })).toBe('failed');
+    expect(mapPagarmeWebhookStatus({ type: 'checkout.canceled' })).toBe('cancelled');
     expect(mapPagarmeWebhookStatus({ type: 'charge.refunded' })).toBe('refunded');
     expect(mapPagarmeWebhookStatus({ type: 'checkout.closed' })).toBeNull();
   });

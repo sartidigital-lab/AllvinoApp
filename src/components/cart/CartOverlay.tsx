@@ -9,16 +9,16 @@ import { usePathname } from 'next/navigation';
 import { X } from 'lucide-react';
 import { PICKUP_SCHEDULE_NOTICE } from '@/lib/delivery/rules';
 import { AUTH_STATE_EVENT, getBrowserSession } from '@/lib/auth/browserSession';
-import { trackConversionEvent } from '@/lib/analytics/conversionEvents';
 
 export function CartOverlay() {
-  const { cart, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, cartTotal, deliveryMethod, setDeliveryMethod } = useCart();
+  const { cart, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, cartTotal } = useCart();
+  const [retirada, setRetirada] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const pathname = usePathname();
   const panelRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
-  const discount = deliveryMethod === 'retirada' ? cartTotal * 0.05 : 0;
+  const discount = retirada ? cartTotal * 0.05 : 0;
   const finalTotal = cartTotal - discount;
 
   useEffect(() => {
@@ -85,10 +85,6 @@ export function CartOverlay() {
       previousActiveElement?.focus();
     };
   }, [isCartOpen, setIsCartOpen]);
-
-  useEffect(() => {
-    if (isCartOpen) trackConversionEvent('cart_opened', { item_count: cart.length, cart_total: cartTotal });
-  }, [cart.length, cartTotal, isCartOpen]);
 
   if (!isCartOpen) return null;
 
@@ -179,8 +175,8 @@ export function CartOverlay() {
             <Checkbox
               label="Retirada na Loja"
               description="Ganhe 5% de desconto"
-              checked={deliveryMethod === 'retirada'}
-              onChange={(e) => setDeliveryMethod(e.target.checked ? 'retirada' : 'entrega')}
+              checked={retirada}
+              onChange={(e) => setRetirada(e.target.checked)}
             />
             <p className="text-xs leading-5 text-stone-500">{PICKUP_SCHEDULE_NOTICE}</p>
             
@@ -190,16 +186,16 @@ export function CartOverlay() {
             </div>
             
             <Link 
-              href="/checkout"
+              href={isAuthenticated ? '/checkout' : '/?login=true&redirectTo=/checkout'}
               onClick={() => setIsCartOpen(false)}
               className="w-full block"
             >
               <Button variant="primary" size="lg" className="w-full">
-                {isAuthenticated ? 'Ir para pagamento' : 'Continuar como visitante'}
+                {isAuthenticated ? 'Ir para Pagamento' : 'Entrar ou criar conta'}
               </Button>
             </Link>
             {isAuthenticated === false && (
-              <p className="text-center text-xs font-medium text-stone-500">Você poderá criar sua conta no envio do pedido.</p>
+              <p className="text-center text-xs font-medium text-stone-500">Entre ou crie sua conta para finalizar o pedido.</p>
             )}
           </div>
         )}

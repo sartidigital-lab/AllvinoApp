@@ -50,6 +50,10 @@ describe('security controls', () => {
     expect(proxy).toContain("connect-src 'self'");
     expect(proxy).toContain('https://brasilapi.com.br');
     expect(proxy).toContain('https://viacep.com.br');
+    expect(proxy).toContain('https://connect.facebook.net');
+    expect(proxy).toContain('https://www.facebook.com');
+    expect(proxy).toContain('https://www.googletagmanager.com');
+    expect(proxy).toContain('https://www.google-analytics.com');
     expect(proxy).toContain("'strict-dynamic'");
     expect(proxy).not.toContain("script-src 'self' 'unsafe-inline'");
     expect(readFileSync('src/app/layout.tsx', 'utf8')).toContain('await connection()');

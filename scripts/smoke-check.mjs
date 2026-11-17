@@ -34,7 +34,7 @@ const checks = [
   },
   {
     file: 'src/components/cart/CartOverlay.tsx',
-    includes: ['Sua Seleção', 'Retirada na Loja', 'Continuar como visitante', 'deliveryMethod', 'updateQuantity', 'removeFromCart'],
+    includes: ['Sua Seleção', 'Retirada na Loja', 'Entrar ou criar conta', '/?login=true&redirectTo=/checkout', 'updateQuantity', 'removeFromCart'],
   },
   {
     file: 'src/app/catalogo/page.tsx',

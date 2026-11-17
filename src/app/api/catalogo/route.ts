@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { CatalogProduct, mapCatalogProductToWine } from '@/lib/catalog/products';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function GET() {
   const supabase = createClient(
@@ -27,7 +28,7 @@ export async function GET() {
 
   return NextResponse.json(((data || []) as CatalogProduct[]).map(mapCatalogProductToWine), {
     headers: {
-      'Cache-Control': 'public, max-age=30, s-maxage=60, stale-while-revalidate=300',
+      'Cache-Control': 'no-store, max-age=0',
     },
   });
 }

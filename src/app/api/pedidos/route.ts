@@ -84,8 +84,8 @@ export async function POST(request: Request) {
       p_delivery_zip_code: deliveryZipCode || null,
       p_customer_name: user.user_metadata?.nome_completo || user.email?.split('@')[0] || null,
       p_customer_phone: user.user_metadata?.whatsapp || user.user_metadata?.telefone || null,
-      // This named argument selects the current checkout RPC signature and
-      // records consent only when the visitor explicitly allowed marketing.
+      // Explicitly select the current RPC signature. The database also stores
+      // the choice only when the visitor allowed the marketing category.
       p_marketing_consent: marketingConsent,
     }
   );

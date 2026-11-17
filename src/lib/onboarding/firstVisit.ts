@@ -1,9 +1,15 @@
-export type FirstVisitStep = 'age' | 'underage' | 'done';
+export type FirstVisitStep = 'age' | 'underage' | 'install' | 'notifications' | 'done';
 
 export const FIRST_VISIT_STORAGE_KEY = 'allvino:first-visit:v1';
 
-const savedSteps: FirstVisitStep[] = ['underage', 'done'];
+const savedSteps: FirstVisitStep[] = ['underage', 'install', 'notifications', 'done'];
 
 export function readFirstVisitStep(value: string | null): FirstVisitStep {
+  if (value === 'location') return 'install';
   return value && savedSteps.includes(value as FirstVisitStep) ? value as FirstVisitStep : 'age';
+}
+
+export function nextFirstVisitStep(step: FirstVisitStep): FirstVisitStep {
+  if (step === 'install') return 'notifications';
+  return 'done';
 }

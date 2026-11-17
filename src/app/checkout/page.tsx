@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { CurrentUser, getCurrentUserFast } from '@/lib/auth/currentUser';
 import { createOrder, getUserOrders } from '@/lib/database/orders';
@@ -22,7 +23,6 @@ import {
 } from '@/lib/payments/terms';
 import { createPaymentCheckout } from '@/lib/database/payments';
 import { DeliveryZone, Promotion } from '@/types/database';
-import { trackConversionEvent } from '@/lib/analytics/conversionEvents';
 
 const SALES_WHATSAPP_NUMBER = '5527992770952';
 
@@ -50,8 +50,9 @@ function formatDeliveryAddress(address: AddressFields) {
 }
 
 export default function CheckoutPage() {
-  const { cart, cartTotal, clearCart, deliveryMethod: entrega, setDeliveryMethod } = useCart();
+  const { cart, cartTotal, clearCart } = useCart();
   const [user, setUser] = useState<CurrentUser | null>(null);
+  const [entrega, setEntrega] = useState('entrega');
   const [address, setAddress] = useState<AddressFields>(EMPTY_ADDRESS);
   const [cep, setCep] = useState('');
   const [isLookingUpAddress, setIsLookingUpAddress] = useState(false);
@@ -63,6 +64,7 @@ export default function CheckoutPage() {
   const [pagamento, setPagamento] = useState('Pix');
   const [installments, setInstallments] = useState(1);
   const [promotionCode, setPromotionCode] = useState('');
+  const [isCouponOpen, setIsCouponOpen] = useState(false);
   const [appliedPromotion, setAppliedPromotion] = useState<Promotion | null>(null);
   const [promotionMessage, setPromotionMessage] = useState<string | null>(null);
   const [isCheckingPromotion, setIsCheckingPromotion] = useState(false);
@@ -84,12 +86,11 @@ export default function CheckoutPage() {
   }, []);
 
   useEffect(() => {
-    if (cart.length > 0) trackConversionEvent('checkout_started', { item_count: cart.length, cart_total: cartTotal });
-  }, [cart.length, cartTotal]);
-
-  useEffect(() => {
     const couponCode = new URLSearchParams(window.location.search).get('cupom');
-    if (couponCode) setPromotionCode(normalizePromotionCode(couponCode));
+    if (couponCode) {
+      setPromotionCode(normalizePromotionCode(couponCode));
+      setIsCouponOpen(true);
+    }
   }, []);
 
   useEffect(() => () => {
@@ -108,6 +109,7 @@ export default function CheckoutPage() {
   const discount = nonPaymentDiscount + pixDiscount;
   const shippingFee = entrega === 'entrega' && deliveryZone ? calculateShippingFee(deliveryZone, cartTotal) : 0;
   const finalTotal = cartTotal - discount + shippingFee;
+  const isShippingPending = entrega === 'entrega' && !deliveryZone;
   const cardInstallmentOptions = getCardInstallmentOptions(finalTotal);
   const selectedCardInstallments = normalizeCardInstallments(finalTotal, installments);
   const cartItemsMessage = cart.map((item) => `${item.quantity}x ${item.name}`).join('\n');
@@ -338,14 +340,12 @@ export default function CheckoutPage() {
     }
 
     if (!user) {
-      trackConversionEvent('checkout_auth_required', { item_count: cart.length, cart_total: finalTotal });
       window.location.assign('/?login=true&mode=signup&redirectTo=/checkout');
       return;
     }
 
     const isCardPayment = pagamento === 'Cartao (Link)';
     setIsLoading(true);
-    trackConversionEvent('order_submission_started', { item_count: cart.length, total: finalTotal, delivery_method: entrega, payment_method: pagamento });
 
     const { order, error } = await createOrder(
       user.id,
@@ -364,7 +364,6 @@ export default function CheckoutPage() {
       return;
     }
 
-    trackConversionEvent('order_created', { order_id: order.id, total: order.total_amount, delivery_method: entrega, payment_method: pagamento });
     const orderInstallments = isCardPayment
       ? normalizeCardInstallments(order.total_amount, installments)
       : 1;
@@ -391,14 +390,17 @@ export default function CheckoutPage() {
         <p className="text-stone-500 text-sm text-center">Confirme os seus dados para enviarmos o pedido.</p>
       </div>
 
-      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(340px,420px)] lg:items-start lg:gap-10">
-      <div className="bg-white rounded-3xl p-6 border border-stone-100 shadow-sm space-y-4 lg:sticky lg:top-24 lg:col-start-2 lg:row-start-1">
+      {cart.length === 0 ? (
+        <section className="rounded-3xl border border-stone-100 bg-white p-6 text-center shadow-sm">
+          <h2 className="font-serif text-xl font-bold">Seu carrinho está vazio</h2>
+          <Link href="/catalogo" className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-brand-primary px-5 font-bold text-white hover:bg-brand-primary-hover">Voltar ao catálogo</Link>
+        </section>
+      ) : (
+      <div className="space-y-4 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(340px,420px)] lg:items-start lg:gap-10 lg:space-y-0">
+      <div className="bg-white rounded-3xl p-4 border border-stone-100 shadow-sm space-y-3 sm:p-6 lg:sticky lg:top-24 lg:col-start-2 lg:row-start-1">
         <h2 className="text-xs font-bold text-stone-400 uppercase tracking-widest border-b pb-2">Seus Itens</h2>
-        <div className="space-y-3">
-          {cart.length === 0 ? (
-            <p className="text-stone-500 text-sm">O seu carrinho está vazio.</p>
-          ) : (
-            cart.map((item) => (
+        <div className="max-h-28 space-y-2 overflow-y-auto lg:max-h-[min(26dvh,14rem)]">
+          {cart.map((item) => (
               <div key={item.id} className="flex justify-between items-center text-sm">
                 <div className="flex gap-2 items-center">
                   <span className="font-bold text-stone-400">{item.quantity}x</span>
@@ -412,8 +414,7 @@ export default function CheckoutPage() {
                   {item.discount_percent && <p className="text-[10px] font-black text-[#B91C1C]">-{item.discount_percent}% aplicado</p>}
                 </div>
               </div>
-            ))
-          )}
+          ))}
         </div>
         <div className="border-t pt-4 space-y-2">
           <div className="flex justify-between text-sm text-stone-500">
@@ -432,103 +433,41 @@ export default function CheckoutPage() {
               <span>- R$ {pixDiscount.toFixed(2).replace('.', ',')}</span>
             </div>
           )}
-          {shippingFee > 0 && (
+          {entrega === 'entrega' && (
             <div className="flex justify-between text-sm text-stone-500">
               <span>Frete</span>
-              <span>R$ {shippingFee.toFixed(2).replace('.', ',')}</span>
+              <span>{isShippingPending ? 'A calcular' : shippingFee === 0 ? 'Grátis' : `R$ ${shippingFee.toFixed(2).replace('.', ',')}`}</span>
             </div>
           )}
           <div className="flex justify-between text-xl font-bold pt-2">
-            <span>Total</span>
+            <span>{isShippingPending ? 'Total estimado' : 'Total'}</span>
             <span>R$ {finalTotal.toFixed(2).replace('.', ',')}</span>
           </div>
         </div>
       </div>
 
-      <div className="space-y-4 lg:col-start-1 lg:row-start-1">
-      <div className="bg-white rounded-3xl p-6 border border-stone-100 shadow-sm space-y-5">
-        <h2 className="text-xs font-bold text-stone-400 uppercase tracking-widest border-b pb-2">Seus Dados</h2>
-        {user ? (
-          <div className="grid grid-cols-1 gap-4">
-            <div>
-              <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest ml-1">Nome</label>
-              <input type="text" readOnly value={user.name} className="w-full border-stone-200 bg-stone-50 rounded-xl text-sm font-bold text-stone-500 mt-1 focus:ring-0" />
-            </div>
-            <div>
-              <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest ml-1">WhatsApp</label>
-              <input type="text" readOnly value={user.phone || 'Não informado'} className="w-full border-stone-200 bg-stone-50 rounded-xl text-sm font-bold text-stone-500 mt-1 focus:ring-0" />
-            </div>
-          </div>
-        ) : (
-          <p className="rounded-2xl bg-stone-50 p-4 text-sm font-bold text-stone-500">
-            Você pode montar o pedido sem cadastro. Ao enviar para pagamento, pediremos seu nome, WhatsApp, e-mail e senha para criar a conta.
-          </p>
-        )}
-      </div>
-
-      <div className="space-y-4">
-        <div className="bg-white rounded-3xl p-6 border border-stone-100 shadow-sm space-y-4">
-          <h2 className="text-xs font-bold text-stone-400 uppercase tracking-widest border-b pb-2">Cupom</h2>
-          <div className="flex gap-2">
-            <input
-              value={promotionCode}
-              onChange={(event) => {
-                setPromotionCode(event.target.value.toUpperCase());
-                if (appliedPromotion) setAppliedPromotion(null);
-              }}
-              placeholder="Digite seu cupom"
-              className="min-w-0 flex-1 border-stone-200 rounded-2xl p-4 text-sm font-bold uppercase outline-none focus:border-black transition-colors"
-            />
-            {appliedPromotion ? (
-              <button
-                type="button"
-                onClick={clearPromotion}
-                className="rounded-2xl border border-stone-200 px-4 text-sm font-bold text-stone-600"
-              >
-                Remover
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handleApplyPromotion}
-                disabled={isCheckingPromotion || cart.length === 0}
-                className="rounded-2xl bg-black px-4 text-sm font-bold text-white disabled:opacity-50"
-              >
-                {isCheckingPromotion ? 'Validando...' : 'Aplicar'}
-              </button>
-            )}
-          </div>
-          {promotionMessage && (
-            <p className={`text-xs font-bold ${appliedPromotion ? 'text-emerald-700' : 'text-stone-500'}`}>
-              {promotionMessage}
-            </p>
-          )}
-          {appliedPromotion && (
-            <div className="rounded-2xl bg-emerald-50 p-3 text-xs font-bold text-emerald-800">
-              Desconto do cupom: - R$ {promotionDiscount.toFixed(2).replace('.', ',')}
-            </div>
-          )}
-        </div>
-
+      <div className="min-w-0 space-y-4 lg:col-start-1 lg:row-start-1">
         <div className="bg-white rounded-3xl p-6 border border-stone-100 shadow-sm space-y-5">
-          <h2 className="text-xs font-bold text-stone-400 uppercase tracking-widest border-b pb-2">Entrega</h2>
+          <h2 className="text-xs font-bold text-stone-400 uppercase tracking-widest border-b pb-2">Entrega ou retirada</h2>
           <div className="space-y-3">
             <label className="flex items-center gap-3 p-4 border rounded-2xl border-stone-200 cursor-pointer has-[:checked]:border-black has-[:checked]:bg-stone-50 transition">
-              <input type="radio" name="entrega" value="entrega" checked={entrega === 'entrega'} onChange={() => setDeliveryMethod('entrega')} className="text-black focus:ring-0" />
+              <input type="radio" name="entrega" value="entrega" checked={entrega === 'entrega'} onChange={() => setEntrega('entrega')} className="text-black focus:ring-0" />
               <div className="flex-1 text-sm font-bold">Entrega no Endereço</div>
             </label>
             <label className="flex items-center gap-3 p-4 border rounded-2xl border-stone-200 cursor-pointer has-[:checked]:border-black has-[:checked]:bg-stone-50 transition">
-              <input type="radio" name="entrega" value="retirada" checked={entrega === 'retirada'} onChange={() => setDeliveryMethod('retirada')} className="text-black focus:ring-0" />
+              <input type="radio" name="entrega" value="retirada" checked={entrega === 'retirada'} onChange={() => setEntrega('retirada')} className="text-black focus:ring-0" />
               <div className="flex-1"><p className="text-sm font-bold">Retirada na Loja <span className="ml-2 text-[10px] text-green-600">5% OFF</span></p><p className="mt-1 text-xs font-medium leading-5 text-stone-500">{PICKUP_SCHEDULE_NOTICE}</p></div>
             </label>
           </div>
           {entrega === 'entrega' && (
             <div className="space-y-3">
+              <label htmlFor="checkout-cep" className="block text-sm font-bold text-stone-700">CEP para calcular frete</label>
               <div className="flex gap-2">
                 <input
+                  id="checkout-cep"
                   value={cep}
                   onChange={(event) => handleZipCodeChange(event.target.value)}
-                  placeholder="CEP"
+                  placeholder="00000-000"
                   inputMode="numeric"
                   autoComplete="postal-code"
                   maxLength={9}
@@ -633,6 +572,71 @@ export default function CheckoutPage() {
         </div>
 
         <div className="bg-white rounded-3xl p-6 border border-stone-100 shadow-sm space-y-5">
+          <h2 className="text-xs font-bold text-stone-400 uppercase tracking-widest border-b pb-2">Seus Dados</h2>
+          {user ? (
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest ml-1">Nome</label>
+                <input type="text" readOnly value={user.name} className="w-full border-stone-200 bg-stone-50 rounded-xl text-sm font-bold text-stone-500 mt-1 focus:ring-0" />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest ml-1">WhatsApp</label>
+                <input type="text" readOnly value={user.phone || 'Não informado'} className="w-full border-stone-200 bg-stone-50 rounded-xl text-sm font-bold text-stone-500 mt-1 focus:ring-0" />
+              </div>
+            </div>
+          ) : (
+            <p className="rounded-2xl bg-stone-50 p-4 text-sm font-bold text-stone-500">
+              Você pode montar o pedido sem cadastro. Ao enviar para pagamento, pediremos seu nome, WhatsApp, e-mail e senha para criar a conta.
+            </p>
+          )}
+        </div>
+
+        <details open={isCouponOpen} onToggle={(event) => setIsCouponOpen(event.currentTarget.open)} className="rounded-3xl border border-stone-100 bg-white px-5 py-2.5 shadow-sm">
+          <summary className="min-h-11 cursor-pointer py-3 text-sm font-bold text-stone-700">{appliedPromotion ? `Cupom ${appliedPromotion.code} aplicado` : 'Tenho um cupom'}</summary>
+          <div className="space-y-4 pb-3">
+          <div className="flex gap-2">
+            <input
+              value={promotionCode}
+              onChange={(event) => {
+                setPromotionCode(event.target.value.toUpperCase());
+                if (appliedPromotion) setAppliedPromotion(null);
+              }}
+              placeholder="Digite seu cupom"
+              className="min-w-0 flex-1 border-stone-200 rounded-2xl p-4 text-sm font-bold uppercase outline-none focus:border-black transition-colors"
+            />
+            {appliedPromotion ? (
+              <button
+                type="button"
+                onClick={clearPromotion}
+                className="rounded-2xl border border-stone-200 px-4 text-sm font-bold text-stone-600"
+              >
+                Remover
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleApplyPromotion}
+                disabled={isCheckingPromotion || cart.length === 0}
+                className="rounded-2xl bg-black px-4 text-sm font-bold text-white disabled:opacity-50"
+              >
+                {isCheckingPromotion ? 'Validando...' : 'Aplicar'}
+              </button>
+            )}
+          </div>
+          {promotionMessage && (
+            <p className={`text-xs font-bold ${appliedPromotion ? 'text-emerald-700' : 'text-stone-500'}`}>
+              {promotionMessage}
+            </p>
+          )}
+          {appliedPromotion && (
+            <div className="rounded-2xl bg-emerald-50 p-3 text-xs font-bold text-emerald-800">
+              Desconto do cupom: - R$ {promotionDiscount.toFixed(2).replace('.', ',')}
+            </div>
+          )}
+          </div>
+        </details>
+
+        <div className="bg-white rounded-3xl p-6 border border-stone-100 shadow-sm space-y-5">
           <h2 className="text-xs font-bold text-stone-400 uppercase tracking-widest border-b pb-2">Pagamento</h2>
           <select
             value={pagamento}
@@ -669,11 +673,10 @@ export default function CheckoutPage() {
             </div>
           )}
         </div>
-      </div>
 
       <div className="space-y-3">
         {checkoutMessage && (
-          <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-center text-sm font-bold text-red-700">
+          <div role="alert" className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-center text-sm font-bold text-red-700">
             {checkoutMessage}
           </div>
         )}
@@ -687,8 +690,12 @@ export default function CheckoutPage() {
           disabled={isLoading}
           className="flex w-full items-center justify-center gap-3 rounded-3xl bg-lime-400 py-5 text-lg font-bold text-stone-950 shadow-xl shadow-lime-500/20 transition-colors hover:bg-lime-300 active:scale-95 disabled:opacity-50"
         >
-          {pagamento === 'Pix' && (
+          {pagamento === 'Pix' ? (
             <span className="material-symbols-outlined text-[26px]">qr_code_2</span>
+          ) : (
+            <svg aria-hidden="true" viewBox="0 0 32 32" className="hidden">
+              <path d="M16.03 4C9.39 4 4 9.28 4 15.78c0 2.24.65 4.34 1.78 6.12L4.61 28l6.29-1.62A12.2 12.2 0 0 0 16.03 27C22.67 27 28 21.72 28 15.22 28 8.72 22.67 4 16.03 4Zm0 20.83c-1.66 0-3.28-.43-4.7-1.25l-.34-.2-3.73.96.99-3.55-.23-.37a9.36 9.36 0 0 1-1.49-5.07c0-5.3 4.38-9.62 9.76-9.62 5.37 0 9.19 4.02 9.19 9.49 0 5.3-4.09 9.61-9.45 9.61Zm5.37-7.2c-.29-.14-1.72-.83-1.99-.92-.27-.1-.46-.14-.66.14-.19.28-.76.92-.93 1.11-.17.19-.34.21-.63.07-.29-.14-1.23-.44-2.34-1.4-.86-.75-1.44-1.68-1.61-1.96-.17-.28-.02-.43.13-.57.13-.13.29-.34.43-.51.14-.16.19-.28.29-.47.1-.19.05-.35-.02-.5-.07-.14-.66-1.55-.9-2.13-.24-.56-.49-.49-.66-.5h-.56c-.19 0-.5.07-.76.35-.27.28-1 1-1 2.42 0 1.42 1.03 2.79 1.17 2.98.14.19 2.03 3.02 4.91 4.24.69.29 1.22.46 1.64.59.69.21 1.31.18 1.8.11.55-.08 1.72-.69 1.96-1.35.24-.67.24-1.24.17-1.35-.07-.11-.26-.18-.55-.32Z" />
+            </svg>
           )}
           {isLoading
             ? 'PROCESSANDO...'
@@ -699,6 +706,7 @@ export default function CheckoutPage() {
       </div>
       </div>
       </div>
+      )}
     </main>
   );
 }

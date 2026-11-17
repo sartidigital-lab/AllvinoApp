@@ -21,6 +21,10 @@ const requiredFiles = [
     ],
   },
   {
+    file: 'src/app/api/pedidos/route.ts',
+    includes: ['create_order_with_stock_reservation', 'p_marketing_consent'],
+  },
+  {
     file: 'src/lib/database/payments.ts',
     includes: ['/api/pagamentos/checkout'],
   },
@@ -43,6 +47,10 @@ const requiredFiles = [
   {
     file: 'supabase/migrations/20261020212145_order_payment_shipping_statuses.sql',
     includes: ['prevent_unpaid_pagarme_fulfillment', "new.payment_status = 'cancelled'"],
+  },
+  {
+    file: 'supabase/migrations/20261110170000_add_meta_purchase_tracking.sql',
+    includes: ['p_marketing_consent boolean default false', "notify pgrst, 'reload schema'"],
   },
 ];
 

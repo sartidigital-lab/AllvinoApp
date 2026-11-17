@@ -24,7 +24,7 @@ export function Header() {
         <AppShareButton />
       </div>
       
-      <Link href="/catalogo" aria-label="Allvino — ir para o catálogo" className="h-12 flex items-center justify-center">
+      <Link href="/catalogo" className="h-12 flex items-center justify-center">
         <Image src="/logo-allvino-header.png" alt="Allvino" width={144} height={48} priority className="h-auto w-36 object-contain" />
       </Link>
       
@@ -47,6 +47,7 @@ export function Header() {
           <Link href="/catalogo" className="shrink-0" aria-label="Allvino — ir para o catálogo">
             <Image src="/logo-allvino-header.png" alt="Allvino" width={144} height={48} priority className="h-auto w-36 object-contain" />
           </Link>
+
           <nav className="flex min-w-0 flex-1 items-center gap-1" aria-label="Navegação principal">
             {desktopLinks.map(({ href, label, icon: Icon }) => (
               <Link key={href} href={href} className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-bold text-stone-600 transition hover:bg-stone-100 hover:text-brand-primary">
@@ -55,12 +56,20 @@ export function Header() {
               </Link>
             ))}
           </nav>
+
           <div className="flex items-center gap-3">
             <AppShareButton />
-            <button type="button" aria-label={`Abrir carrinho com ${cartItemCount} ${cartItemCount === 1 ? 'item' : 'itens'}`} onClick={() => setIsCartOpen(true)} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-brand-primary px-5 text-sm font-bold text-white shadow-sm transition hover:bg-brand-primary-hover active:scale-95">
+            <button
+              type="button"
+              aria-label={`Abrir carrinho com ${cartItemCount} ${cartItemCount === 1 ? 'item' : 'itens'}`}
+              onClick={() => setIsCartOpen(true)}
+              className="inline-flex min-h-11 items-center gap-2 rounded-full bg-brand-primary px-5 text-sm font-bold text-white shadow-sm transition hover:bg-brand-primary-hover active:scale-95"
+            >
               <ShoppingBag className="h-5 w-5" aria-hidden="true" />
               Carrinho
-              <span className="flex min-h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-[10px] font-extrabold text-brand-primary" aria-hidden="true">{cartItemCount > 99 ? '99+' : cartItemCount}</span>
+              <span className="flex min-h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-[10px] font-extrabold text-brand-primary" aria-hidden="true">
+                {cartItemCount > 99 ? '99+' : cartItemCount}
+              </span>
             </button>
           </div>
         </div>

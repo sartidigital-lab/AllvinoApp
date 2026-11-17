@@ -140,5 +140,3 @@ export function CustomerRegistrationDialog({ isOpen, onClose, onRegistered }: Cu
     </div>
   );
 }
-
-

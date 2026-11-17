@@ -39,6 +39,7 @@ export function CatalogBannerCarousel({
   const fallbackImageUrl = activeBanner.image_url || activeBanner.mobile_image_url;
   const hasArtwork = Boolean(fallbackImageUrl);
   const hasOverlayContent = activeBanner.show_text || activeBanner.show_cta;
+  const needsMobileCaption = !activeBanner.mobile_image_url && hasArtwork;
 
   return (
     <section
@@ -50,40 +51,42 @@ export function CatalogBannerCarousel({
       onFocusCapture={() => setIsPaused(true)}
       onBlurCapture={() => setIsPaused(false)}
     >
-      <div className={`relative min-h-[300px] overflow-hidden ${hasArtwork ? 'bg-stone-950' : `bg-gradient-to-br ${themes[activeBanner.theme]}`} md:min-h-[360px]`}>
+      <div className={`relative overflow-hidden ${hasArtwork ? 'bg-stone-950' : `min-h-44 bg-gradient-to-br ${themes[activeBanner.theme]}`} sm:min-h-[300px] md:min-h-[360px]`}>
         {fallbackImageUrl && (
           <picture>
             {activeBanner.mobile_image_url && <source media="(max-width: 639px)" srcSet={activeBanner.mobile_image_url} />}
             <img
               src={fallbackImageUrl}
               alt={activeBanner.image_alt || ''}
-              className="absolute inset-0 h-full w-full object-cover"
+              className="block aspect-[16/9] max-h-56 w-full object-contain sm:absolute sm:inset-0 sm:aspect-auto sm:h-full sm:max-h-none sm:object-cover"
             />
           </picture>
         )}
-        {hasOverlayContent && <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/15 to-transparent" />}
+        {hasOverlayContent && <div className="absolute inset-0 hidden bg-gradient-to-r from-black/60 via-black/15 to-transparent sm:block" aria-hidden="true" />}
         <button
           type="button"
           onClick={() => onSelectPromotion(activeBanner.promotion_slug)}
-          className="absolute inset-0 z-[5] cursor-pointer focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-[-4px] focus-visible:outline-white"
+          className={`absolute inset-0 z-[5] cursor-pointer focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-[-4px] focus-visible:outline-white ${activeBanner.show_cta || needsMobileCaption ? 'hidden sm:block' : ''}`}
           aria-label={`Abrir promoção ${activeBanner.promotion_title}`}
         />
-        {hasOverlayContent && (
-          <div className="pointer-events-none relative z-10 flex min-h-[300px] max-w-2xl flex-col justify-end p-6 text-white sm:p-9 md:min-h-[360px] md:justify-center md:p-12">
-            {activeBanner.show_text && (
+        {(hasOverlayContent || needsMobileCaption) && (
+          <div className={`pointer-events-none relative z-10 flex max-w-2xl flex-col justify-end p-4 text-white sm:min-h-[300px] sm:p-9 md:min-h-[360px] md:justify-center md:p-12 ${hasOverlayContent ? '' : 'sm:hidden'}`}>
+            {activeBanner.show_text ? (
               <>
                 {activeBanner.eyebrow && <p className="mb-3 text-[11px] font-black uppercase tracking-[0.28em] text-white/70">{activeBanner.eyebrow}</p>}
                 <h2 className="max-w-xl font-serif text-3xl font-bold leading-[0.98] sm:text-4xl md:text-5xl">{activeBanner.title}</h2>
                 {activeBanner.subtitle && <p className="mt-4 max-w-lg text-sm font-medium leading-6 text-white/80 sm:text-base">{activeBanner.subtitle}</p>}
               </>
+            ) : needsMobileCaption && (
+              <p className="font-serif text-lg font-bold sm:hidden">{activeBanner.promotion_title}</p>
             )}
-            {activeBanner.show_cta && (
+            {(activeBanner.show_cta || needsMobileCaption) && (
               <button
                 type="button"
                 onClick={() => onSelectPromotion(activeBanner.promotion_slug)}
-                className="pointer-events-auto mt-6 inline-flex w-fit items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-black text-[#2A090D] transition hover:translate-x-1"
+                className={`pointer-events-auto mt-2 inline-flex min-h-11 w-fit items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-[#2A090D] transition hover:translate-x-1 sm:mt-6 sm:px-5 sm:py-3 ${activeBanner.show_cta ? '' : 'sm:hidden'}`}
               >
-                {activeBanner.cta_label}
+                {activeBanner.show_cta ? activeBanner.cta_label : 'Ver ofertas'}
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </button>
             )}
@@ -97,7 +100,7 @@ export function CatalogBannerCarousel({
       </div>
 
       {banners.length > 1 && (
-        <div className="absolute bottom-4 right-4 z-20 flex items-center gap-2">
+        <div className="relative z-20 flex items-center justify-end gap-2 bg-stone-950 px-4 pb-3 pt-1 sm:absolute sm:bottom-4 sm:right-4 sm:bg-transparent sm:p-0">
           <button
             type="button"
             onClick={() => setActiveIndex((safeIndex - 1 + banners.length) % banners.length)}

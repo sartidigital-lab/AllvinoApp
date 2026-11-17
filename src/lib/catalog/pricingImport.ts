@@ -24,10 +24,7 @@ function getCell(row: SpreadsheetRow, candidates: string[]) {
 
 function parsePrice(value: unknown) {
   if (typeof value === 'number') return value;
-  const text = String(value ?? '')
-    .replace(/R\$/gi, '')
-    .replace(/\s/g, '')
-    .trim();
+  const text = String(value ?? '').replace(/R\$/gi, '').replace(/\s/g, '').trim();
   if (!text) return Number.NaN;
   if (text.includes(',')) return Number(text.replace(/\./g, '').replace(',', '.'));
   if (/^\d{1,3}(?:\.\d{3})+$/.test(text)) return Number(text.replace(/\./g, ''));
@@ -40,9 +37,7 @@ function normalizeProductCode(value: unknown) {
 
 export function parsePricingRows(rows: SpreadsheetRow[]): PricingImportRow[] {
   const parsed = rows.map((row, index) => {
-    const productCode = normalizeProductCode(getCell(row, [
-      'Código', 'Codigo', 'Código do Produto', 'Codigo do Produto', 'SKU', 'SKU Sankhya',
-    ]));
+    const productCode = normalizeProductCode(getCell(row, ['Código', 'Codigo', 'Código do Produto', 'Codigo do Produto', 'SKU', 'SKU Sankhya']));
     const priceFrom = parsePrice(getCell(row, ['Preço DE', 'Preco DE', 'Preço De', 'Preco De']));
     const priceToValue = getCell(row, ['Preço POR', 'Preco POR', 'Preço Por', 'Preco Por']);
     const priceTo = String(priceToValue ?? '').trim() === '' ? null : parsePrice(priceToValue);
@@ -63,9 +58,7 @@ export function parsePricingRows(rows: SpreadsheetRow[]): PricingImportRow[] {
 }
 
 function escapeXml(value: string) {
-  return value.replace(/[<>&'\"]/g, (character) => ({
-    '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;',
-  })[character] || character);
+  return value.replace(/[<>&'"]/g, (character) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' })[character] || character);
 }
 
 function escapeSpreadsheetFormula(value: string) {

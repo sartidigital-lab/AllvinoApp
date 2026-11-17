@@ -30,7 +30,7 @@ const wine: Wine = {
 };
 
 function CartHarness() {
-  const { addToCart, addManyToCart, cart, isCartOpen, deliveryMethod, setDeliveryMethod } = useCart();
+  const { addToCart, addManyToCart, cart, isCartOpen } = useCart();
 
   return (
     <>
@@ -38,8 +38,6 @@ function CartHarness() {
       <button type="button" onClick={() => addManyToCart([{ ...wine, quantity: 2 }])}>Adicionar vários</button>
       <output data-testid="cart-open">{String(isCartOpen)}</output>
       <output data-testid="cart-quantity">{cart[0]?.quantity ?? 0}</output>
-      <output data-testid="delivery-method">{deliveryMethod}</output>
-      <button type="button" onClick={() => setDeliveryMethod('retirada')}>Escolher retirada</button>
     </>
   );
 }
@@ -68,11 +66,25 @@ describe('CartContext', () => {
     expect(screen.getByTestId('cart-open')).toHaveTextContent('false');
   });
 
-  it('mantém a escolha de retirada disponível para o checkout', () => {
+  it('emite add_to_cart quando a tag Google está disponível', () => {
+    const gtag = vi.fn();
+    window.gtag = gtag;
     renderCart();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Escolher retirada' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Adicionar produto' }));
 
-    expect(screen.getByTestId('delivery-method')).toHaveTextContent('retirada');
+    expect(gtag).toHaveBeenCalledWith('event', 'add_to_cart', {
+      currency: 'BRL',
+      value: 99,
+      items: [{
+        item_id: wine.id,
+        item_name: wine.name,
+        item_category: 'Argentina',
+        price: 99,
+        quantity: 1,
+      }],
+    });
+
+    window.gtag = undefined;
   });
 });

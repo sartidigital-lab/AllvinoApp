@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { AdminEmptyState, AdminNotice, AdminPageHeader, AdminSection, AdminStatCard, AdminStatusBadge } from '@/components/admin/AdminPrimitives';
 import { createWine, deleteWine, fetchWinesFromSupabase, importWinePricing, toggleWinePublished, updateWine } from '@/lib/database/wines';
 import { fetchStockLevelByCode, fetchStockLevelsByCodes, importStockLevels, normalizeProductCode, parseStockRows, saveManualStockLevel } from '@/lib/database/stock';
@@ -12,6 +13,7 @@ import { ProductImage } from '@/components/ui';
 import { parseGrapes, serializeGrapes } from '@/lib/catalog/grapes';
 import { formatProductDescription, formatProductText } from '@/lib/catalog/productText';
 import { ProductCategoriesManager } from '@/components/admin/ProductCategoriesManager';
+import { getKitEditorHref } from '@/lib/kits/routing';
 
 type WineForm = {
   name: string;
@@ -150,6 +152,7 @@ function toPayload(form: WineForm): Partial<Wine> {
 }
 
 export default function AdminCatalogPage() {
+  const router = useRouter();
   const [wines, setWines] = useState<Wine[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -252,6 +255,15 @@ export default function AdminCatalogPage() {
     setGrapeInput('');
     setIsFormOpen(true);
     setMessage(null);
+  };
+
+  const openProductEditor = (product: Wine) => {
+    if (product.product_kind === 'kit') {
+      router.push(getKitEditorHref(product.id));
+      return;
+    }
+
+    openEditForm(product);
   };
 
   const closeForm = () => {
@@ -832,7 +844,7 @@ export default function AdminCatalogPage() {
                         <span className="material-symbols-outlined text-[18px]">{wine.published ? 'visibility_off' : 'visibility'}</span>
                         {wine.published ? 'Ocultar' : 'Publicar'}
                       </button>
-                      <button onClick={() => openEditForm(wine)} className="admin-button flex items-center justify-center gap-2 border border-stone-200 text-sm text-stone-700 hover:bg-stone-50" type="button">
+                      <button onClick={() => openProductEditor(wine)} className="admin-button flex items-center justify-center gap-2 border border-stone-200 text-sm text-stone-700 hover:bg-stone-50" type="button">
                         <span className="material-symbols-outlined text-[18px]">edit</span>
                         Editar
                       </button>
@@ -905,7 +917,7 @@ export default function AdminCatalogPage() {
                           >
                             <span className="material-symbols-outlined">{wine.published ? 'visibility_off' : 'visibility'}</span>
                           </button>
-                          <button onClick={() => openEditForm(wine)} className="admin-button flex h-10 w-10 items-center justify-center text-blue-500 hover:bg-blue-50 hover:text-blue-700" title="Editar" type="button">
+                          <button onClick={() => openProductEditor(wine)} className="admin-button flex h-10 w-10 items-center justify-center text-blue-500 hover:bg-blue-50 hover:text-blue-700" title="Editar" type="button">
                             <span className="material-symbols-outlined">edit</span>
                           </button>
                           <button onClick={() => handleDelete(wine)} className="admin-button flex h-10 w-10 items-center justify-center text-red-500 hover:bg-red-50 hover:text-red-700" title="Excluir" type="button">

@@ -13,6 +13,7 @@ const adminTables = new Set([
   'product_promotion_items',
   'product_selections',
   'product_promotions',
+  'product_kit_items',
   'produtos',
   'promotions',
   'stock_imports',
@@ -22,8 +23,8 @@ const adminTables = new Set([
 const adminRpc = new Set([
   'delete_catalog_product_category',
   'get_stock_levels_for_codes',
-  'import_stock_levels_atomic',
   'import_catalog_pricing_atomic',
+  'import_stock_levels_atomic',
   'mark_manual_payment_paid',
   'save_catalog_banner_campaign',
   'save_catalog_product_category',

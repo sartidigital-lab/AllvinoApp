@@ -1,9 +1,9 @@
 "use client";
 
 import { usePathname } from 'next/navigation';
+import { CookieConsentBanner } from '@/components/privacy/CookieConsentBanner';
 import { GoogleTagManager } from '@/components/analytics/GoogleTagManager';
 import { MetaPixel } from '@/components/analytics/MetaPixel';
-import { CookieConsentBanner } from '@/components/privacy/CookieConsentBanner';
 import { WhatsAppButton } from '@/components/layout/WhatsAppButton';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 
@@ -23,7 +23,7 @@ export function CustomerOnlyExperience({ nonce }: CustomerOnlyExperienceProps) {
   return (
     <>
       <GoogleTagManager nonce={nonce} />
-      <MetaPixel nonce={nonce} />
+      <MetaPixel />
       <SiteFooter />
       <WhatsAppButton />
       <CookieConsentBanner />

@@ -8,13 +8,16 @@ import { useToast } from '@/context/ToastContext';
 import { useFavorites } from '@/context/FavoritesContext';
 import { useRecentlyViewed } from '@/context/RecentlyViewedContext';
 import { WineCardSkeleton, EmptyState, PageTransition, ProductImage } from '@/components/ui';
-import { Heart, Search, Share2, ShoppingCart, SlidersHorizontal, Wine as WineIcon, X } from 'lucide-react';
+import { Heart, Search, Share2, ShoppingCart, SlidersHorizontal, Star, Wine as WineIcon, X } from 'lucide-react';
 import { CatalogBannerCarousel } from '@/components/catalog/CatalogBannerCarousel';
+import { SelectionBanners } from '@/components/catalog/SelectionBanners';
 import { formatCatalogDiscountPercent, formatMoney, getKitUnitPrice, WinePrice } from '@/components/catalog/WinePrice';
 import { FlashOfferCountdown } from '@/components/catalog/FlashOfferCountdown';
 import { getGrapeClassification } from '@/lib/catalog/grapes';
-import { trackConversionEvent } from '@/lib/analytics/conversionEvents';
+import { clearCatalogReturn, readCatalogReturn, saveCatalogReturn, type CatalogReturn } from '@/lib/catalog/browsingState';
 import type { CatalogBanner, CatalogProductCategory, Wine } from '@/types/database';
+
+const PRODUCTS_PER_BATCH = 8;
 
 const priceRanges = [
   { label: 'Até R$50', min: 0, max: 50 },
@@ -30,9 +33,10 @@ type CatalogProductCardProps = {
   onToggleFavorite: (wine: Wine) => void;
   onShare: (wine: Wine) => void;
   isFavorite: boolean;
+  onOpen: () => void;
 };
 
-function CatalogProductCard({ wine, onAddToCart, onToggleFavorite, onShare, isFavorite }: CatalogProductCardProps) {
+function CatalogProductCard({ wine, onAddToCart, onToggleFavorite, onShare, isFavorite, onOpen }: CatalogProductCardProps) {
   const pixPrice = Number((wine.price * 0.95).toFixed(2));
   const installmentPrice = Number((wine.price / 3).toFixed(2));
   const isKit = wine.product_kind === 'kit';
@@ -47,7 +51,7 @@ function CatalogProductCard({ wine, onAddToCart, onToggleFavorite, onShare, isFa
 
   return (
     <article className="w-[calc((100vw-3rem)/2)] min-w-[138px] shrink-0 overflow-hidden bg-transparent transition-transform hover:-translate-y-0.5 sm:w-[min(42vw,220px)] md:w-[280px] md:rounded-brand-2xl md:border md:border-[#3c2528] md:bg-white md:shadow-[0_2px_10px_rgba(54,16,24,0.08)] lg:w-full lg:min-w-0">
-      <Link href={`/catalogo/${wine.id}`} className="block active:scale-[0.99]">
+      <Link href={`/catalogo/${wine.id}`} onNavigate={onOpen} className="block active:scale-[0.99]">
         <div className="relative md:border-b md:border-stone-100 md:bg-[#fdfbf8]">
           <ProductImage src={wine.image_url} alt={wine.name} width={300} height={400} sizes="(max-width: 639px) calc((100vw - 3rem) / 2), (max-width: 767px) 42vw, (min-width: 1024px) 25vw, 280px" className={`h-40 w-full object-contain mix-blend-multiply sm:h-48 md:h-52 ${imagePadding}`} />
           {hasProductBadges && (
@@ -70,7 +74,7 @@ function CatalogProductCard({ wine, onAddToCart, onToggleFavorite, onShare, isFa
             </div>
           )}
         </div>
-        <div className="px-2.5 pb-2 pt-3 sm:px-3"><p className="truncate text-[10px] font-bold uppercase tracking-wide text-stone-400 sm:text-[11px]">{wine.product_kind === 'kit' ? 'Seleção especial' : wine.type || wine.region || 'Vinho'}</p><h3 className="mt-1 min-h-11 font-serif text-[14px] font-bold leading-5 text-stone-950 line-clamp-2 sm:text-[16px]">{wine.name}</h3></div>
+        <div className="px-2.5 pb-2 pt-3 sm:px-3"><p className="truncate text-[9px] font-bold uppercase tracking-wide text-stone-400 sm:text-[10px]">{wine.product_kind === 'kit' ? 'Seleção especial' : wine.type || wine.region || 'Vinho'}</p><h3 className="mt-1 min-h-10 font-serif text-[13px] font-bold leading-4 text-stone-950 line-clamp-2 sm:text-[15px] sm:leading-5">{wine.name}</h3><p className="mt-2 flex items-center gap-1 text-[9px] text-stone-400 sm:text-[10px]"><span className="flex text-stone-300">{Array.from({ length: 5 }).map((_, index) => <Star key={index} className="h-3 w-3" />)}</span><span className="truncate">Sem avaliações</span></p></div>
       </Link>
       <div className="grid grid-cols-2 text-[10px] font-medium text-[#741128] sm:text-xs md:border-y md:border-stone-200"><button onClick={() => onToggleFavorite(wine)} type="button" className="flex min-h-9 items-center justify-center gap-1 hover:bg-[#fdf5f6] md:border-r md:border-stone-200" aria-label={isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}><Heart className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${isFavorite ? 'fill-current' : ''}`} /><span className="hidden sm:inline">Favoritar</span></button><button onClick={() => onShare(wine)} type="button" className="flex min-h-9 items-center justify-center gap-1 hover:bg-[#fdf5f6]"><Share2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" /><span className="hidden sm:inline">Compartilhar</span></button></div>
       <div className="space-y-2 p-2.5 sm:p-3">
@@ -87,13 +91,15 @@ function CatalogProductCard({ wine, onAddToCart, onToggleFavorite, onShare, isFa
   );
 }
 
-type CatalogProductRowProps = Omit<CatalogProductCardProps, 'wine' | 'isFavorite'> & {
+type CatalogProductRowProps = Omit<CatalogProductCardProps, 'wine' | 'isFavorite' | 'onOpen'> & {
   wines: Wine[];
   getIsFavorite: (id: string) => boolean;
   label: string;
+  rowId: string;
+  onOpen: (wine: Wine, row: HTMLDivElement | null) => void;
 };
 
-function CatalogProductRow({ wines, getIsFavorite, label, onAddToCart, onToggleFavorite, onShare }: CatalogProductRowProps) {
+function CatalogProductRow({ wines, getIsFavorite, label, rowId, onAddToCart, onToggleFavorite, onShare, onOpen }: CatalogProductRowProps) {
   const rowRef = useRef<HTMLDivElement>(null);
   const [pageCount, setPageCount] = useState(1);
   const [activePage, setActivePage] = useState(0);
@@ -112,8 +118,8 @@ function CatalogProductRow({ wines, getIsFavorite, label, onAddToCart, onToggleF
   }, [wines.length]);
 
   return <div>
-    <div ref={rowRef} onScroll={(event) => setActivePage(Math.min(pageCount - 1, Math.max(0, Math.round(event.currentTarget.scrollLeft / Math.max(event.currentTarget.clientWidth, 1)))))} className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-3 scrollbar-hide lg:mx-0 lg:grid lg:grid-cols-4 lg:gap-5 lg:overflow-visible lg:px-0" aria-label={label}>
-      {wines.map((wine) => <div key={wine.id} className="snap-start lg:min-w-0"><CatalogProductCard wine={wine} isFavorite={getIsFavorite(wine.id)} onAddToCart={onAddToCart} onToggleFavorite={onToggleFavorite} onShare={onShare} /></div>)}
+    <div ref={rowRef} data-catalog-row={rowId} onScroll={(event) => setActivePage(Math.min(pageCount - 1, Math.max(0, Math.round(event.currentTarget.scrollLeft / Math.max(event.currentTarget.clientWidth, 1)))))} className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-3 scrollbar-hide lg:mx-0 lg:grid lg:grid-cols-4 lg:gap-5 lg:overflow-visible lg:px-0" aria-label={label}>
+      {wines.map((wine) => <div key={wine.id} className="snap-start lg:min-w-0"><CatalogProductCard onOpen={() => onOpen(wine, rowRef.current)} wine={wine} isFavorite={getIsFavorite(wine.id)} onAddToCart={onAddToCart} onToggleFavorite={onToggleFavorite} onShare={onShare} /></div>)}
     </div>
     {pageCount > 1 && <div className="flex items-center justify-center gap-1.5 pb-1 pt-0.5 md:hidden" aria-label="Indicador de rolagem horizontal"><span className="mr-1 text-[10px] font-bold text-stone-400">Deslize</span>{Array.from({ length: pageCount }).map((_, index) => <span key={index} className={`h-1.5 rounded-full transition-all ${index === activePage ? 'w-5 bg-brand-primary' : 'w-1.5 bg-stone-300'}`} aria-hidden="true" />)}</div>}
   </div>;
@@ -138,30 +144,64 @@ export default function CatalogoPage() {
   const [productCategories, setProductCategories] = useState<CatalogProductCategory[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const deferredSearch = useDeferredValue(search);
-  const scrolledPromotionRef = useRef<string | null>(null);
-  const trackedCatalogViewRef = useRef(false);
+  const filterKey = JSON.stringify([search, sortBy, selectedPrice, selectedType, selectedGrape, selectedCountry, selectedRegion, selectedPromotion]);
+  const [visibleBatches, setVisibleBatches] = useState<{ key: string; limits: CatalogReturn['limits'] } | null>(null);
+  const [pendingReturn, setPendingReturn] = useState<CatalogReturn | null>(null);
+  const [catalogMetadataReady, setCatalogMetadataReady] = useState(false);
+  const filterDialog = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    const dialog = filterDialog.current;
+    if (!isFilterOpen || !dialog) return;
+    const trigger = document.activeElement;
+    dialog.showModal();
+    return () => {
+      dialog.close();
+      if (trigger instanceof HTMLElement) trigger.focus();
+    };
+  }, [isFilterOpen]);
 
   useEffect(() => {
     const syncPromotionFromUrl = () => {
       setSelectedPromotion(new URLSearchParams(window.location.search).get('promocao') || '');
     };
     syncPromotionFromUrl();
+    const snapshot = readCatalogReturn();
+    const currentHref = window.location.pathname + window.location.search + window.location.hash;
+    if (snapshot?.href === currentHref) {
+      setSearch(snapshot.search);
+      setSortBy(snapshot.sortBy);
+      setSelectedPrice(snapshot.price);
+      setSelectedType(snapshot.type);
+      setSelectedGrape(snapshot.grape);
+      setSelectedCountry(snapshot.country);
+      setSelectedRegion(snapshot.region);
+      setVisibleBatches({
+        key: JSON.stringify([snapshot.search, snapshot.sortBy, snapshot.price, snapshot.type, snapshot.grape, snapshot.country, snapshot.region, new URLSearchParams(window.location.search).get('promocao') || '']),
+        limits: snapshot.limits,
+      });
+      setPendingReturn(snapshot);
+    }
     window.addEventListener('popstate', syncPromotionFromUrl);
 
     let active = true;
-    fetch('/api/catalogo/promocoes', { cache: 'no-store' })
+    const promotionsRequest = fetch('/api/catalogo/promocoes', { cache: 'no-store' })
       .then((response) => (response.ok ? response.json() : []))
       .then((data) => {
         if (active && Array.isArray(data)) setBanners(data as CatalogBanner[]);
       })
       .catch(() => undefined);
 
-    fetch('/api/catalogo/categorias', { cache: 'no-store' })
+    const categoriesRequest = fetch('/api/catalogo/categorias', { cache: 'no-store' })
       .then((response) => (response.ok ? response.json() : []))
       .then((data) => {
         if (active && Array.isArray(data)) setProductCategories(data as CatalogProductCategory[]);
       })
       .catch(() => undefined);
+
+    void Promise.allSettled([promotionsRequest, categoriesRequest]).then(() => {
+      if (active) setCatalogMetadataReady(true);
+    });
 
     return () => {
       active = false;
@@ -170,17 +210,22 @@ export default function CatalogoPage() {
   }, []);
 
   useEffect(() => {
-    if (!selectedPromotion || isLoading || window.location.hash !== '#ofertas' || scrolledPromotionRef.current === selectedPromotion) return;
-    scrolledPromotionRef.current = selectedPromotion;
-    window.requestAnimationFrame(() => document.getElementById('ofertas')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-  }, [isLoading, selectedPromotion]);
+    if (!pendingReturn || isLoading || !catalogMetadataReady || deferredSearch !== search) return;
 
-  useEffect(() => {
-    if (!isLoading && !trackedCatalogViewRef.current) {
-      trackedCatalogViewRef.current = true;
-      trackConversionEvent('catalog_view', { product_count: wines.length });
-    }
-  }, [isLoading, wines.length]);
+    const frame = requestAnimationFrame(() => {
+      const target = pendingReturn.row;
+      const row = target && [...document.querySelectorAll<HTMLElement>('[data-catalog-row]')].find((element) => element.dataset.catalogRow === target.id);
+      if (row && target) {
+        row.scrollLeft = target.left;
+        window.scrollTo({ top: window.scrollY + row.getBoundingClientRect().top - target.top, behavior: 'instant' });
+      } else {
+        window.scrollTo({ top: pendingReturn.top, behavior: 'instant' });
+      }
+      clearCatalogReturn();
+      setPendingReturn(null);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [pendingReturn, isLoading, catalogMetadataReady, deferredSearch, search]);
 
   const types = useMemo(() => [...new Set(wines.map((w) => w.type).filter((value): value is string => Boolean(value)))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [wines]);
   const grapes = useMemo(() => [...new Set(wines.map((w) => getGrapeClassification(w.grape)).filter((value): value is string => Boolean(value)))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [wines]);
@@ -259,6 +304,24 @@ export default function CatalogoPage() {
 
   const activeFilterCount = [selectedPrice !== null, selectedType, selectedGrape, selectedCountry, selectedRegion, selectedPromotion, search].filter(Boolean).length;
 
+  const rememberCatalog = (wine: Wine, row: HTMLElement | null) => {
+    const rowId = row?.dataset.catalogRow;
+    saveCatalogReturn({
+      href: window.location.pathname + window.location.search + window.location.hash,
+      productId: wine.id,
+      search,
+      sortBy,
+      price: selectedPrice,
+      type: selectedType,
+      grape: selectedGrape,
+      country: selectedCountry,
+      region: selectedRegion,
+      limits: visibleBatches?.key === filterKey ? visibleBatches.limits : {},
+      top: window.scrollY,
+      row: row && rowId ? { id: rowId, top: row.getBoundingClientRect().top, left: row.scrollLeft } : undefined,
+    });
+  };
+
   const clearFilters = () => {
     setSearch('');
     setSelectedPrice(null);
@@ -271,7 +334,6 @@ export default function CatalogoPage() {
   };
 
   const handleSelectPromotion = (slug: string) => {
-    if (slug) trackConversionEvent('promotion_selected', { promotion_slug: slug });
     setSelectedPromotion(slug);
     const nextUrl = new URL(window.location.href);
     if (slug) nextUrl.searchParams.set('promocao', slug);
@@ -283,7 +345,7 @@ export default function CatalogoPage() {
   return (
     <PageTransition><main className="min-h-screen bg-brand-bg pb-24 lg:pb-16">
       {/* Header */}
-      <div className="sticky top-0 z-30 border-b border-stone-100 bg-white/90 backdrop-blur-md lg:top-20">
+      <div className="sticky top-[73px] z-30 border-b border-stone-100 bg-white/90 backdrop-blur-md lg:top-20">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 lg:px-8">
           <h1 className="font-serif text-xl font-bold">Catálogo</h1>
           {isOffline && (
@@ -332,9 +394,11 @@ export default function CatalogoPage() {
         </div>
       </div>
 
-      {!selectedPromotion && <div className="mx-auto max-w-7xl px-4 pt-5 lg:px-8 lg:pt-8">
+      <div className="mx-auto max-w-7xl px-4 pt-5 lg:px-8 lg:pt-8">
         <CatalogBannerCarousel banners={banners} onSelectPromotion={handleSelectPromotion} />
-      </div>}
+      </div>
+
+      <SelectionBanners />
 
       {standalonePromotionSelections.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 pt-6 lg:px-8" aria-label="Seleções em promoção">
@@ -357,7 +421,7 @@ export default function CatalogoPage() {
                 onClick={() => handleSelectPromotion(selection.slug)}
                 className={`shrink-0 rounded-2xl border px-4 py-3 text-left transition ${selectedPromotion === selection.slug ? 'border-brand-primary bg-brand-primary text-white shadow-lg shadow-red-950/10' : 'border-stone-200 bg-white text-stone-900 hover:border-brand-primary/40'}`}
               >
-                <span className="block text-[10px] font-black uppercase tracking-wider opacity-65">Até {formatCatalogDiscountPercent(selection.discount)}% off</span>
+                <span className="block text-[10px] font-black uppercase tracking-wider opacity-65">Até {selection.discount}% off</span>
                 <span className="mt-0.5 block text-sm font-bold">{selection.title}</span>
               </button>
             ))}
@@ -425,11 +489,12 @@ export default function CatalogoPage() {
               Ver todos
             </Link>
           </div>
-          <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+          <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide" data-catalog-row="recently-viewed">
             {recentlyViewed.slice(0, 8).map((wine) => (
               <Link
                 key={wine.id}
                 href={`/catalogo/${wine.id}`}
+                onNavigate={() => rememberCatalog(wine, document.querySelector('[data-catalog-row="recently-viewed"]'))}
                 className="surface-card shrink-0 w-[140px] overflow-hidden active:scale-[0.98] transition-transform"
               >
                 <ProductImage
@@ -452,12 +517,7 @@ export default function CatalogoPage() {
       )}
 
       {/* Product sections */}
-      <div id="ofertas" className="mx-auto max-w-7xl scroll-mt-32 px-4 pt-6 lg:px-8">
-        {selectedPromotion && (
-          <Link href="/" className="mb-4 inline-flex min-h-11 items-center gap-2 rounded-full border border-stone-200 bg-white px-4 text-sm font-bold text-stone-700 hover:text-brand-primary">
-            <span aria-hidden="true">←</span> Início
-          </Link>
-        )}
+      <div id="ofertas" className="mx-auto max-w-7xl scroll-mt-52 px-4 pt-6 lg:px-8">
         {!isLoading && (
           <div className="mb-3 flex items-center justify-between gap-3 text-xs font-bold text-stone-500" role="status" aria-live="polite">
             <span>{filteredWines.length} {filteredWines.length === 1 ? 'produto encontrado' : 'produtos encontrados'}</span>
@@ -476,14 +536,33 @@ export default function CatalogoPage() {
         ) : (
           <div className="space-y-10">
             {catalogSections.map((section) => {
-              const rows = section.slug === 'todos-os-produtos'
-                ? Array.from({ length: Math.ceil(section.wines.length / 8) }, (_, index) => section.wines.slice(index * 8, (index + 1) * 8))
-                : [section.wines];
-              return <section key={section.id} id={section.slug} className="scroll-mt-36" aria-label={section.title}>
+              const sectionLimit = (visibleBatches?.key === filterKey ? visibleBatches.limits[section.id] : undefined) ?? PRODUCTS_PER_BATCH;
+              const visibleWines = section.wines.slice(0, sectionLimit);
+              const rows = Array.from(
+                { length: Math.ceil(visibleWines.length / PRODUCTS_PER_BATCH) },
+                (_, index) => visibleWines.slice(index * PRODUCTS_PER_BATCH, (index + 1) * PRODUCTS_PER_BATCH),
+              );
+              return <section key={section.id} id={section.slug} className="scroll-mt-52" aria-label={section.title}>
                 <div className="mb-4 flex items-end justify-between gap-4"><div><p className="text-[10px] font-black uppercase tracking-[0.24em] text-brand-primary">Catálogo Allvino</p><h2 className="mt-1 font-serif text-2xl font-bold text-stone-950">{section.title}</h2></div><span className="hidden text-xs font-bold text-stone-400 md:inline lg:hidden">Deslize para ver mais</span></div>
                 <div className="space-y-5">
-                  {rows.map((row, index) => <CatalogProductRow key={`${section.id}-${index}`} wines={row} label={`${section.title}, faixa ${index + 1}`} getIsFavorite={isFavorite} onAddToCart={(item) => { if (item.stock > 0) { addToCart(item); trackConversionEvent('add_to_cart', { product_id: item.id, product_kind: item.product_kind }); showToast(`${item.product_kind === 'kit' ? 'Kit' : 'Vinho'} adicionado ao carrinho!`, 'success'); } }} onToggleFavorite={(item) => { toggleFavorite(item); showToast(isFavorite(item.id) ? 'Removido dos favoritos' : 'Adicionado aos favoritos', 'info'); }} onShare={(item) => { if (navigator.share) { void navigator.share({ title: item.name, url: `${window.location.origin}/catalogo/${item.id}` }); } else { void navigator.clipboard?.writeText(`${window.location.origin}/catalogo/${item.id}`); showToast('Link do produto copiado.', 'success'); } }} />)}
+                  {rows.map((row, index) => <CatalogProductRow key={`${section.id}-${index}`} wines={row} rowId={`${section.id}-${index}`} onOpen={rememberCatalog} label={`${section.title}, faixa ${index + 1}`} getIsFavorite={isFavorite} onAddToCart={(item) => { if (item.stock > 0) { addToCart(item); showToast(`${item.product_kind === 'kit' ? 'Kit' : 'Vinho'} adicionado ao carrinho!`, 'success'); } }} onToggleFavorite={(item) => { toggleFavorite(item); showToast(isFavorite(item.id) ? 'Removido dos favoritos' : 'Adicionado aos favoritos', 'info'); }} onShare={(item) => { if (navigator.share) { void navigator.share({ title: item.name, url: `${window.location.origin}/catalogo/${item.id}` }); } else { void navigator.clipboard?.writeText(`${window.location.origin}/catalogo/${item.id}`); showToast('Link do produto copiado.', 'success'); } }} />)}
                 </div>
+                {visibleWines.length < section.wines.length && (
+                  <button
+                    type="button"
+                    aria-label={`Ver mais produtos em ${section.title}`}
+                    className="mx-auto mt-4 flex min-h-11 items-center rounded-xl border border-stone-300 bg-white px-5 text-sm font-bold text-brand-primary hover:border-brand-primary"
+                    onClick={() => setVisibleBatches((previous) => ({
+                      key: filterKey,
+                      limits: {
+                        ...(previous?.key === filterKey ? previous.limits : {}),
+                        [section.id]: sectionLimit + PRODUCTS_PER_BATCH,
+                      },
+                    }))}
+                  >
+                    Ver mais produtos · {visibleWines.length} de {section.wines.length}
+                  </button>
+                )}
               </section>;
             })}
           </div>
@@ -492,11 +571,16 @@ export default function CatalogoPage() {
 
       {/* Filter Sidebar */}
       {isFilterOpen && (
-        <div className="fixed inset-0 z-50 flex justify-end">
+        <dialog
+          ref={filterDialog}
+          aria-labelledby="catalog-filters-title"
+          onCancel={(event) => { event.preventDefault(); setIsFilterOpen(false); }}
+          className="fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none justify-end bg-transparent p-0 open:flex"
+        >
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsFilterOpen(false)} />
           <div className="relative w-full max-w-sm h-full bg-white shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col">
             <div className="p-5 border-b flex justify-between items-center">
-              <h2 className="font-bold text-lg">Filtros</h2>
+              <h2 id="catalog-filters-title" className="font-bold text-lg">Filtros</h2>
               <button onClick={() => setIsFilterOpen(false)} className="p-2 hover:bg-stone-100 rounded-full" aria-label="Fechar filtros">
                 <X className="h-5 w-5" aria-hidden="true" />
               </button>
@@ -513,7 +597,7 @@ export default function CatalogoPage() {
                           onClick={() => handleSelectPromotion(selectedPromotion === selection.slug ? '' : selection.slug)}
                           className={`rounded-xl border px-3 py-2 text-xs font-bold transition ${selectedPromotion === selection.slug ? 'border-brand-primary bg-brand-primary text-white' : 'border-stone-200 bg-white text-stone-600 hover:border-brand-primary'}`}
                         >
-                          {selection.title} · -{formatCatalogDiscountPercent(selection.discount)}%
+                          {selection.title} · -{selection.discount}%
                         </button>
                       ))}
                     </div>
@@ -619,7 +703,7 @@ export default function CatalogoPage() {
               </button>
             </div>
           </div>
-        </div>
+        </dialog>
       )}
     </main></PageTransition>
   );
