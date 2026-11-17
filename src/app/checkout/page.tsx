@@ -22,6 +22,7 @@ import {
   normalizeCardInstallments,
 } from '@/lib/payments/terms';
 import { createPaymentCheckout } from '@/lib/database/payments';
+import { trackConversionEvent } from '@/lib/analytics/conversionEvents';
 import { DeliveryZone, Promotion } from '@/types/database';
 
 const SALES_WHATSAPP_NUMBER = '5527992770952';
@@ -75,6 +76,14 @@ export default function CheckoutPage() {
   const deliveryRequestRef = useRef(0);
   const numberInputRef = useRef<HTMLInputElement>(null);
   const numberFocusTimeoutRef = useRef<number | null>(null);
+  const trackedCheckoutStartRef = useRef(false);
+
+  useEffect(() => {
+    if (cart.length > 0 && !trackedCheckoutStartRef.current) {
+      trackedCheckoutStartRef.current = true;
+      trackConversionEvent('checkout_started', { item_count: cart.length, cart_total: cartTotal });
+    }
+  }, [cart.length, cartTotal]);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -340,11 +349,13 @@ export default function CheckoutPage() {
     }
 
     if (!user) {
+      trackConversionEvent('checkout_auth_required', { item_count: cart.length, cart_total: finalTotal });
       window.location.assign('/?login=true&mode=signup&redirectTo=/checkout');
       return;
     }
 
     const isCardPayment = pagamento === 'Cartao (Link)';
+    trackConversionEvent('order_submission_started', { item_count: cart.length, total: finalTotal, delivery_method: entrega, payment_method: pagamento });
     setIsLoading(true);
 
     const { order, error } = await createOrder(
@@ -363,6 +374,8 @@ export default function CheckoutPage() {
       setIsLoading(false);
       return;
     }
+
+    trackConversionEvent('order_created', { order_id: order.id, total: order.total_amount, delivery_method: entrega, payment_method: pagamento });
 
     const orderInstallments = isCardPayment
       ? normalizeCardInstallments(order.total_amount, installments)

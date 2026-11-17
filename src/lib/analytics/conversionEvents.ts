@@ -29,6 +29,41 @@ declare global {
   }
 }
 
+/**
+ * Maps funnel events to the names Google Analytics and Google Ads recognise.
+ * `add_to_cart` returns null because CartContext already sends the full GA4
+ * add_to_cart (with items and value), so sending it here would count twice.
+ */
+export function toGoogleEvent(
+  event: ConversionEvent,
+  properties: EventProperties,
+): { name: string; params: Record<string, unknown> } | null {
+  if (event === 'add_to_cart') return null;
+
+  if (event === 'product_view') {
+    return {
+      name: 'view_item',
+      params: {
+        currency: 'BRL',
+        items: [{ item_id: properties.product_id, item_category: properties.product_kind }],
+      },
+    };
+  }
+
+  if (event === 'checkout_started') {
+    return {
+      name: 'begin_checkout',
+      params: {
+        currency: 'BRL',
+        value: typeof properties.cart_total === 'number' ? properties.cart_total : undefined,
+        num_items: properties.item_count,
+      },
+    };
+  }
+
+  return { name: event, params: properties };
+}
+
 /** Emits only consented, non-identifying funnel signals for the configured analytics destination. */
 export function trackConversionEvent(event: ConversionEvent, properties: EventProperties = {}) {
   if (typeof window === 'undefined') return;
@@ -42,7 +77,8 @@ export function trackConversionEvent(event: ConversionEvent, properties: EventPr
   if (analyticsAllowed) {
     window.dataLayer = window.dataLayer || [];
     window.dataLayer.push(payload);
-    window.gtag?.('event', event, properties);
+    const googleEvent = toGoogleEvent(event, properties);
+    if (googleEvent) window.gtag?.('event', googleEvent.name, googleEvent.params);
   }
 
   if (marketingAllowed) {

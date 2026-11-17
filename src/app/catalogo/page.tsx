@@ -14,6 +14,7 @@ import { SelectionBanners } from '@/components/catalog/SelectionBanners';
 import { formatCatalogDiscountPercent, formatMoney, getKitUnitPrice, WinePrice } from '@/components/catalog/WinePrice';
 import { FlashOfferCountdown } from '@/components/catalog/FlashOfferCountdown';
 import { getGrapeClassification } from '@/lib/catalog/grapes';
+import { trackConversionEvent } from '@/lib/analytics/conversionEvents';
 import { clearCatalogReturn, readCatalogReturn, saveCatalogReturn, type CatalogReturn } from '@/lib/catalog/browsingState';
 import type { CatalogBanner, CatalogProductCategory, Wine } from '@/types/database';
 
@@ -149,6 +150,14 @@ export default function CatalogoPage() {
   const [pendingReturn, setPendingReturn] = useState<CatalogReturn | null>(null);
   const [catalogMetadataReady, setCatalogMetadataReady] = useState(false);
   const filterDialog = useRef<HTMLDialogElement>(null);
+  const trackedCatalogViewRef = useRef(false);
+
+  useEffect(() => {
+    if (!isLoading && !trackedCatalogViewRef.current) {
+      trackedCatalogViewRef.current = true;
+      trackConversionEvent('catalog_view', { product_count: wines.length });
+    }
+  }, [isLoading, wines.length]);
 
   useEffect(() => {
     const dialog = filterDialog.current;
@@ -334,6 +343,7 @@ export default function CatalogoPage() {
   };
 
   const handleSelectPromotion = (slug: string) => {
+    if (slug) trackConversionEvent('promotion_selected', { promotion_slug: slug });
     setSelectedPromotion(slug);
     const nextUrl = new URL(window.location.href);
     if (slug) nextUrl.searchParams.set('promocao', slug);
@@ -545,7 +555,7 @@ export default function CatalogoPage() {
               return <section key={section.id} id={section.slug} className="scroll-mt-52" aria-label={section.title}>
                 <div className="mb-4 flex items-end justify-between gap-4"><div><p className="text-[10px] font-black uppercase tracking-[0.24em] text-brand-primary">Catálogo Allvino</p><h2 className="mt-1 font-serif text-2xl font-bold text-stone-950">{section.title}</h2></div><span className="hidden text-xs font-bold text-stone-400 md:inline lg:hidden">Deslize para ver mais</span></div>
                 <div className="space-y-5">
-                  {rows.map((row, index) => <CatalogProductRow key={`${section.id}-${index}`} wines={row} rowId={`${section.id}-${index}`} onOpen={rememberCatalog} label={`${section.title}, faixa ${index + 1}`} getIsFavorite={isFavorite} onAddToCart={(item) => { if (item.stock > 0) { addToCart(item); showToast(`${item.product_kind === 'kit' ? 'Kit' : 'Vinho'} adicionado ao carrinho!`, 'success'); } }} onToggleFavorite={(item) => { toggleFavorite(item); showToast(isFavorite(item.id) ? 'Removido dos favoritos' : 'Adicionado aos favoritos', 'info'); }} onShare={(item) => { if (navigator.share) { void navigator.share({ title: item.name, url: `${window.location.origin}/catalogo/${item.id}` }); } else { void navigator.clipboard?.writeText(`${window.location.origin}/catalogo/${item.id}`); showToast('Link do produto copiado.', 'success'); } }} />)}
+                  {rows.map((row, index) => <CatalogProductRow key={`${section.id}-${index}`} wines={row} rowId={`${section.id}-${index}`} onOpen={rememberCatalog} label={`${section.title}, faixa ${index + 1}`} getIsFavorite={isFavorite} onAddToCart={(item) => { if (item.stock > 0) { addToCart(item); trackConversionEvent('add_to_cart', { product_id: item.id, product_kind: item.product_kind }); showToast(`${item.product_kind === 'kit' ? 'Kit' : 'Vinho'} adicionado ao carrinho!`, 'success'); } }} onToggleFavorite={(item) => { toggleFavorite(item); showToast(isFavorite(item.id) ? 'Removido dos favoritos' : 'Adicionado aos favoritos', 'info'); }} onShare={(item) => { if (navigator.share) { void navigator.share({ title: item.name, url: `${window.location.origin}/catalogo/${item.id}` }); } else { void navigator.clipboard?.writeText(`${window.location.origin}/catalogo/${item.id}`); showToast('Link do produto copiado.', 'success'); } }} />)}
                 </div>
                 {visibleWines.length < section.wines.length && (
                   <button

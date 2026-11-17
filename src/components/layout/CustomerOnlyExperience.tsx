@@ -23,7 +23,7 @@ export function CustomerOnlyExperience({ nonce }: CustomerOnlyExperienceProps) {
   return (
     <>
       <GoogleTagManager nonce={nonce} />
-      <MetaPixel />
+      <MetaPixel nonce={nonce} />
       <SiteFooter />
       <WhatsAppButton />
       <CookieConsentBanner />
