@@ -20,6 +20,9 @@ const nextConfig = {
       { source: "/checkout.html", destination: "/checkout", permanent: true },
       { source: "/conta.html", destination: "/conta", permanent: true },
       { source: "/promocao.html", destination: "/catalogo", permanent: true },
+      // Google Ads sends clicks to /vinhos-importados, which used to return 404.
+      { source: "/vinhos-importados", destination: "/catalogo", permanent: true },
+      { source: "/vinhos-importados/:path*", destination: "/catalogo", permanent: true },
       { source: "/login.html", destination: "/", permanent: true },
       { source: "/cadastro.html", destination: "/", permanent: true },
       { source: "/recuperar-senha.html", destination: "/", permanent: true },
