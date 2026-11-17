@@ -2,7 +2,7 @@
 
 import { AdminEmptyState, AdminNotice, AdminPageHeader, AdminSection, AdminStatCard, AdminStatusBadge } from '@/components/admin/AdminPrimitives';
 import { downloadOrderReceiptPdf } from '@/lib/orders/orderReceiptPdf';
-import { getKitComponentOrderQuantity, getOrderItemName, getOrderItemWithComposition, type KitComponent } from '@/lib/orders/orderReceipt';
+import { getKitComponentOrderQuantity, getKitComponentsForOrderItem, getOrderItemName, getOrderItemWithComposition, type KitComponent } from '@/lib/orders/orderReceipt';
 import { createClient } from '@/utils/supabase/admin-client';
 import { useEffect, useMemo, useState } from 'react';
 
