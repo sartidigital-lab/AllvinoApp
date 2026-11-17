@@ -43,7 +43,7 @@ assert.match(authModal, /['"]\/api\/auth\/login['"]/, 'login must use the BFF');
 assert.match(authModal, /['"]\/api\/auth\/oauth['"]/, 'OAuth must start through the BFF');
 assert.doesNotMatch(authModal, /supabase\.auth\./, 'browser UI must not call Supabase Auth directly');
 assert.match(authCallback, /createBffAuthClient/, 'OAuth callback must set secure BFF cookies');
-assert.match(adminOrders, /order_items\(quantity,unit_price,product_name\)/);
+assert.match(adminOrders, /order_items\(product_id,quantity,unit_price,product_name\)/, 'admin orders must load the item product id to resolve kit composition');
 assert.doesNotMatch(adminOrders, /wines\(name\)/, 'admin orders must not depend on a missing legacy foreign key');
 assert.match(migration, /enforce_published_order_item/);
 assert.match(checkoutHardening, /revoke insert on public\.orders from authenticated/);

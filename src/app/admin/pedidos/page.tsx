@@ -1,6 +1,8 @@
 "use client";
 
 import { AdminEmptyState, AdminNotice, AdminPageHeader, AdminSection, AdminStatCard, AdminStatusBadge } from '@/components/admin/AdminPrimitives';
+import { downloadOrderReceiptPdf } from '@/lib/orders/orderReceiptPdf';
+import { getKitComponentOrderQuantity, getOrderItemName, getOrderItemWithComposition, type KitComponent } from '@/lib/orders/orderReceipt';
 import { createClient } from '@/utils/supabase/admin-client';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -9,9 +11,22 @@ type DateFilter = 'all' | 'today' | '7d' | '30d';
 type SortOrder = 'recent' | 'oldest' | 'value-desc' | 'value-asc';
 
 type AdminOrderItem = {
+  product_id: string | null;
   quantity: number;
   unit_price: number;
   product_name: string | null;
+};
+
+type AdminProduct = {
+  id: string;
+  nome: string;
+  tipo_produto: 'wine' | 'kit';
+};
+
+type KitCompositionRow = {
+  kit_id: string;
+  product_id: string;
+  quantity: number;
 };
 
 type AdminOrder = {
@@ -84,10 +99,6 @@ const dateFilterLabels: Record<DateFilter, string> = {
   '30d': 'Últimos 30 dias',
 };
 
-function getItemName(item: AdminOrderItem) {
-  return item.product_name || 'Produto removido';
-}
-
 function formatMoney(value: number) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
@@ -133,7 +144,7 @@ function getWhatsAppUrl(phone: string | null, message?: string) {
 
 function getWhatsAppOrderMessage(order: AdminOrder) {
   const items = order.order_items
-    ?.map((item) => `- ${item.quantity}x ${getItemName(item)}`)
+    ?.map((item) => `- ${item.quantity}x ${getOrderItemName(item)}`)
     .join('\n') || '- Itens do pedido';
 
   return [
@@ -150,6 +161,66 @@ function getWhatsAppOrderMessage(order: AdminOrder) {
   ].join('\n');
 }
 
+async function loadKitComponents(
+  supabase: ReturnType<typeof createClient>,
+  orders: AdminOrder[],
+): Promise<{ components: Record<string, KitComponent[]>; error: boolean }> {
+  const productIds = [...new Set(
+    orders.flatMap((order) => order.order_items || [])
+      .map((item) => item.product_id)
+      .filter((id): id is string => Boolean(id)),
+  )];
+  if (productIds.length === 0) return { components: {}, error: false };
+
+  const { data: orderProducts, error: productsError } = await supabase
+    .from('produtos')
+    .select('id,nome,tipo_produto')
+    .in('id', productIds);
+  if (productsError) return { components: {}, error: true };
+
+  const products = (orderProducts || []) as AdminProduct[];
+  const kitIds = products.filter((product) => product.tipo_produto === 'kit').map((product) => product.id);
+  if (kitIds.length === 0) return { components: {}, error: false };
+
+  const { data: compositionRows, error: compositionError } = await supabase
+    .from('product_kit_items')
+    .select('kit_id,product_id,quantity')
+    .in('kit_id', kitIds);
+  if (compositionError) return { components: {}, error: true };
+
+  const composition = (compositionRows || []) as KitCompositionRow[];
+  const namesById = new Map(products.map((product) => [product.id, product.nome]));
+  const componentIds = [...new Set(composition.map((item) => item.product_id).filter((id) => !namesById.has(id)))];
+
+  if (componentIds.length > 0) {
+    const { data: componentProducts, error: componentError } = await supabase
+      .from('produtos')
+      .select('id,nome,tipo_produto')
+      .in('id', componentIds);
+    if (componentError) return { components: {}, error: true };
+    (componentProducts || []).forEach((product) => {
+      const typedProduct = product as AdminProduct;
+      namesById.set(typedProduct.id, typedProduct.nome);
+    });
+  }
+
+  const components = composition.reduce<Record<string, KitComponent[]>>((acc, item) => {
+    const quantity = Math.trunc(Number(item.quantity));
+    if (!item.kit_id || !item.product_id || quantity < 1) return acc;
+    acc[item.kit_id] = [
+      ...(acc[item.kit_id] || []),
+      {
+        product_id: item.product_id,
+        name: namesById.get(item.product_id) || 'Produto removido da composição',
+        quantity_per_kit: quantity,
+      },
+    ];
+    return acc;
+  }, {});
+
+  return { components, error: false };
+}
+
 export default function AdminPedidosPage() {
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<'all' | OrderStatus>('all');
@@ -160,6 +231,8 @@ export default function AdminPedidosPage() {
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [kitComponentsById, setKitComponentsById] = useState<Record<string, KitComponent[]>>({});
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const loadOrders = async () => {
@@ -169,7 +242,7 @@ export default function AdminPedidosPage() {
     const supabase = createClient();
     const { data, error } = await supabase
       .from('orders')
-      .select('id,status,total_amount,delivery_type,payment_method,payment_provider,payment_status,payment_reference,payment_url,paid_at,payment_error,delivery_address,discount_amount,subtotal_amount,promotion_code,delivery_zip_code,delivery_zone_name,delivery_estimate_days,shipping_fee,created_at,customer_name,customer_phone,order_items(quantity,unit_price,product_name)')
+      .select('id,status,total_amount,delivery_type,payment_method,payment_provider,payment_status,payment_reference,payment_url,paid_at,payment_error,delivery_address,discount_amount,subtotal_amount,promotion_code,delivery_zip_code,delivery_zone_name,delivery_estimate_days,shipping_fee,created_at,customer_name,customer_phone,order_items(product_id,quantity,unit_price,product_name)')
       .order('created_at', { ascending: false })
       .limit(100);
 
@@ -182,6 +255,11 @@ export default function AdminPedidosPage() {
     const nextOrders = (data || []) as AdminOrder[];
     setOrders(nextOrders);
     setSelectedOrderId((current) => current || nextOrders[0]?.id || null);
+    const kitComponents = await loadKitComponents(supabase, nextOrders);
+    setKitComponentsById(kitComponents.components);
+    if (kitComponents.error) {
+      setErrorMessage('Pedidos carregados, mas não foi possível carregar a composição de alguns kits.');
+    }
     setIsLoading(false);
   };
 
@@ -197,7 +275,11 @@ export default function AdminPedidosPage() {
       .filter((order) => {
         const matchesStatus = selectedStatus === 'all' || order.status === selectedStatus;
         const matchesDate = !dateLimit || new Date(order.created_at).getTime() >= dateLimit;
-        const itemNames = order.order_items?.map(getItemName).join(' ') || '';
+        const itemNames = order.order_items?.map(getOrderItemName).join(' ') || '';
+        const kitComponentNames = order.order_items
+          ?.flatMap((item) => getKitComponentsForOrderItem(item, kitComponentsById))
+          .map((component) => component.name)
+          .join(' ') || '';
         const searchableText = normalizeSearch(
           [
             order.id,
@@ -210,6 +292,7 @@ export default function AdminPedidosPage() {
             order.payment_reference,
             order.delivery_address,
             itemNames,
+            kitComponentNames,
           ].join(' ')
         );
         const matchesSearch = !normalizedSearch || searchableText.includes(normalizedSearch);
@@ -231,7 +314,7 @@ export default function AdminPedidosPage() {
 
         return new Date(secondOrder.created_at).getTime() - new Date(firstOrder.created_at).getTime();
       });
-  }, [orders, selectedStatus, searchTerm, dateFilter, sortOrder]);
+  }, [orders, selectedStatus, searchTerm, dateFilter, sortOrder, kitComponentsById]);
 
   const selectedOrder = useMemo(
     () => orders.find((order) => order.id === selectedOrderId) || filteredOrders[0] || null,
@@ -322,6 +405,25 @@ export default function AdminPedidosPage() {
       )
     );
     setUpdatingId(null);
+  };
+
+  const exportOrderPdf = async () => {
+    if (!selectedOrder || isExportingPdf) return;
+
+    setIsExportingPdf(true);
+    setErrorMessage(null);
+    try {
+      await downloadOrderReceiptPdf({
+        ...selectedOrder,
+        status: statusLabels[selectedOrder.status],
+        payment_status: paymentStatusLabels[selectedOrder.payment_status],
+        items: (selectedOrder.order_items || []).map((item) => getOrderItemWithComposition(item, kitComponentsById)),
+      });
+    } catch {
+      setErrorMessage('Não foi possível gerar o PDF do pedido. Tente novamente.');
+    } finally {
+      setIsExportingPdf(false);
+    }
   };
 
   return (
@@ -551,20 +653,53 @@ export default function AdminPedidosPage() {
                     Enviar resumo no WhatsApp
                   </a>
                 )}
+                <button
+                  type="button"
+                  disabled={isExportingPdf}
+                  onClick={exportOrderPdf}
+                  className="admin-button mt-2 inline-flex items-center gap-2 border border-stone-200 bg-white px-3 text-xs text-stone-700 transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <span className="material-symbols-outlined text-[16px]">picture_as_pdf</span>
+                  {isExportingPdf ? 'Gerando PDF...' : 'Baixar extrato em PDF'}
+                </button>
               </div>
 
               <div>
                 <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-stone-400">Itens</h3>
                 <div className="space-y-3">
-                  {selectedOrder.order_items?.map((item, index) => (
-                    <div key={`${selectedOrder.id}-${index}`} className="flex justify-between gap-3 rounded-lg border border-stone-100 p-3">
-                      <div className="min-w-0">
-                        <p className="line-clamp-2 text-sm font-bold text-black">{getItemName(item)}</p>
-                        <p className="text-xs font-bold text-stone-400">{item.quantity} x {formatMoney(item.unit_price)}</p>
+                  {selectedOrder.order_items?.map((item, index) => {
+                    const kitComponents = getKitComponentsForOrderItem(item, kitComponentsById);
+                    return (
+                      <div key={`${selectedOrder.id}-${index}`} className="rounded-lg border border-stone-100 p-3">
+                        <div className="flex justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="line-clamp-2 text-sm font-bold text-black">{getOrderItemName(item)}</p>
+                              {kitComponents.length > 0 && <span className="rounded-full bg-[#F3EAE2] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#8F1D2C]">Kit</span>}
+                            </div>
+                            <p className="text-xs font-bold text-stone-400">{item.quantity} x {formatMoney(item.unit_price)}</p>
+                          </div>
+                          <p className="shrink-0 text-sm font-bold text-black">{formatMoney(item.quantity * item.unit_price)}</p>
+                        </div>
+                        {kitComponents.length > 0 && (
+                          <div className="mt-3 rounded-lg border border-[#F3EAE2] bg-[#FFFAF6] p-3">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-[#8F1D2C]">Composição do kit</p>
+                            <div className="mt-2 space-y-1.5">
+                              {kitComponents.map((component) => {
+                                const totalQuantity = getKitComponentOrderQuantity(item.quantity, component.quantity_per_kit);
+                                return (
+                                  <div key={component.product_id} className="flex items-start justify-between gap-3 text-xs">
+                                    <span className="min-w-0 font-semibold text-stone-700">{component.name}</span>
+                                    <span className="shrink-0 font-bold text-stone-500">{component.quantity_per_kit} por kit · {totalQuantity} no pedido</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <p className="shrink-0 text-sm font-bold text-black">{formatMoney(item.quantity * item.unit_price)}</p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
