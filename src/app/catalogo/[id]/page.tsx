@@ -16,6 +16,7 @@ import { formatCatalogDiscountPercent, getKitUnitPrice } from '@/components/cata
 import { fetchDeliveryQuote } from '@/lib/database/delivery';
 import { formatZipCode, normalizeZipCode, PICKUP_SCHEDULE_NOTICE } from '@/lib/delivery/rules';
 import { ProductReviews } from '@/components/catalog/ProductReviews';
+import { trackConversionEvent } from '@/lib/analytics/conversionEvents';
 import { readCatalogReturn } from '@/lib/catalog/browsingState';
 
 function formatMoney(value: number) {
@@ -69,7 +70,10 @@ export default function WineDetailPage() {
   }, [id]);
 
   useEffect(() => {
-    if (wine) trackView(wine);
+    if (wine) {
+      trackView(wine);
+      trackConversionEvent('product_view', { product_id: wine.id, product_kind: wine.product_kind });
+    }
   }, [wine, trackView]);
 
   if (isLoading) return <WineDetailSkeleton />;
@@ -184,7 +188,7 @@ export default function WineDetailPage() {
 
             <div className="space-y-2">
               <button
-                onClick={() => { addToCart(wine); setIsCartOpen(true); }}
+                onClick={() => { addToCart(wine); trackConversionEvent('add_to_cart', { product_id: wine.id, source: 'buy_now' }); setIsCartOpen(true); }}
                 type="button"
                 disabled={wine.stock === 0}
                 className="flex min-h-12 w-full items-center justify-center gap-2 rounded-brand-xl bg-brand-primary px-5 text-base font-bold text-white transition hover:bg-brand-primary-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
@@ -193,7 +197,7 @@ export default function WineDetailPage() {
                 {wine.stock === 0 ? 'Indisponível' : 'Comprar'}
               </button>
               <button
-                onClick={() => { addToCart(wine); showToast('Item adicionado. Ajuste a quantidade no carrinho quando quiser.', 'success'); }}
+                onClick={() => { addToCart(wine); trackConversionEvent('add_to_cart', { product_id: wine.id, source: 'product_page' }); showToast('Item adicionado. Ajuste a quantidade no carrinho quando quiser.', 'success'); }}
                 type="button"
                 disabled={wine.stock === 0}
                 className="flex min-h-11 w-full items-center justify-center gap-2 rounded-brand-xl border border-brand-primary bg-white px-5 text-sm font-bold text-brand-primary transition hover:bg-stone-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"

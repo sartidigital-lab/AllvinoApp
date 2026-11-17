@@ -8,6 +8,7 @@ import {
   verifyPagarmeWebhookSignature,
 } from '@/lib/payments/pagarmeWebhook';
 import { auditSecurityEvent } from '@/lib/security/audit';
+import { dispatchPurchaseTracking } from '@/lib/analytics/dispatchPurchase';
 
 export async function POST(request: Request) {
   const rawBody = await request.text();
@@ -77,6 +78,12 @@ export async function POST(request: Request) {
   if (error) {
     auditSecurityEvent('payment.webhook_failed', { eventId: event.id, eventType: event.type, code: error.code });
     return NextResponse.json({ error: 'Não foi possível processar o evento.' }, { status: 500 });
+  }
+
+  // The payment is confirmed in the database; now report the sale to Meta and
+  // Google. This never fails the webhook, so Pagar.me does not retry on it.
+  if (mapPagarmeWebhookStatus(event) === 'paid') {
+    await dispatchPurchaseTracking(admin, event.data?.code);
   }
 
   return NextResponse.json({ received: true });

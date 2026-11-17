@@ -6,6 +6,8 @@ import { checkoutRequestSchema } from '@/lib/validation/checkout';
 import { checkRateLimitDistributed, getClientKey, rateLimitResponse } from '@/lib/security/rateLimit';
 import { auditSecurityEvent } from '@/lib/security/audit';
 import { isCookieCategoryAllowed, readCookieConsent } from '@/lib/privacy/cookieConsent';
+import { createAdminClient } from '@/utils/supabase/admin';
+import { buildTrackingContext } from '@/lib/analytics/purchaseEvents';
 
 const checkoutMessages = [
   'Pedido invalido.',
@@ -107,6 +109,19 @@ export async function POST(request: Request) {
 
   if (orderError || !order) {
     return NextResponse.json({ error: 'Pedido criado, mas não foi possível carregar o resumo.' }, { status: 500 });
+  }
+
+  // Keep the browser identifiers (consent-gated) so the payment webhook can
+  // report the sale to Meta and Google later. A failure here never blocks the order.
+  try {
+    const cookieConsent = readCookieConsent(request.headers.get('cookie') || '');
+    const trackingContext = buildTrackingContext(request.headers, {
+      marketing: isCookieCategoryAllowed(cookieConsent, 'marketing'),
+      analytics: isCookieCategoryAllowed(cookieConsent, 'analytics'),
+    });
+    await createAdminClient().from('orders').update({ tracking_context: trackingContext }).eq('id', orderId);
+  } catch {
+    auditSecurityEvent('order.tracking_context_failed', { userId: user.id, orderId });
   }
 
   auditSecurityEvent('order.created', { userId: user.id, orderId });

@@ -9,6 +9,7 @@ import { usePathname } from 'next/navigation';
 import { X } from 'lucide-react';
 import { PICKUP_SCHEDULE_NOTICE } from '@/lib/delivery/rules';
 import { AUTH_STATE_EVENT, getBrowserSession } from '@/lib/auth/browserSession';
+import { trackConversionEvent } from '@/lib/analytics/conversionEvents';
 
 export function CartOverlay() {
   const { cart, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, cartTotal } = useCart();
@@ -24,6 +25,10 @@ export function CartOverlay() {
   useEffect(() => {
     setIsCartOpen(false);
   }, [pathname, setIsCartOpen]);
+
+  useEffect(() => {
+    if (isCartOpen) trackConversionEvent('cart_opened', { item_count: cart.length, cart_total: cartTotal });
+  }, [cart.length, cartTotal, isCartOpen]);
 
   useEffect(() => {
     let active = true;
