@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { useWines } from '@/hooks/useWines';
 import { useCart } from '@/context/CartContext';
 import { useToast } from '@/context/ToastContext';
-import { WinePrice, formatCatalogDiscountPercent } from '@/components/catalog/WinePrice';
+import { WinePrice, formatCatalogDiscountPercent, formatMoney, getKitUnitPrice } from '@/components/catalog/WinePrice';
 import { ProductImage } from '@/components/ui';
 import { getMaxCartQuantity, sanitizeWine } from '@/lib/catalog/sanitizeWine';
 import type { Selection } from '@/components/catalog/SelectionBanners';
@@ -79,13 +79,25 @@ export default function SelectionPage() {
           const quantity = cart.find((item) => item.id === wine.id)?.quantity || 0;
           const unavailable = wine.stock <= 0;
           const atLimit = !unavailable && quantity >= Math.min(wine.stock, getMaxCartQuantity());
+          const pixPrice = Number((wine.price * 0.95).toFixed(2));
+          const isKit = wine.product_kind === 'kit';
+          const unitPrice = isKit ? getKitUnitPrice(wine.price, wine.kit_item_count) : null;
+          const pixUnitPrice = isKit ? getKitUnitPrice(pixPrice, wine.kit_item_count) : null;
           return <article key={wine.id} className="flex h-full min-w-0 flex-col rounded-xl border border-stone-200 bg-white p-3">
             <Link href={`/catalogo/${wine.id}`} className="flex flex-1 flex-col rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary">
               <div className="relative"><ProductImage src={wine.image_url} alt={wine.name} width={300} height={400} className="h-40 w-full object-contain sm:h-48" />{Boolean(wine.discount_percent) && <span className="absolute right-0 top-0 rounded bg-red-700 px-2 py-1 text-xs font-bold text-white">-{formatCatalogDiscountPercent(wine.discount_percent!)}%</span>}</div>
               <h2 className="my-3 break-words text-sm font-bold sm:text-base">{wine.name}</h2>
             </Link>
             <WinePrice wine={wine} reserveSpace />
-            <button type="button" disabled={unavailable || atLimit} onClick={() => addProduct(wine)} className="mt-4 min-h-11 w-full rounded-lg bg-[#82c341] px-2 py-3 text-sm font-bold text-white transition hover:bg-[#6eae31] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:cursor-not-allowed disabled:opacity-50">{unavailable ? 'Indisponível' : atLimit ? 'Limite no carrinho' : quantity > 0 ? 'Adicionar novamente' : 'Adicionar ao carrinho'}</button>
+            <div className="mt-1 min-h-5 text-xs font-medium text-stone-500">
+              {unitPrice !== null && <span>{formatMoney(unitPrice)} por garrafa</span>}
+            </div>
+            <div className="mt-3 min-h-12 text-xs text-emerald-700">
+              <p className="font-semibold">À vista <strong className="text-sm">{formatMoney(pixPrice)}</strong> no PIX <span className="inline-block rounded bg-emerald-700 px-1 py-0.5 text-[10px] font-bold text-white">5% OFF</span></p>
+              {pixUnitPrice !== null && <p className="mt-1 font-medium">{formatMoney(pixUnitPrice)} por garrafa</p>}
+            </div>
+            <p className="mt-2 min-h-4 text-xs text-stone-600">ou 3x de {formatMoney(Number((wine.price / 3).toFixed(2)))} sem juros</p>
+            <div className="mt-auto pt-4"><button type="button" disabled={unavailable || atLimit} onClick={() => addProduct(wine)} className="min-h-11 w-full rounded-lg bg-[#82c341] px-2 py-3 text-sm font-bold text-white transition hover:bg-[#6eae31] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:cursor-not-allowed disabled:opacity-50">{unavailable ? 'Indisponível' : atLimit ? 'Limite no carrinho' : quantity > 0 ? 'Adicionar novamente' : 'Adicionar ao carrinho'}</button></div>
           </article>;
         })}
       </div>

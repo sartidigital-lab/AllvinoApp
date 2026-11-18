@@ -10,7 +10,7 @@ vi.mock('@/context/CartContext', () => ({ useCart: () => ({ cart: fixture.cart, 
 vi.mock('@/context/ToastContext', () => ({ useToast: () => ({ showToast: fixture.toast }) }));
 vi.mock('@/components/ui', () => ({ ProductImage: ({ alt }: { alt: string }) => <div aria-label={alt} /> }));
 
-const wine: Wine = { id: 'e4c70c3a-2737-4df5-9550-4e1f7fe97ee7', name: 'Kit de teste', description: null, price: 99, original_price: 120, discount_percent: 17, promotion_id: null, promotion_title: null, promotion_slug: null, image_url: null, type: null, region: null, grape: null, category: null, stock: 2, product_code: null, published: true, created_at: '2026-01-01T00:00:00.000Z' };
+const wine: Wine = { id: 'e4c70c3a-2737-4df5-9550-4e1f7fe97ee7', name: 'Kit de teste', product_kind: 'kit', kit_item_count: 4, description: null, price: 99, original_price: 120, discount_percent: 17, promotion_id: null, promotion_title: null, promotion_slug: null, image_url: null, type: null, region: null, grape: null, category: null, stock: 2, product_code: null, published: true, created_at: '2026-01-01T00:00:00.000Z' };
 
 beforeEach(() => {
   fixture.cart = [];
@@ -20,6 +20,14 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('página de seleção', () => {
+  it('exibe valores totais e por garrafa no preço normal e no PIX', async () => {
+    render(<SelectionPage />);
+    expect(await screen.findByText(/24,75 por garrafa/)).toBeVisible();
+    expect(screen.getByText(/23,51 por garrafa/)).toBeVisible();
+    expect(screen.getByText(/94,05/)).toBeVisible();
+    expect(screen.getByText(/33,00.*sem juros/)).toBeVisible();
+  });
+
   it('adiciona produto e informa o cliente, com imagens por dispositivo', async () => {
     render(<SelectionPage />);
     const button = await screen.findByRole('button', { name: 'Adicionar ao carrinho' });
