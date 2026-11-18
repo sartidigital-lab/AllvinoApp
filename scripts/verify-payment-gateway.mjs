@@ -13,6 +13,8 @@ const requiredFiles = [
       'IR PARA PAGAMENTO PIX',
       'IR PARA PAGAMENTO SEGURO',
       'checkout seguro da Stone/Pagar.me',
+      "trackConversionEvent('order_created'",
+      "trackConversionEvent('checkout_started'",
     ],
     excludes: [
       'buildCheckoutWhatsAppMessage',
@@ -22,7 +24,45 @@ const requiredFiles = [
   },
   {
     file: 'src/app/api/pedidos/route.ts',
-    includes: ['create_order_with_stock_reservation', 'p_marketing_consent'],
+    includes: ['create_order_with_stock_reservation', 'p_marketing_consent', 'buildTrackingContext'],
+  },
+  // Tracking guards: a build that drops the Meta/Google purchase tracking must
+  // fail instead of silently replacing production.
+  {
+    file: 'src/lib/analytics/dispatchPurchase.ts',
+    includes: ['graph.facebook.com', 'META_CAPI_ACCESS_TOKEN', 'google-analytics.com/mp/collect', 'marketing_consent_at'],
+  },
+  {
+    file: 'src/lib/analytics/purchaseEvents.ts',
+    includes: ["event_name: 'Purchase'", "name: 'purchase'", 'event_id: order.id'],
+  },
+  {
+    file: 'src/components/analytics/MetaPixel.tsx',
+    includes: ['allvino:conversion', 'fbq(', 'trackCustom'],
+  },
+  {
+    file: 'src/lib/analytics/attribution.ts',
+    includes: ['allvino_attr', 'gclid', 'fbclid', 'classifyChannel'],
+  },
+  {
+    file: 'src/components/layout/CustomerOnlyExperience.tsx',
+    includes: ['AttributionCapture'],
+  },
+  {
+    file: 'src/components/analytics/GoogleTagManager.tsx',
+    includes: ['G-F5T9JS9VYQ', 'AW-18556930168'],
+  },
+  {
+    file: 'src/lib/analytics/conversionEvents.ts',
+    includes: ['trackConversionEvent', 'allvino:conversion'],
+  },
+  {
+    file: 'src/app/catalogo/page.tsx',
+    includes: ["trackConversionEvent('catalog_view'", "trackConversionEvent('add_to_cart'"],
+  },
+  {
+    file: 'supabase/migrations/20261117190000_add_order_tracking_context.sql',
+    includes: ['tracking_context', 'ga4_purchase_sent_at'],
   },
   {
     file: 'src/lib/database/payments.ts',
@@ -34,7 +74,7 @@ const requiredFiles = [
   },
   {
     file: 'src/app/api/pagamentos/webhook/route.ts',
-    includes: ['process_pagarme_webhook', 'verifyPagarmeWebhook'],
+    includes: ['process_pagarme_webhook', 'verifyPagarmeWebhook', 'dispatchPurchaseTracking'],
   },
   {
     file: 'src/lib/payments/pagarme.ts',
