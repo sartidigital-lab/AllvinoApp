@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { CookieConsentBanner } from '@/components/privacy/CookieConsentBanner';
+import { AttributionCapture } from '@/components/analytics/AttributionCapture';
 import { GoogleTagManager } from '@/components/analytics/GoogleTagManager';
 import { MetaPixel } from '@/components/analytics/MetaPixel';
 import { WhatsAppButton } from '@/components/layout/WhatsAppButton';
@@ -22,6 +23,7 @@ export function CustomerOnlyExperience({ nonce }: CustomerOnlyExperienceProps) {
 
   return (
     <>
+      <AttributionCapture />
       <GoogleTagManager nonce={nonce} />
       <MetaPixel nonce={nonce} />
       <SiteFooter />

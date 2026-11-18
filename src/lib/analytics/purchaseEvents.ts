@@ -1,4 +1,11 @@
 import { createHash } from 'node:crypto';
+import {
+  buildFbcFromTouch,
+  classifyChannel,
+  readAttributionCookie,
+  type Attribution,
+  type SalesChannel,
+} from '@/lib/analytics/attribution';
 
 export const META_PIXEL_ID = '1566575165487222';
 export const META_GRAPH_VERSION = 'v23.0';
@@ -17,6 +24,10 @@ export type TrackingContext = {
   marketing_consent?: boolean;
   analytics_consent?: boolean;
   captured_at?: string;
+  /** UTM tags and click ids of the first and last visit, as recorded by the site. */
+  attribution?: Attribution;
+  /** Where the sale came from, derived from the attribution above. */
+  channel?: SalesChannel;
 };
 
 export type PurchaseOrderItem = {
@@ -107,6 +118,22 @@ export function buildTrackingContext(
   if (consent.analytics) {
     context.ga_client_id = parseGaClientId(readCookie(cookies, '_ga'));
     context.ga_session_id = parseGaSessionId(readCookie(cookies, `_ga_${GA4_MEASUREMENT_ID.replace('G-', '')}`));
+  }
+
+  // The site's own record of the visit source. The cookie only exists when the
+  // visitor accepted analytics or marketing cookies.
+  if (consent.analytics || consent.marketing) {
+    const attribution = readAttributionCookie(cookies);
+    if (attribution) {
+      context.attribution = attribution;
+      context.channel = classifyChannel(attribution);
+      // If the pixel could not create _fbc, rebuild it from the Meta click id.
+      if (consent.marketing && !context.fbc) {
+        context.fbc = buildFbcFromTouch(attribution.last?.fbclid ? attribution.last : attribution.first);
+      }
+    } else {
+      context.channel = 'direto_ou_organico';
+    }
   }
 
   return Object.fromEntries(Object.entries(context).filter(([, value]) => value !== undefined)) as TrackingContext;
