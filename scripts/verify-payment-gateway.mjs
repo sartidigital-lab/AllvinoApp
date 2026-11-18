@@ -41,6 +41,14 @@ const requiredFiles = [
     includes: ['allvino:conversion', 'fbq(', 'trackCustom'],
   },
   {
+    file: 'src/lib/analytics/attribution.ts',
+    includes: ['allvino_attr', 'gclid', 'fbclid', 'classifyChannel'],
+  },
+  {
+    file: 'src/components/layout/CustomerOnlyExperience.tsx',
+    includes: ['AttributionCapture'],
+  },
+  {
     file: 'src/components/analytics/GoogleTagManager.tsx',
     includes: ['G-F5T9JS9VYQ', 'AW-18556930168'],
   },
