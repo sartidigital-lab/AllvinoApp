@@ -51,7 +51,7 @@ function CatalogProductCard({ wine, onAddToCart, onToggleFavorite, onShare, isFa
     : 'p-2 sm:p-3';
 
   return (
-    <article className="w-[calc((100vw-3rem)/2)] min-w-[138px] shrink-0 overflow-hidden bg-transparent transition-transform hover:-translate-y-0.5 sm:w-[min(42vw,220px)] md:w-[280px] md:rounded-brand-2xl md:border md:border-[#3c2528] md:bg-white md:shadow-[0_2px_10px_rgba(54,16,24,0.08)] lg:w-full lg:min-w-0">
+    <article className="flex h-full w-[calc((100vw-3rem)/2)] min-w-[138px] shrink-0 flex-col overflow-hidden bg-transparent transition-transform hover:-translate-y-0.5 sm:w-[min(42vw,220px)] md:w-[280px] md:rounded-brand-2xl md:border md:border-[#3c2528] md:bg-white md:shadow-[0_2px_10px_rgba(54,16,24,0.08)] lg:w-full lg:min-w-0">
       <Link href={`/catalogo/${wine.id}`} onNavigate={onOpen} className="block active:scale-[0.99]">
         <div className="relative md:border-b md:border-stone-100 md:bg-[#fdfbf8]">
           <ProductImage src={wine.image_url} alt={wine.name} width={300} height={400} sizes="(max-width: 639px) calc((100vw - 3rem) / 2), (max-width: 767px) 42vw, (min-width: 1024px) 25vw, 280px" className={`h-40 w-full object-contain mix-blend-multiply sm:h-48 md:h-52 ${imagePadding}`} />
@@ -78,16 +78,19 @@ function CatalogProductCard({ wine, onAddToCart, onToggleFavorite, onShare, isFa
         <div className="px-2.5 pb-2 pt-3 sm:px-3"><p className="truncate text-[9px] font-bold uppercase tracking-wide text-stone-400 sm:text-[10px]">{wine.product_kind === 'kit' ? 'Seleção especial' : wine.type || wine.region || 'Vinho'}</p><h3 className="mt-1 min-h-10 font-serif text-[13px] font-bold leading-4 text-stone-950 line-clamp-2 sm:text-[15px] sm:leading-5">{wine.name}</h3><p className="mt-2 flex items-center gap-1 text-[9px] text-stone-400 sm:text-[10px]"><span className="flex text-stone-300">{Array.from({ length: 5 }).map((_, index) => <Star key={index} className="h-3 w-3" />)}</span><span className="truncate">Sem avaliações</span></p></div>
       </Link>
       <div className="grid grid-cols-2 text-[10px] font-medium text-[#741128] sm:text-xs md:border-y md:border-stone-200"><button onClick={() => onToggleFavorite(wine)} type="button" className="flex min-h-9 items-center justify-center gap-1 hover:bg-[#fdf5f6] md:border-r md:border-stone-200" aria-label={isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}><Heart className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${isFavorite ? 'fill-current' : ''}`} /><span className="hidden sm:inline">Favoritar</span></button><button onClick={() => onShare(wine)} type="button" className="flex min-h-9 items-center justify-center gap-1 hover:bg-[#fdf5f6]"><Share2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" /><span className="hidden sm:inline">Compartilhar</span></button></div>
-      <div className="space-y-2 p-2.5 sm:p-3">
-        <WinePrice wine={wine} reserveSpace />
-        <div className="flex min-h-4 flex-col justify-end">
+      <div className="flex flex-1 flex-col p-2.5 sm:p-3">
+        <div className="space-y-1.5">
+          <WinePrice wine={wine} reserveSpace />
           {kitUnitPrice !== null && <p className="text-[9px] font-semibold text-stone-500 sm:text-[10px]">{formatMoney(kitUnitPrice)} por garrafa</p>}
+          <div>
+            <p className="text-[9px] font-bold text-emerald-700 sm:text-[10px]">À vista <span className="text-xs font-black sm:text-sm">R$ {pixPrice.toFixed(2).replace('.', ',')}</span> no PIX <span className="inline-block rounded bg-emerald-600 px-1 py-0.5 text-[8px] text-white sm:text-[9px]">5% OFF</span></p>
+            {kitPixUnitPrice !== null && <p className="text-[9px] font-semibold text-emerald-700/80 sm:text-[10px]">{formatMoney(kitPixUnitPrice)} por garrafa</p>}
+          </div>
+          <p className="text-[9px] font-medium text-stone-600 sm:text-[10px]">ou 3x de R$ {installmentPrice.toFixed(2).replace('.', ',')} sem juros</p>
+          {wine.show_countdown && <FlashOfferCountdown endsAt={wine.promotion_ends_at} />}
         </div>
-        <div className="flex min-h-12 flex-col justify-end sm:min-h-[3.25rem]">
-          <p className="line-clamp-2 text-[9px] font-bold text-emerald-700 sm:text-[10px]">À vista <span className="text-xs font-black sm:text-sm">R$ {pixPrice.toFixed(2).replace('.', ',')}</span> no PIX <span className="rounded bg-emerald-600 px-1 py-0.5 text-[8px] text-white sm:text-[9px]">5% OFF</span></p>
-          {kitPixUnitPrice !== null && <p className="text-[9px] font-semibold text-emerald-700/80 sm:text-[10px]">{formatMoney(kitPixUnitPrice)} por garrafa</p>}
-        </div>
-        <div className="flex min-h-8 flex-col justify-end"><p className="line-clamp-2 text-[9px] font-medium text-stone-600 sm:text-[10px]">ou 3x de R$ {installmentPrice.toFixed(2).replace('.', ',')} sem juros</p></div><div className="flex min-h-7 items-start">{wine.show_countdown && <FlashOfferCountdown endsAt={wine.promotion_ends_at} />}</div><button onClick={() => onAddToCart(wine)} type="button" disabled={wine.stock === 0} className="mt-1 flex min-h-10 w-full items-center justify-center gap-1 rounded-lg bg-[#82c341] px-2 text-[10px] font-bold text-white shadow-sm transition hover:bg-[#6eae31] disabled:cursor-not-allowed disabled:opacity-40 sm:gap-2 sm:px-3 sm:text-xs"><ShoppingCart className="h-3.5 w-3.5 sm:h-4 sm:w-4" />{wine.stock === 0 ? 'Indisponível' : <><span className="sm:hidden">Adicionar</span><span className="hidden sm:inline">Adicionar ao carrinho</span></>}</button></div>
+        <div className="mt-auto pt-3"><button onClick={() => onAddToCart(wine)} type="button" disabled={wine.stock === 0} className="flex min-h-10 w-full items-center justify-center gap-1 rounded-lg bg-[#82c341] px-2 text-[10px] font-bold text-white shadow-sm transition hover:bg-[#6eae31] disabled:cursor-not-allowed disabled:opacity-40 sm:gap-2 sm:px-3 sm:text-xs"><ShoppingCart className="h-3.5 w-3.5 sm:h-4 sm:w-4" />{wine.stock === 0 ? 'Indisponível' : <><span className="sm:hidden">Adicionar</span><span className="hidden sm:inline">Adicionar ao carrinho</span></>}</button></div>
+      </div>
     </article>
   );
 }
