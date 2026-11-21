@@ -8,6 +8,7 @@ import { auditSecurityEvent } from '@/lib/security/audit';
 import { isCookieCategoryAllowed, readCookieConsent } from '@/lib/privacy/cookieConsent';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { buildTrackingContext } from '@/lib/analytics/purchaseEvents';
+import { getCheckoutPhone } from '@/lib/auth/checkoutPhone';
 
 const checkoutMessages = [
   'Pedido invalido.',
@@ -43,6 +44,11 @@ export async function POST(request: Request) {
 
   if (userError || !user) {
     return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
+  }
+
+  const customerPhone = getCheckoutPhone(user.user_metadata);
+  if (!customerPhone) {
+    return NextResponse.json({ error: 'Informe um WhatsApp válido com DDD antes de finalizar o pedido.' }, { status: 400 });
   }
 
   const limit = await checkRateLimitDistributed(getClientKey(request, 'checkout', user.id), 10, 60_000);
@@ -85,7 +91,7 @@ export async function POST(request: Request) {
       p_promotion_code: promotionCode || null,
       p_delivery_zip_code: deliveryZipCode || null,
       p_customer_name: user.user_metadata?.nome_completo || user.email?.split('@')[0] || null,
-      p_customer_phone: user.user_metadata?.whatsapp || user.user_metadata?.telefone || null,
+      p_customer_phone: customerPhone,
       // Explicitly select the current RPC signature. The database also stores
       // the choice only when the visitor allowed the marketing category.
       p_marketing_consent: marketingConsent,

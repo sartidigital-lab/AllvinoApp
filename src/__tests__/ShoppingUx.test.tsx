@@ -10,6 +10,7 @@ const fixture = vi.hoisted(() => ({
   cart: [] as Array<Wine & { quantity: number }>,
   wines: [] as Wine[],
   createOrder: vi.fn(),
+  user: null as null | { id: string; name: string; phone: string; birthDate: string },
 }));
 
 vi.mock('@/hooks/useWines', () => ({ useWines: () => ({ wines: fixture.wines, isLoading: false, isOffline: false }) }));
@@ -19,7 +20,7 @@ vi.mock('@/context/CartContext', () => ({
 vi.mock('@/context/FavoritesContext', () => ({ useFavorites: () => ({ isFavorite: () => false, toggleFavorite: vi.fn() }) }));
 vi.mock('@/context/RecentlyViewedContext', () => ({ useRecentlyViewed: () => ({ recentlyViewed: [] }) }));
 vi.mock('@/context/ToastContext', () => ({ useToast: () => ({ showToast: vi.fn() }) }));
-vi.mock('@/lib/auth/currentUser', () => ({ getCurrentUserFast: async () => null }));
+vi.mock('@/lib/auth/currentUser', () => ({ getCurrentUserFast: async () => fixture.user }));
 vi.mock('@/lib/database/orders', () => ({ createOrder: fixture.createOrder, getUserOrders: vi.fn() }));
 vi.mock('@/lib/database/promotions', () => ({
   calculatePromotionDiscount: () => 0,
@@ -41,6 +42,7 @@ const wine: Wine = {
 
 beforeEach(() => {
   fixture.cart = [];
+  fixture.user = null;
   fixture.createOrder.mockClear();
   fixture.wines = Array.from({ length: 18 }, (_, index) => ({ ...wine, id: `wine-${index + 1}`, name: `Malbec ${index + 1}` }));
   clearCatalogReturn();
@@ -55,6 +57,24 @@ afterEach(() => {
 });
 
 describe('UX de compra', () => {
+  it('solicita WhatsApp ausente antes de criar o pedido e salva o contato', async () => {
+    fixture.cart = [{ ...wine, quantity: 1 }];
+    fixture.user = { id: 'user-1', name: 'Cliente', phone: '', birthDate: '' };
+    fixture.createOrder.mockResolvedValue({ order: null, error: new Error('Teste') });
+    const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({ phone: '27992770952' }) }));
+    vi.stubGlobal('fetch', fetchMock);
+    window.history.replaceState(null, '', '/checkout');
+    render(<CheckoutPage />);
+    const input = await screen.findByLabelText('WhatsApp');
+    fireEvent.click(screen.getByRole('radio', { name: /Retirada na Loja/ }));
+    fireEvent.click(screen.getByRole('button', { name: /IR PARA PAGAMENTO/ }));
+    expect(screen.getByText(/Informe um WhatsApp válido com DDD para finalizar/)).toBeVisible();
+    expect(fixture.createOrder).not.toHaveBeenCalled();
+    fireEvent.change(input, { target: { value: '27992770952' } });
+    fireEvent.click(screen.getByRole('button', { name: /IR PARA PAGAMENTO/ }));
+    await waitFor(() => expect(fixture.createOrder).toHaveBeenCalled());
+    expect(fetchMock).toHaveBeenCalledWith('/api/cliente/whatsapp', expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ whatsapp: '27992770952' }) }));
+  });
   it('renderiza oito produtos e acrescenta outro lote sob demanda', async () => {
     window.history.replaceState(null, '', '/catalogo');
     await act(async () => { render(<CatalogoPage />); });

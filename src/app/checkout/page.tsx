@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { CurrentUser, getCurrentUserFast } from '@/lib/auth/currentUser';
+import { formatPhone } from '@/lib/auth/customerRegistration';
+import { normalizeCheckoutPhone } from '@/lib/auth/checkoutPhone';
 import { createOrder, getUserOrders } from '@/lib/database/orders';
 import {
   calculatePromotionDiscount,
@@ -53,6 +55,8 @@ function formatDeliveryAddress(address: AddressFields) {
 export default function CheckoutPage() {
   const { cart, cartTotal, clearCart } = useCart();
   const [user, setUser] = useState<CurrentUser | null>(null);
+  const [checkoutPhone, setCheckoutPhone] = useState('');
+  const phoneInputRef = useRef<HTMLInputElement>(null);
   const [entrega, setEntrega] = useState('entrega');
   const [address, setAddress] = useState<AddressFields>(EMPTY_ADDRESS);
   const [cep, setCep] = useState('');
@@ -354,6 +358,30 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (!normalizeCheckoutPhone(user.phone)) {
+      const phone = normalizeCheckoutPhone(checkoutPhone);
+      if (!phone) {
+        setCheckoutMessage('Informe um WhatsApp válido com DDD para finalizar o pedido.');
+        phoneInputRef.current?.focus();
+        return;
+      }
+      setIsLoading(true);
+      try {
+        const response = await fetch('/api/cliente/whatsapp', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ whatsapp: phone }),
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || 'Não foi possível salvar seu WhatsApp.');
+        setUser({ ...user, phone: payload.phone });
+      } catch (error) {
+        setCheckoutMessage(error instanceof Error ? error.message : 'Não foi possível salvar seu WhatsApp. Tente novamente.');
+        setIsLoading(false);
+        return;
+      }
+    }
+
     const isCardPayment = pagamento === 'Cartao (Link)';
     trackConversionEvent('order_submission_started', { item_count: cart.length, total: finalTotal, delivery_method: entrega, payment_method: pagamento });
     setIsLoading(true);
@@ -593,8 +621,15 @@ export default function CheckoutPage() {
                 <input type="text" readOnly value={user.name} className="w-full border-stone-200 bg-stone-50 rounded-xl text-sm font-bold text-stone-500 mt-1 focus:ring-0" />
               </div>
               <div>
-                <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest ml-1">WhatsApp</label>
-                <input type="text" readOnly value={user.phone || 'Não informado'} className="w-full border-stone-200 bg-stone-50 rounded-xl text-sm font-bold text-stone-500 mt-1 focus:ring-0" />
+                <label htmlFor="checkout-whatsapp" className="text-[10px] font-bold text-stone-400 uppercase tracking-widest ml-1">WhatsApp</label>
+                {normalizeCheckoutPhone(user.phone) ? (
+                  <input id="checkout-whatsapp" type="text" readOnly value={user.phone} className="w-full border-stone-200 bg-stone-50 rounded-xl text-sm font-bold text-stone-500 mt-1 focus:ring-0" />
+                ) : (
+                  <>
+                    <input ref={phoneInputRef} id="checkout-whatsapp" type="tel" inputMode="tel" autoComplete="tel-national" value={checkoutPhone} onChange={(event) => setCheckoutPhone(formatPhone(event.target.value))} placeholder="(00) 00000-0000" aria-describedby="checkout-whatsapp-help" className="w-full border-stone-300 bg-white rounded-xl text-sm font-bold text-stone-800 mt-1 focus:ring-brand-primary" />
+                    <p id="checkout-whatsapp-help" className="mt-2 text-xs text-stone-500">Informe seu WhatsApp com DDD para acompanharmos seu pedido.</p>
+                  </>
+                )}
               </div>
             </div>
           ) : (
