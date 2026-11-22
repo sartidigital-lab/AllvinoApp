@@ -1,8 +1,10 @@
 "use client";
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AdminEmptyState, AdminNotice, AdminPageHeader, AdminSection, AdminStatCard, AdminStatusBadge } from '@/components/admin/AdminPrimitives';
+import { AdminOrderFilters } from '@/components/admin/AdminOrderFilters';
+import { getAdminOrderTotals, getAdminStatusCounts, matchesAdminOrderPeriod, matchesAdminOrderStatus, type AdminOrderPeriod, type AdminOrderStatusFilter } from '@/lib/orders/adminFilters';
 import { createClient } from '@/utils/supabase/admin-client';
 import { fetchStockLevels } from '@/lib/database/stock';
 
@@ -95,6 +97,7 @@ async function fetchAllAdminOrders(supabase: ReturnType<typeof createClient>) {
       .from('orders')
       .select('id,status,total_amount,delivery_type,payment_provider,payment_status,customer_name,customer_phone,created_at,order_items(quantity,unit_price,product_name)')
       .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
       .range(offset, offset + pageSize - 1);
 
     if (error) return { data: [], error };
@@ -107,11 +110,9 @@ async function fetchAllAdminOrders(supabase: ReturnType<typeof createClient>) {
 }
 
 export default function AdminAnalyticsPage() {
-  const [faturamento, setFaturamento] = useState(0);
-  const [garrafas, setGarrafas] = useState(0);
-  const [pedidos, setPedidos] = useState(0);
-  const [topProducts, setTopProducts] = useState<ProductRanking[]>([]);
-  const [recentOrders, setRecentOrders] = useState<AdminOrder[]>([]);
+  const [orders, setOrders] = useState<AdminOrder[]>([]);
+  const [period, setPeriod] = useState<AdminOrderPeriod>({ start: '', end: '' });
+  const [selectedStatus, setSelectedStatus] = useState<AdminOrderStatusFilter>('all');
   const [actions, setActions] = useState<OperationalAction[]>([]);
   const [openConversations, setOpenConversations] = useState(0);
   const [lowStockProducts, setLowStockProducts] = useState(0);
@@ -145,24 +146,6 @@ export default function AdminAnalyticsPage() {
       const stockLevels = stockResult.stockLevels;
       const crmCards = (crmResult.data || []) as CrmCard[];
       const conversations = (conversationsResult.data || []) as Conversation[];
-      let totalFaturamento = 0;
-      let totalGarrafas = 0;
-      const ranking = new Map<string, ProductRanking>();
-
-      orders.forEach((order) => {
-        totalFaturamento += order.total_amount;
-
-        order.order_items?.forEach((item) => {
-          const productName = getWineName(item);
-          const current = ranking.get(productName) || { name: productName, quantity: 0, revenue: 0 };
-
-          current.quantity += item.quantity;
-          current.revenue += item.quantity * item.unit_price;
-          totalGarrafas += item.quantity;
-          ranking.set(productName, current);
-        });
-      });
-
       const lowStockCount = stockLevels.filter((stock) => stock.product_name && stock.quantity <= 5).length;
       const openConversationCount = conversations.filter((conversation) => conversation.status !== 'closed').length;
       const paymentPendingCount = orders.filter((order) => (
@@ -171,17 +154,9 @@ export default function AdminAnalyticsPage() {
         order.status !== 'cancelled'
       )).length;
 
-      setFaturamento(totalFaturamento);
-      setGarrafas(totalGarrafas);
-      setPedidos(orders.length);
+      setOrders(orders);
       setLowStockProducts(lowStockCount);
       setOpenConversations(openConversationCount);
-      setTopProducts(
-        Array.from(ranking.values())
-          .sort((a, b) => b.quantity - a.quantity)
-          .slice(0, 10)
-      );
-      setRecentOrders(orders.slice(0, 5));
       setActions([
         {
           label: 'Pedidos pendentes',
@@ -243,6 +218,24 @@ export default function AdminAnalyticsPage() {
     fetchAnalytics();
   }, []);
 
+  const filteredOrders = useMemo(() => orders.filter((order) => matchesAdminOrderPeriod(order, period) && matchesAdminOrderStatus(order, selectedStatus)), [orders, period, selectedStatus]);
+  const totals = useMemo(() => getAdminOrderTotals(filteredOrders), [filteredOrders]);
+  const statusCounts = useMemo(() => getAdminStatusCounts(orders.filter((order) => matchesAdminOrderPeriod(order, period))), [orders, period]);
+  const { topProducts, garrafas } = useMemo(() => {
+    const ranking = new Map<string, ProductRanking>();
+    let count = 0;
+    filteredOrders.forEach((order) => order.order_items?.forEach((item) => {
+      const name = getWineName(item);
+      const current = ranking.get(name) || { name, quantity: 0, revenue: 0 };
+      current.quantity += item.quantity;
+      current.revenue += item.quantity * item.unit_price;
+      count += item.quantity;
+      ranking.set(name, current);
+    }));
+    return { topProducts: Array.from(ranking.values()).sort((a, b) => b.quantity - a.quantity).slice(0, 10), garrafas: count };
+  }, [filteredOrders]);
+  const recentOrders = filteredOrders.slice(0, 5);
+
   return (
     <div className="space-y-6">
       <AdminPageHeader
@@ -262,10 +255,13 @@ export default function AdminAnalyticsPage() {
         </AdminNotice>
       )}
 
+      <AdminOrderFilters period={period} onPeriodChange={setPeriod} status={selectedStatus} onStatusChange={setSelectedStatus} counts={statusCounts} />
+
       <div className="admin-stats-grid grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-5">
-        <AdminStatCard label="Faturamento" value={isLoading ? '...' : formatMoney(faturamento)} icon="payments" tone="dark" />
+        <AdminStatCard label="Faturamento pago" value={isLoading ? '...' : formatMoney(totals.paid)} icon="payments" tone="dark" />
+        <AdminStatCard label="Valor dos pedidos" value={isLoading ? '...' : formatMoney(totals.value)} icon="monitoring" />
         <AdminStatCard label="Garrafas vendidas" value={isLoading ? '...' : garrafas} icon="wine_bar" />
-        <AdminStatCard label="Total de pedidos" value={isLoading ? '...' : pedidos} icon="receipt_long" />
+        <AdminStatCard label="Total de pedidos" value={isLoading ? '...' : totals.count} icon="receipt_long" />
         <AdminStatCard label="Conversas abertas" value={isLoading ? '...' : openConversations} icon="forum" />
         <AdminStatCard label="Estoque baixo" value={isLoading ? '...' : lowStockProducts} icon="production_quantity_limits" tone="accent" />
       </div>

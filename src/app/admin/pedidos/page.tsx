@@ -1,6 +1,8 @@
 "use client";
 
 import { AdminEmptyState, AdminNotice, AdminPageHeader, AdminSection, AdminStatCard, AdminStatusBadge } from '@/components/admin/AdminPrimitives';
+import { AdminOrderFilters } from '@/components/admin/AdminOrderFilters';
+import { getAdminOrderTotals, getAdminStatusCounts, matchesAdminOrderPeriod, matchesAdminOrderStatus, type AdminOrderPeriod, type AdminOrderStatusFilter } from '@/lib/orders/adminFilters';
 import { downloadOrderReceiptPdf } from '@/lib/orders/orderReceiptPdf';
 import { getKitComponentOrderQuantity, getKitComponentsForOrderItem, getOrderItemName, getOrderItemWithComposition, type KitComponent } from '@/lib/orders/orderReceipt';
 import { createClient } from '@/utils/supabase/admin-client';
@@ -72,7 +74,6 @@ const statusTones: Record<OrderStatus, 'neutral' | 'success' | 'warning' | 'dang
 };
 
 const statusFlow: OrderStatus[] = ['pending', 'confirmed', 'preparing', 'delivered'];
-const statusOptions: Array<'all' | OrderStatus> = ['all', ...statusFlow, 'cancelled'];
 
 const paymentStatusLabels: Record<AdminOrder['payment_status'], string> = {
   pending: 'Pagamento pendente',
@@ -172,31 +173,34 @@ async function loadKitComponents(
   )];
   if (productIds.length === 0) return { components: {}, error: false };
 
-  const { data: orderProducts, error: productsError } = await supabase
-    .from('produtos')
-    .select('id,nome,tipo_produto')
-    .in('id', productIds);
-  if (productsError) return { components: {}, error: true };
-
-  const products = (orderProducts || []) as AdminProduct[];
+  const products: AdminProduct[] = [];
+  for (let offset = 0; offset < productIds.length; offset += 80) {
+    const { data, error } = await supabase.from('produtos').select('id,nome,tipo_produto').in('id', productIds.slice(offset, offset + 80));
+    if (error) return { components: {}, error: true };
+    products.push(...(data || []) as AdminProduct[]);
+  }
   const kitIds = products.filter((product) => product.tipo_produto === 'kit').map((product) => product.id);
   if (kitIds.length === 0) return { components: {}, error: false };
 
-  const { data: compositionRows, error: compositionError } = await supabase
-    .from('product_kit_items')
-    .select('kit_id,product_id,quantity')
-    .in('kit_id', kitIds);
-  if (compositionError) return { components: {}, error: true };
-
-  const composition = (compositionRows || []) as KitCompositionRow[];
+  const composition: KitCompositionRow[] = [];
+  for (let offset = 0; offset < kitIds.length; offset += 80) {
+    const ids = kitIds.slice(offset, offset + 80);
+    for (let page = 0; ; page += 250) {
+      const { data, error } = await supabase.from('product_kit_items').select('kit_id,product_id,quantity').in('kit_id', ids).order('kit_id').order('product_id').range(page, page + 249);
+      if (error) return { components: {}, error: true };
+      const rows = (data || []) as KitCompositionRow[];
+      composition.push(...rows);
+      if (rows.length < 250) break;
+    }
+  }
   const namesById = new Map(products.map((product) => [product.id, product.nome]));
   const componentIds = [...new Set(composition.map((item) => item.product_id).filter((id) => !namesById.has(id)))];
 
-  if (componentIds.length > 0) {
+  for (let offset = 0; offset < componentIds.length; offset += 80) {
     const { data: componentProducts, error: componentError } = await supabase
       .from('produtos')
       .select('id,nome,tipo_produto')
-      .in('id', componentIds);
+      .in('id', componentIds.slice(offset, offset + 80));
     if (componentError) return { components: {}, error: true };
     (componentProducts || []).forEach((product) => {
       const typedProduct = product as AdminProduct;
@@ -223,7 +227,8 @@ async function loadKitComponents(
 
 export default function AdminPedidosPage() {
   const [orders, setOrders] = useState<AdminOrder[]>([]);
-  const [selectedStatus, setSelectedStatus] = useState<'all' | OrderStatus>('all');
+  const [selectedStatus, setSelectedStatus] = useState<AdminOrderStatusFilter>('all');
+  const [period, setPeriod] = useState<AdminOrderPeriod>({ start: '', end: '' });
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
@@ -240,19 +245,24 @@ export default function AdminPedidosPage() {
     setErrorMessage(null);
 
     const supabase = createClient();
-    const { data, error } = await supabase
-      .from('orders')
-      .select('id,status,total_amount,delivery_type,payment_method,payment_provider,payment_status,payment_reference,payment_url,paid_at,payment_error,delivery_address,discount_amount,subtotal_amount,promotion_code,delivery_zip_code,delivery_zone_name,delivery_estimate_days,shipping_fee,created_at,customer_name,customer_phone,order_items(product_id,quantity,unit_price,product_name)')
-      .order('created_at', { ascending: false })
-      .limit(100);
-
-    if (error) {
-      setErrorMessage('Não foi possível carregar os pedidos.');
-      setIsLoading(false);
-      return;
+    const nextOrders: AdminOrder[] = [];
+    const batchSize = 250;
+    for (let offset = 0; ; offset += batchSize) {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('id,status,total_amount,delivery_type,payment_method,payment_provider,payment_status,payment_reference,payment_url,paid_at,payment_error,delivery_address,discount_amount,subtotal_amount,promotion_code,delivery_zip_code,delivery_zone_name,delivery_estimate_days,shipping_fee,created_at,customer_name,customer_phone,order_items(product_id,quantity,unit_price,product_name)')
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
+        .range(offset, offset + batchSize - 1);
+      if (error) {
+        setErrorMessage('Não foi possível carregar os pedidos.');
+        setIsLoading(false);
+        return;
+      }
+      const batch = (data || []) as AdminOrder[];
+      nextOrders.push(...batch);
+      if (batch.length < batchSize) break;
     }
-
-    const nextOrders = (data || []) as AdminOrder[];
     setOrders(nextOrders);
     setSelectedOrderId((current) => current || nextOrders[0]?.id || null);
     const kitComponents = await loadKitComponents(supabase, nextOrders);
@@ -273,8 +283,8 @@ export default function AdminPedidosPage() {
 
     return orders
       .filter((order) => {
-        const matchesStatus = selectedStatus === 'all' || order.status === selectedStatus;
-        const matchesDate = !dateLimit || new Date(order.created_at).getTime() >= dateLimit;
+        const matchesStatus = matchesAdminOrderStatus(order, selectedStatus);
+        const matchesDate = (!dateLimit || new Date(order.created_at).getTime() >= dateLimit) && matchesAdminOrderPeriod(order, period);
         const itemNames = order.order_items?.map(getOrderItemName).join(' ') || '';
         const kitComponentNames = order.order_items
           ?.flatMap((item) => getKitComponentsForOrderItem(item, kitComponentsById))
@@ -314,11 +324,11 @@ export default function AdminPedidosPage() {
 
         return new Date(secondOrder.created_at).getTime() - new Date(firstOrder.created_at).getTime();
       });
-  }, [orders, selectedStatus, searchTerm, dateFilter, sortOrder, kitComponentsById]);
+  }, [orders, selectedStatus, searchTerm, dateFilter, period, sortOrder, kitComponentsById]);
 
   const selectedOrder = useMemo(
-    () => orders.find((order) => order.id === selectedOrderId) || filteredOrders[0] || null,
-    [filteredOrders, orders, selectedOrderId]
+    () => filteredOrders.find((order) => order.id === selectedOrderId) || filteredOrders[0] || null,
+    [filteredOrders, selectedOrderId]
   );
 
   const pageSize = 25;
@@ -327,10 +337,10 @@ export default function AdminPedidosPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [selectedStatus, searchTerm, dateFilter, sortOrder]);
+  }, [selectedStatus, searchTerm, dateFilter, period, sortOrder]);
 
   const summary = useMemo(() => {
-    return orders.reduce(
+    return filteredOrders.reduce(
       (acc, order) => {
         acc.total += 1;
         acc.revenue += order.total_amount;
@@ -340,18 +350,13 @@ export default function AdminPedidosPage() {
       },
       { total: 0, revenue: 0, paymentPending: 0, pending: 0, confirmed: 0, preparing: 0, delivered: 0, cancelled: 0 }
     );
-  }, [orders]);
+  }, [filteredOrders]);
 
+  const totals = useMemo(() => getAdminOrderTotals(filteredOrders), [filteredOrders]);
   const statusCounts = useMemo(() => {
-    return orders.reduce(
-      (acc, order) => {
-        acc.all += 1;
-        acc[order.status] += 1;
-        return acc;
-      },
-      { all: 0, pending: 0, confirmed: 0, preparing: 0, delivered: 0, cancelled: 0 }
-    );
-  }, [orders]);
+    const dateLimit = getDateLimit(dateFilter);
+    return getAdminStatusCounts(orders.filter((order) => (!dateLimit || new Date(order.created_at).getTime() >= dateLimit) && matchesAdminOrderPeriod(order, period)));
+  }, [orders, dateFilter, period]);
 
   const updateOrderStatus = async (order: AdminOrder, status: OrderStatus) => {
     setUpdatingId(order.id);
@@ -447,27 +452,15 @@ export default function AdminPedidosPage() {
         <AdminNotice tone="danger">{errorMessage}</AdminNotice>
       )}
 
+      <AdminOrderFilters period={period} onPeriodChange={(value) => { setPeriod(value); setDateFilter('all'); }} status={selectedStatus} onStatusChange={setSelectedStatus} counts={statusCounts} />
+
       <div className="admin-stats-grid grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-5">
         <AdminStatCard label="Total" value={isLoading ? '...' : summary.total} icon="receipt_long" tone="dark" />
         <AdminStatCard label="Pendentes" value={isLoading ? '...' : summary.pending} icon="pending_actions" tone="accent" />
         <AdminStatCard label="Aguardando pagamento" value={isLoading ? '...' : summary.paymentPending} icon="payments" />
         <AdminStatCard label="Entregues" value={isLoading ? '...' : summary.delivered} icon="check_circle" />
-        <AdminStatCard label="Faturamento" value={isLoading ? '...' : formatMoney(summary.revenue)} icon="monitoring" />
-      </div>
-
-      <div className="admin-scrollbar flex gap-2 overflow-x-auto pb-1">
-        {statusOptions.map((status) => (
-          <button
-            key={status}
-            type="button"
-            onClick={() => setSelectedStatus(status)}
-            className={`admin-button min-h-10 shrink-0 rounded-full px-4 text-xs transition ${
-              selectedStatus === status ? 'bg-black text-white' : 'bg-white text-stone-500 border border-stone-200'
-            }`}
-          >
-            {status === 'all' ? 'Todos' : statusLabels[status]} ({statusCounts[status]})
-          </button>
-        ))}
+        <AdminStatCard label="Valor dos pedidos" value={isLoading ? '...' : formatMoney(summary.revenue)} icon="monitoring" />
+        <AdminStatCard label="Faturamento pago" value={isLoading ? '...' : formatMoney(totals.paid)} icon="payments" />
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
@@ -495,7 +488,7 @@ export default function AdminPedidosPage() {
               <label className="relative block">
                 <select
                   value={dateFilter}
-                  onChange={(event) => setDateFilter(event.target.value as DateFilter)}
+                  onChange={(event) => { setDateFilter(event.target.value as DateFilter); setPeriod({ start: '', end: '' }); }}
                   className="h-11 w-full appearance-none rounded-lg border border-stone-200 bg-white px-3 pr-9 text-sm font-bold text-stone-800 outline-none transition focus:border-black"
                   aria-label="Filtrar período"
                 >
