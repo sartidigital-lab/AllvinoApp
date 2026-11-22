@@ -4,12 +4,15 @@ import type { ReactNode } from 'react';
 import CatalogoPage from '@/app/catalogo/page';
 import CheckoutPage from '@/app/checkout/page';
 import { clearCatalogReturn, readCatalogReturn, saveCatalogReturn } from '@/lib/catalog/browsingState';
+import { saveCheckoutDraft } from '@/lib/auth/checkoutDraft';
 import type { Wine } from '@/types/database';
 
 const fixture = vi.hoisted(() => ({
   cart: [] as Array<Wine & { quantity: number }>,
   wines: [] as Wine[],
   createOrder: vi.fn(),
+  quote: vi.fn(),
+  promotion: vi.fn(),
   user: null as null | { id: string; name: string; phone: string; birthDate: string },
 }));
 
@@ -23,10 +26,13 @@ vi.mock('@/context/ToastContext', () => ({ useToast: () => ({ showToast: vi.fn()
 vi.mock('@/lib/auth/currentUser', () => ({ getCurrentUserFast: async () => fixture.user }));
 vi.mock('@/lib/database/orders', () => ({ createOrder: fixture.createOrder, getUserOrders: vi.fn() }));
 vi.mock('@/lib/database/promotions', () => ({
-  calculatePromotionDiscount: () => 0,
+  calculatePromotionDiscount: () => 10,
+  fetchActivePromotionByCode: fixture.promotion,
+  getPromotionBottleCount: () => 1,
+  getPromotionEligibleSubtotal: () => 99,
   normalizePromotionCode: (code: string) => code.toUpperCase(),
 }));
-vi.mock('@/lib/database/delivery', () => ({ fetchDeliveryQuote: vi.fn() }));
+vi.mock('@/lib/database/delivery', () => ({ fetchDeliveryQuote: fixture.quote }));
 vi.mock('@/lib/database/payments', () => ({ createPaymentCheckout: vi.fn() }));
 vi.mock('@/components/ui', async (importOriginal) => ({
   ...await importOriginal<typeof import('@/components/ui')>(),
@@ -42,6 +48,9 @@ const wine: Wine = {
 
 beforeEach(() => {
   fixture.cart = [];
+  sessionStorage.clear();
+  fixture.quote.mockReset();
+  fixture.promotion.mockReset();
   fixture.user = null;
   fixture.createOrder.mockClear();
   fixture.wines = Array.from({ length: 18 }, (_, index) => ({ ...wine, id: `wine-${index + 1}`, name: `Malbec ${index + 1}` }));
@@ -57,6 +66,20 @@ afterEach(() => {
 });
 
 describe('UX de compra', () => {
+  it('retoma endereço e revalida frete e cupom depois da autenticação', async () => {
+    fixture.cart = [{ ...wine, quantity: 1 }];
+    fixture.user = { id: 'user-1', name: 'Cliente', phone: '27999999999', birthDate: '' };
+    fixture.quote.mockResolvedValue({ zone: { name: 'Região', estimate_days: 2, fee: 10 }, shippingFee: 10, error: null });
+    fixture.promotion.mockResolvedValue({ promotion: { code: 'VINHO', title: 'Desconto', min_subtotal: 0, scope: 'all' }, error: null });
+    saveCheckoutDraft(sessionStorage, { savedAt: Date.now(), entrega: 'entrega', address: { logradouro: 'Rua Um', numero: '10', bairro: 'Centro', localidade: 'Vitória', uf: 'ES' }, cep: '29000-000', pagamento: 'Pix', installments: 1, promotionCode: 'VINHO', promotionApplied: true });
+    window.history.replaceState(null, '', '/checkout');
+    render(<CheckoutPage />);
+    expect(await screen.findByDisplayValue('Rua Um')).toBeVisible();
+    expect(screen.getByDisplayValue('10')).toBeVisible();
+    await waitFor(() => expect(fixture.quote).toHaveBeenCalledWith('29000000', 99));
+    await waitFor(() => expect(fixture.promotion).toHaveBeenCalledWith('VINHO'));
+    expect(await screen.findByText('Desconto aplicado.')).toBeVisible();
+  });
   it('solicita WhatsApp ausente antes de criar o pedido e salva o contato', async () => {
     fixture.cart = [{ ...wine, quantity: 1 }];
     fixture.user = { id: 'user-1', name: 'Cliente', phone: '', birthDate: '' };

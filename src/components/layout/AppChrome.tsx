@@ -3,6 +3,7 @@
 import { Suspense } from 'react';
 import { usePathname } from 'next/navigation';
 import { AuthModal } from '@/components/auth/AuthModal';
+import { AuthReturnNotice } from '@/components/auth/AuthReturnNotice';
 import { CartOverlay } from '@/components/cart/CartOverlay';
 import { Header } from '@/components/layout/Header';
 import { Navbar } from '@/components/layout/Navbar';
@@ -14,6 +15,7 @@ export function AppChrome() {
   if (isAdminRoute) {
     return (
       <Suspense fallback={null}>
+        <AuthReturnNotice />
         <AuthModal />
       </Suspense>
     );
@@ -25,6 +27,7 @@ export function AppChrome() {
       <Navbar />
       <CartOverlay />
       <Suspense fallback={null}>
+        <AuthReturnNotice />
         <AuthModal />
       </Suspense>
     </>
