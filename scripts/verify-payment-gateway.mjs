@@ -36,9 +36,13 @@ const requiredFiles = [
     file: 'src/lib/analytics/purchaseEvents.ts',
     includes: ["event_name: 'Purchase'", "name: 'purchase'", 'event_id: order.id'],
   },
+  // Browser tracking lives in the Google Tag Manager container. The site only
+  // reports to the dataLayer, so a pixel or gtag call coming back into the code
+  // would count every event twice.
   {
-    file: 'src/components/analytics/MetaPixel.tsx',
-    includes: ['allvino:conversion', 'fbq(', 'trackCustom'],
+    file: 'src/lib/analytics/dataLayer.ts',
+    includes: ['window.dataLayer.push', 'currentConsent'],
+    excludes: ['fbq(', 'gtag('],
   },
   {
     file: 'src/lib/analytics/attribution.ts',
@@ -50,11 +54,18 @@ const requiredFiles = [
   },
   {
     file: 'src/components/analytics/GoogleTagManager.tsx',
-    includes: ['G-F5T9JS9VYQ', 'AW-18556930168'],
+    includes: ['GTM-KFPG6J42', 'allvino_consent', 'allvino_page_view_analytics', 'allvino_page_view_marketing'],
+    excludes: ['fbq(', 'gtag(', 'fbevents.js'],
   },
   {
     file: 'src/lib/analytics/conversionEvents.ts',
-    includes: ['trackConversionEvent', 'allvino:conversion'],
+    includes: ['trackConversionEvent', 'pushDataLayer'],
+    excludes: ['fbq(', 'gtag(', 'allvino:conversion'],
+  },
+  {
+    file: 'src/lib/analytics/google.ts',
+    includes: ['add_to_cart_ecommerce', 'pushDataLayer'],
+    excludes: ['gtag('],
   },
   {
     file: 'src/app/catalogo/page.tsx',

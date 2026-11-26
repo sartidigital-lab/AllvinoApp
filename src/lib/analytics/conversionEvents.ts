@@ -1,6 +1,6 @@
 'use client';
 
-import { isCookieCategoryAllowed, readCookieConsent } from '@/lib/privacy/cookieConsent';
+import { currentConsent, newEventId, pushDataLayer } from '@/lib/analytics/dataLayer';
 
 export type ConversionEvent =
   | 'catalog_view'
@@ -15,24 +15,10 @@ export type ConversionEvent =
 
 type EventProperties = Record<string, string | number | boolean | null | undefined>;
 
-export type MetaConversionEvent = {
-  id: string;
-  name: ConversionEvent;
-  properties: EventProperties;
-};
-
-declare global {
-  interface Window {
-    dataLayer?: unknown[];
-    gtag?: (...args: unknown[]) => void;
-    allvinoMetaEventQueue?: MetaConversionEvent[];
-  }
-}
-
 /**
  * Maps funnel events to the names Google Analytics and Google Ads recognise.
- * `add_to_cart` returns null because CartContext already sends the full GA4
- * add_to_cart (with items and value), so sending it here would count twice.
+ * `add_to_cart` returns null because CartContext already reports the full GA4
+ * add_to_cart (with items and value), so reporting it here would count twice.
  */
 export function toGoogleEvent(
   event: ConversionEvent,
@@ -64,30 +50,26 @@ export function toGoogleEvent(
   return { name: event, params: properties };
 }
 
-/** Emits only consented, non-identifying funnel signals for the configured analytics destination. */
+/** Funnel events whose GA4 version carries an `ecommerce` object. */
+const ECOMMERCE_EVENTS: ConversionEvent[] = ['product_view', 'checkout_started'];
+
+/**
+ * Pushes a funnel event to the dataLayer when the visitor accepted analytics
+ * or marketing cookies. Which tag reads it is decided in Google Tag Manager,
+ * from the consent flags announced by the GoogleTagManager component.
+ */
 export function trackConversionEvent(event: ConversionEvent, properties: EventProperties = {}) {
   if (typeof window === 'undefined') return;
 
-  const consent = readCookieConsent(document.cookie);
-  const analyticsAllowed = isCookieCategoryAllowed(consent, 'analytics');
-  const marketingAllowed = isCookieCategoryAllowed(consent, 'marketing');
-  if (!analyticsAllowed && !marketingAllowed) return;
+  const consent = currentConsent();
+  if (!consent.analytics && !consent.marketing) return;
 
-  const payload = { event, ...properties };
-  if (analyticsAllowed) {
-    window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push(payload);
-    const googleEvent = toGoogleEvent(event, properties);
-    if (googleEvent) window.gtag?.('event', googleEvent.name, googleEvent.params);
-  }
-
-  if (marketingAllowed) {
-    const metaEvent: MetaConversionEvent = {
-      id: globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`,
-      name: event,
-      properties,
-    };
-    window.allvinoMetaEventQueue = [...(window.allvinoMetaEventQueue || []), metaEvent];
-    window.dispatchEvent(new CustomEvent<MetaConversionEvent>('allvino:conversion', { detail: metaEvent }));
-  }
+  const googleEvent = ECOMMERCE_EVENTS.includes(event) ? toGoogleEvent(event, properties) : null;
+  if (googleEvent) pushDataLayer({ ecommerce: null });
+  pushDataLayer({
+    event,
+    event_id: newEventId(),
+    ...properties,
+    ...(googleEvent ? { ecommerce: googleEvent.params } : {}),
+  });
 }

@@ -20,6 +20,36 @@ const ORDER_COLUMNS = [
   'order_items(product_id,wine_id,product_name,quantity,unit_price)',
 ].join(',');
 
+/**
+ * Pagar.me sends `order.paid` and `charge.paid` almost together, and each one
+ * runs this dispatch. Reading `*_sent_at` and writing it after the request is
+ * a race: both deliveries read null and both send. So the destination is
+ * claimed first, with one conditional UPDATE that only one delivery can win.
+ */
+async function claimDispatch(
+  admin: AdminClient,
+  orderId: string,
+  column: 'meta_purchase_sent_at' | 'ga4_purchase_sent_at',
+  extra: Record<string, string> = {},
+) {
+  const { data, error } = await admin
+    .from('orders')
+    .update({ [column]: new Date().toISOString(), ...extra })
+    .eq('id', orderId)
+    .is(column, null)
+    .select('id');
+  return !error && Array.isArray(data) && data.length > 0;
+}
+
+/** Gives the claim back so a failed request can be retried by the next webhook delivery. */
+async function releaseDispatch(
+  admin: AdminClient,
+  orderId: string,
+  column: 'meta_purchase_sent_at' | 'ga4_purchase_sent_at',
+) {
+  await admin.from('orders').update({ [column]: null }).eq('id', orderId);
+}
+
 async function sendMetaPurchase(admin: AdminClient, order: PurchaseOrder) {
   const accessToken = process.env.META_CAPI_ACCESS_TOKEN?.trim();
   if (!accessToken) return 'skipped_no_token';
@@ -27,37 +57,43 @@ async function sendMetaPurchase(admin: AdminClient, order: PurchaseOrder) {
   // Without the marketing choice recorded at checkout there is no basis to send personal data.
   if (!order.marketing_consent_at) return 'skipped_no_consent';
 
-  const pixelId = process.env.META_PIXEL_ID?.trim() || META_PIXEL_ID;
-  const { data: userResult } = await admin.auth.admin.getUserById(order.user_id);
-  const payload = buildMetaPurchasePayload(
-    order,
-    userResult?.user?.email ?? null,
-    process.env.META_TEST_EVENT_CODE?.trim() || undefined,
-  );
-
-  const response = await fetch(
-    `https://graph.facebook.com/${META_GRAPH_VERSION}/${pixelId}/events?access_token=${encodeURIComponent(accessToken)}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-    },
-  );
-  if (!response.ok) {
-    const detail = await response.text().catch(() => '');
-    auditSecurityEvent('tracking.meta_purchase_failed', {
-      orderId: order.id,
-      status: response.status,
-      detail: detail.slice(0, 300),
-    });
-    return 'failed';
+  if (!(await claimDispatch(admin, order.id, 'meta_purchase_sent_at', { meta_purchase_event_id: order.id }))) {
+    return 'already_sent';
   }
 
-  await admin
-    .from('orders')
-    .update({ meta_purchase_event_id: order.id, meta_purchase_sent_at: new Date().toISOString() })
-    .eq('id', order.id);
+  try {
+    const pixelId = process.env.META_PIXEL_ID?.trim() || META_PIXEL_ID;
+    const { data: userResult } = await admin.auth.admin.getUserById(order.user_id);
+    const payload = buildMetaPurchasePayload(
+      order,
+      userResult?.user?.email ?? null,
+      process.env.META_TEST_EVENT_CODE?.trim() || undefined,
+    );
+
+    const response = await fetch(
+      `https://graph.facebook.com/${META_GRAPH_VERSION}/${pixelId}/events?access_token=${encodeURIComponent(accessToken)}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      },
+    );
+    if (!response.ok) {
+      const detail = await response.text().catch(() => '');
+      auditSecurityEvent('tracking.meta_purchase_failed', {
+        orderId: order.id,
+        status: response.status,
+        detail: detail.slice(0, 300),
+      });
+      await releaseDispatch(admin, order.id, 'meta_purchase_sent_at');
+      return 'failed';
+    }
+  } catch (caught) {
+    await releaseDispatch(admin, order.id, 'meta_purchase_sent_at').catch(() => undefined);
+    throw caught;
+  }
+
   auditSecurityEvent('tracking.meta_purchase_sent', { orderId: order.id });
   return 'sent';
 }
@@ -71,22 +107,29 @@ async function sendGa4Purchase(admin: AdminClient, order: PurchaseOrder) {
   const payload = buildGa4PurchasePayload(order);
   if (!payload) return 'skipped_no_client_id';
 
-  const measurementId = process.env.GA4_MEASUREMENT_ID?.trim() || GA4_MEASUREMENT_ID;
-  const response = await fetch(
-    `https://www.google-analytics.com/mp/collect?measurement_id=${encodeURIComponent(measurementId)}&api_secret=${encodeURIComponent(apiSecret)}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-    },
-  );
-  if (!response.ok) {
-    auditSecurityEvent('tracking.ga4_purchase_failed', { orderId: order.id, status: response.status });
-    return 'failed';
+  if (!(await claimDispatch(admin, order.id, 'ga4_purchase_sent_at'))) return 'already_sent';
+
+  try {
+    const measurementId = process.env.GA4_MEASUREMENT_ID?.trim() || GA4_MEASUREMENT_ID;
+    const response = await fetch(
+      `https://www.google-analytics.com/mp/collect?measurement_id=${encodeURIComponent(measurementId)}&api_secret=${encodeURIComponent(apiSecret)}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      },
+    );
+    if (!response.ok) {
+      auditSecurityEvent('tracking.ga4_purchase_failed', { orderId: order.id, status: response.status });
+      await releaseDispatch(admin, order.id, 'ga4_purchase_sent_at');
+      return 'failed';
+    }
+  } catch (caught) {
+    await releaseDispatch(admin, order.id, 'ga4_purchase_sent_at').catch(() => undefined);
+    throw caught;
   }
 
-  await admin.from('orders').update({ ga4_purchase_sent_at: new Date().toISOString() }).eq('id', order.id);
   auditSecurityEvent('tracking.ga4_purchase_sent', { orderId: order.id });
   return 'sent';
 }
