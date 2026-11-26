@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { CartProvider, useCart } from '@/context/CartContext';
+import { COOKIE_CONSENT_COOKIE_NAME, createCookieConsent, saveCookieConsent } from '@/lib/privacy/cookieConsent';
 import { Wine } from '@/types/database';
 
 vi.mock('@/lib/database/wines', () => ({
@@ -66,25 +67,29 @@ describe('CartContext', () => {
     expect(screen.getByTestId('cart-open')).toHaveTextContent('false');
   });
 
-  it('emite add_to_cart quando a tag Google está disponível', () => {
-    const gtag = vi.fn();
-    window.gtag = gtag;
+  it('envia add_to_cart ao dataLayer quando o visitante aceitou analytics', () => {
+    window.dataLayer = [];
+    saveCookieConsent(createCookieConsent({ analytics: true }));
     renderCart();
 
     fireEvent.click(screen.getByRole('button', { name: 'Adicionar produto' }));
 
-    expect(gtag).toHaveBeenCalledWith('event', 'add_to_cart', {
-      currency: 'BRL',
-      value: 99,
-      items: [{
-        item_id: wine.id,
-        item_name: wine.name,
-        item_category: 'Argentina',
-        price: 99,
-        quantity: 1,
-      }],
-    });
+    expect(window.dataLayer).toContainEqual(expect.objectContaining({
+      event: 'add_to_cart_ecommerce',
+      ecommerce: {
+        currency: 'BRL',
+        value: 99,
+        items: [{
+          item_id: wine.id,
+          item_name: wine.name,
+          item_category: 'Argentina',
+          price: 99,
+          quantity: 1,
+        }],
+      },
+    }));
 
-    window.gtag = undefined;
+    window.dataLayer = undefined;
+    document.cookie = `${COOKIE_CONSENT_COOKIE_NAME}=; Path=/; Max-Age=0`;
   });
 });
