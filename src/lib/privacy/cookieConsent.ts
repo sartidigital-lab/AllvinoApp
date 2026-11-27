@@ -76,6 +76,17 @@ export function saveCookieConsent(consent: CookieConsent) {
   document.cookie = `${COOKIE_CONSENT_COOKIE_NAME}=${serializeCookieConsent(consent)}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
 }
 
+/**
+ * Decision of the site owner (26/11/2026): measurement (analytics) and
+ * marketing run for every visitor, with no consent banner. Every tracking
+ * path asks `isCookieCategoryAllowed`, so this one switch controls them all.
+ * To require the visitor's choice again, set it to true and put
+ * `CookieConsentBanner` back in `CustomerOnlyExperience`.
+ */
+export const TRACKING_REQUIRES_CONSENT = false;
+
 export function isCookieCategoryAllowed(consent: CookieConsent | null, category: keyof CookieConsentCategories) {
-  return category === 'necessary' || consent?.categories[category] === true;
+  if (category === 'necessary') return true;
+  if (!TRACKING_REQUIRES_CONSENT && (category === 'analytics' || category === 'marketing')) return true;
+  return consent?.categories[category] === true;
 }
