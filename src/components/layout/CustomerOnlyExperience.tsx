@@ -1,7 +1,6 @@
 "use client";
 
 import { usePathname } from 'next/navigation';
-import { CookieConsentBanner } from '@/components/privacy/CookieConsentBanner';
 import { AttributionCapture } from '@/components/analytics/AttributionCapture';
 import { GoogleTagManager } from '@/components/analytics/GoogleTagManager';
 import { WhatsAppButton } from '@/components/layout/WhatsAppButton';
@@ -26,7 +25,6 @@ export function CustomerOnlyExperience({ nonce }: CustomerOnlyExperienceProps) {
       <GoogleTagManager nonce={nonce} />
       <SiteFooter />
       <WhatsAppButton />
-      <CookieConsentBanner />
     </>
   );
 }

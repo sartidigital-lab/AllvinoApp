@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  TRACKING_REQUIRES_CONSENT,
   createCookieConsent,
   isCookieCategoryAllowed,
   parseCookieConsent,
@@ -25,7 +26,28 @@ describe('cookie consent', () => {
 
     expect(parsed).toEqual(consent);
     expect(isCookieCategoryAllowed(parsed, 'necessary')).toBe(true);
-    expect(isCookieCategoryAllowed(parsed, 'analytics')).toBe(false);
     expect(isCookieCategoryAllowed(parsed, 'marketing')).toBe(true);
+  });
+
+  describe('owner decision: tracking does not wait for a visitor choice', () => {
+    it('is switched off by the single TRACKING_REQUIRES_CONSENT constant', () => {
+      expect(TRACKING_REQUIRES_CONSENT).toBe(false);
+    });
+
+    it('allows analytics and marketing with no stored choice', () => {
+      expect(isCookieCategoryAllowed(null, 'analytics')).toBe(true);
+      expect(isCookieCategoryAllowed(null, 'marketing')).toBe(true);
+    });
+
+    it('allows analytics and marketing even when an old banner choice refused them', () => {
+      const refused = createCookieConsent({});
+      expect(isCookieCategoryAllowed(refused, 'analytics')).toBe(true);
+      expect(isCookieCategoryAllowed(refused, 'marketing')).toBe(true);
+    });
+
+    it('does not widen any other category', () => {
+      expect(isCookieCategoryAllowed(null, 'preferences')).toBe(false);
+      expect(isCookieCategoryAllowed(createCookieConsent({ preferences: true }), 'preferences')).toBe(true);
+    });
   });
 });
